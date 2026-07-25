@@ -1,0 +1,6 @@
+{
+  "name": "KK Kids",
+  "description": "Fun & interactive educational games for kids to learn English alphabet, numbers, writing, tracing, matching, and vocabulary with a friendly lion mascot and warm human voices.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
