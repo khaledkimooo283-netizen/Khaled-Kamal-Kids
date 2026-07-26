@@ -4,8 +4,11 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,9 +34,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.audio.SpeechAndSoundEngine
+import com.example.data.HandwritingData
 import com.example.data.KkDataRepository
+import com.example.data.TracingGuideItem
 import com.example.ui.components.*
-import kotlin.math.hypot
 
 @Composable
 fun TracingGameScreen(
@@ -41,58 +45,74 @@ fun TracingGameScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
-    var mode by remember { mutableStateOf("alphabet") } // "alphabet" or "numbers"
+    // Mode: "uppercase", "lowercase", "numbers"
+    var mode by remember { mutableStateOf("uppercase") }
     var currentIndex by remember { mutableIntStateOf(0) }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
-    val currentLetterItem = repository.alphabetList.getOrNull(currentIndex) ?: repository.alphabetList.first()
-    val currentNumberItem = repository.numberList.getOrNull(currentIndex) ?: repository.numberList.first()
+    val currentList: List<TracingGuideItem> = when (mode) {
+        "uppercase" -> HandwritingData.uppercaseLetters
+        "lowercase" -> HandwritingData.lowercaseLetters
+        else -> HandwritingData.numbers
+    }
 
-    var userDrawnPoints by remember { mutableStateOf(listOf<Offset>()) }
+    val currentItem = currentList.getOrNull(currentIndex) ?: currentList.first()
+
+    var userDrawnPoints by remember { mutableStateOf(listOf<Pair<Float, Float>>()) }
     var strokeSuccess by remember { mutableStateOf(false) }
     var isFailedAttempt by remember { mutableStateOf(false) }
-    var feedbackMessage by remember { mutableStateOf("Trace inside the path starting from the GREEN dot! 🟢") }
+    var feedbackMessage by remember { mutableStateOf("Start tracing at the GREEN dot! 🟢") }
 
     var isShaking by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
-    // Shake animation
+    // Shake animation on mistake
     val shakeOffset = remember { Animatable(0f) }
     LaunchedEffect(isShaking) {
         if (isShaking) {
             repeat(3) {
-                shakeOffset.animateTo(16f, tween(50))
-                shakeOffset.animateTo(-16f, tween(50))
+                shakeOffset.animateTo(14f, tween(45))
+                shakeOffset.animateTo(-14f, tween(45))
             }
-            shakeOffset.animateTo(0f, tween(50))
+            shakeOffset.animateTo(0f, tween(45))
             isShaking = false
         }
     }
 
-    // Speak item name on item change
+    // Pulse animation for direction arrow
+    val transition = rememberInfiniteTransition()
+    val arrowPulse by transition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    // Speak item name on item/mode change
     LaunchedEffect(currentIndex, mode) {
         userDrawnPoints = emptyList()
         strokeSuccess = false
         isFailedAttempt = false
         feedbackMessage = "Start tracing at the GREEN dot! 🟢"
-        if (mode == "alphabet") {
-            audioEngine.speakPhonetic(
-                currentLetterItem.letter.toString(),
-                currentLetterItem.word
-            )
+
+        if (mode == "uppercase") {
+            audioEngine.speakPhonetic(currentItem.character, currentItem.word)
+        } else if (mode == "lowercase") {
+            audioEngine.speak("lowercase ${currentItem.character} for ${currentItem.word}")
         } else {
-            audioEngine.speak("${currentNumberItem.number}... ${currentNumberItem.word}!")
+            audioEngine.speak("${currentItem.character}... ${currentItem.word}!")
         }
     }
 
-    val guideStrokes = if (mode == "alphabet") currentLetterItem.strokeGuidePoints else currentNumberItem.strokeGuidePoints
-    val itemTitle = if (mode == "alphabet") "${currentLetterItem.letter} for ${currentLetterItem.word} ${currentLetterItem.emoji}" else "${currentNumberItem.number} (${currentNumberItem.word}) ${currentNumberItem.emoji}"
+    val guideStrokes = currentItem.strokeGuidePoints
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE3F2FD))
+            .background(Color(0xFFE0F2FE))
     ) {
         Column(
             modifier = Modifier
@@ -101,48 +121,78 @@ fun TracingGameScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Tracing & Writing ✏️",
+                title = "Handwriting & Tracing ✏️",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
                 onMuteToggle = { audioEngine.isMuted = !audioEngine.isMuted }
             )
 
-            // Mode Toggle
+            // Category Mode Selector (3 modes: ABC, abc, 123)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
-                    onClick = { mode = "alphabet"; currentIndex = 0 },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (mode == "alphabet") Color(0xFF1E88E5) else Color(0xFFBBDEFB)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("ABC Alphabet", color = if (mode == "alphabet") Color.White else Color(0xFF1565C0), fontWeight = FontWeight.Bold)
+                listOf("uppercase" to "ABC Capital", "lowercase" to "abc Small", "numbers" to "123 Numbers").forEach { (catKey, label) ->
+                    val isSelected = mode == catKey
+                    Button(
+                        onClick = {
+                            mode = catKey
+                            currentIndex = 0
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) Color(0xFF0284C7) else Color(0xFFBAE6FD)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (isSelected) Color.White else Color(0xFF0369A1),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
+            }
 
-                Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-                Button(
-                    onClick = { mode = "numbers"; currentIndex = 0 },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (mode == "numbers") Color(0xFF1E88E5) else Color(0xFFBBDEFB)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("123 Numbers", color = if (mode == "numbers") Color.White else Color(0xFF1565C0), fontWeight = FontWeight.Bold)
+            // Quick Scrollable Character Carousel
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                itemsIndexed(currentList) { idx, item ->
+                    val isSelected = idx == currentIndex
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) Color(0xFF0284C7) else Color.White)
+                            .clickable { currentIndex = idx }
+                            .border(1.5.dp, if (isSelected) Color(0xFF0369A1) else Color(0xFF93C5FD), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = item.character,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 15.sp,
+                            color = if (isSelected) Color.White else Color(0xFF0F172A)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Item Title & Selector Controls
+            // Item Title & Prev/Next Controls
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,39 +202,39 @@ fun TracingGameScreen(
             ) {
                 IconButton(
                     onClick = {
-                        val max = if (mode == "alphabet") repository.alphabetList.size else repository.numberList.size
+                        val max = currentList.size
                         currentIndex = (currentIndex - 1 + max) % max
                     },
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(40.dp)
                         .background(Color.White, CircleShape)
                 ) {
-                    Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous", tint = Color(0xFF1976D2))
+                    Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous", tint = Color(0xFF0284C7))
                 }
 
                 Text(
-                    text = itemTitle,
-                    fontSize = 22.sp,
+                    text = "${currentItem.displayTitle} ${currentItem.emoji}",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF0D47A1)
+                    color = Color(0xFF0369A1)
                 )
 
                 IconButton(
                     onClick = {
-                        val max = if (mode == "alphabet") repository.alphabetList.size else repository.numberList.size
+                        val max = currentList.size
                         currentIndex = (currentIndex + 1) % max
                     },
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(40.dp)
                         .background(Color.White, CircleShape)
                 ) {
-                    Icon(Icons.Filled.ChevronRight, contentDescription = "Next", tint = Color(0xFF1976D2))
+                    Icon(Icons.Filled.ChevronRight, contentDescription = "Next", tint = Color(0xFF0284C7))
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // Tracing Board
+            // Professional Handwriting Tracing Board with Guidelines
             Box(
                 modifier = Modifier
                     .size(280.dp)
@@ -193,9 +243,9 @@ fun TracingGameScreen(
                     .border(
                         4.dp,
                         when {
-                            strokeSuccess -> Color(0xFF4CAF50)
-                            isFailedAttempt -> Color(0xFFE53935)
-                            else -> Color(0xFF90CAF9)
+                            strokeSuccess -> Color(0xFF22C55E)
+                            isFailedAttempt -> Color(0xFFEF4444)
+                            else -> Color(0xFF38BDF8)
                         },
                         RoundedCornerShape(24.dp)
                     ),
@@ -208,21 +258,25 @@ fun TracingGameScreen(
                             if (!strokeSuccess) {
                                 detectDragGestures(
                                     onDragStart = { offset ->
-                                        userDrawnPoints = listOf(offset)
+                                        userDrawnPoints = listOf(Pair(offset.x, offset.y))
                                         isFailedAttempt = false
                                     },
                                     onDrag = { change, _ ->
                                         change.consume()
-                                        userDrawnPoints = userDrawnPoints + change.position
+                                        userDrawnPoints = userDrawnPoints + Pair(change.position.x, change.position.y)
                                     },
                                     onDragEnd = {
                                         val canvasSize = size.width.toFloat()
-                                        val (isValid, coverage, accuracy) = validateTracing(userDrawnPoints, guideStrokes, canvasSize)
+                                        val validation = HandwritingData.validateHandwritingTracing(
+                                            drawnPoints = userDrawnPoints,
+                                            strokes = guideStrokes,
+                                            canvasSize = canvasSize
+                                        )
 
-                                        if (isValid) {
+                                        if (validation.isValid) {
                                             strokeSuccess = true
                                             isFailedAttempt = false
-                                            feedbackMessage = "✅ Excellent Tracing! ⭐ +3 Stars"
+                                            feedbackMessage = "⭐ Excellent Handwriting! +3 Stars"
                                             showConfetti = true
                                             repository.addStars(3)
                                             userStars = repository.getStars()
@@ -231,11 +285,7 @@ fun TracingGameScreen(
                                         } else {
                                             isFailedAttempt = true
                                             isShaking = true
-                                            feedbackMessage = if (accuracy < 0.80f) {
-                                                "❌ Stay inside the lines! Try again ✏️"
-                                            } else {
-                                                "❌ Almost! Cover the full letter path ✏️"
-                                            }
+                                            feedbackMessage = "❌ ${validation.message}"
                                             audioEngine.speakTryAgain()
                                         }
                                     }
@@ -246,7 +296,31 @@ fun TracingGameScreen(
                     val w = size.width
                     val h = size.height
 
-                    // 1. Draw Gray Background Track (Educational Width)
+                    // 1. Kindergarten Educational Guidelines
+                    // Top line (y = 0.12 * h)
+                    drawLine(
+                        color = Color(0xFFCBD5E1),
+                        start = Offset(0f, 0.12f * h),
+                        end = Offset(w, 0.12f * h),
+                        strokeWidth = 2f
+                    )
+                    // Mid line (dashed pink, y = 0.50 * h)
+                    drawLine(
+                        color = Color(0xFFF472B6),
+                        start = Offset(0f, 0.50f * h),
+                        end = Offset(w, 0.50f * h),
+                        strokeWidth = 2f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
+                    )
+                    // Baseline (solid blue, y = 0.88 * h)
+                    drawLine(
+                        color = Color(0xFF38BDF8),
+                        start = Offset(0f, 0.88f * h),
+                        end = Offset(w, 0.88f * h),
+                        strokeWidth = 3f
+                    )
+
+                    // 2. Outer Gray Guide Track (Educational width)
                     guideStrokes.forEach { strokeList ->
                         if (strokeList.size > 1) {
                             val trackPath = Path()
@@ -256,24 +330,24 @@ fun TracingGameScreen(
                             }
                             drawPath(
                                 path = trackPath,
-                                color = Color(0xFFECEFF1),
-                                style = Stroke(width = 54f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                color = Color(0xFFF1F5F9),
+                                style = Stroke(width = 50f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                             )
-                            // Dashed Center Guide
+                            // Inner Dashed Center Guide
                             drawPath(
                                 path = trackPath,
-                                color = Color(0xFF29B6F6),
+                                color = Color(0xFF0284C7),
                                 style = Stroke(
-                                    width = 10f,
+                                    width = 8f,
                                     cap = StrokeCap.Round,
                                     join = StrokeJoin.Round,
-                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 12f), 0f)
+                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
                                 )
                             )
                         }
                     }
 
-                    // 2. Draw Start & End Markers with Numbers
+                    // 3. Start Dots 🟢 & End Dots 🔴 with Directional Arrows
                     guideStrokes.forEachIndexed { strokeIdx, strokeList ->
                         if (strokeList.isNotEmpty()) {
                             val startX = strokeList.first().first * w
@@ -283,60 +357,72 @@ fun TracingGameScreen(
 
                             // Green Start Dot
                             drawCircle(
-                                color = Color(0xFF43A047),
+                                color = Color(0xFF16A34A),
                                 radius = 18f,
                                 center = Offset(startX, startY)
                             )
                             drawCircle(
                                 color = Color.White,
-                                radius = 8f,
+                                radius = 7f,
                                 center = Offset(startX, startY)
                             )
 
-                            // Red End Dot
+                            // Red Finish Dot
                             drawCircle(
-                                color = Color(0xFFE53935),
+                                color = Color(0xFFDC2626),
                                 radius = 14f,
                                 center = Offset(endX, endY)
                             )
+
+                            // Directional Arrow Hint on stroke mid-point
+                            if (strokeList.size > 2) {
+                                val midIdx = strokeList.size / 2
+                                val midX = strokeList[midIdx].first * w
+                                val midY = strokeList[midIdx].second * h
+                                drawCircle(
+                                    color = Color(0xFF0284C7),
+                                    radius = 10f * arrowPulse,
+                                    center = Offset(midX, midY)
+                                )
+                            }
                         }
                     }
 
-                    // 3. Draw User's Active Stroke
+                    // 4. Draw User Active Tracing Path
                     if (userDrawnPoints.size > 1) {
                         val userPath = Path()
-                        userPath.moveTo(userDrawnPoints[0].x, userDrawnPoints[0].y)
+                        userPath.moveTo(userDrawnPoints[0].first, userDrawnPoints[0].second)
                         for (i in 1 until userDrawnPoints.size) {
-                            userPath.lineTo(userDrawnPoints[i].x, userDrawnPoints[i].y)
+                            userPath.lineTo(userDrawnPoints[i].first, userDrawnPoints[i].second)
                         }
                         drawPath(
                             path = userPath,
                             color = when {
-                                strokeSuccess -> Color(0xFF4CAF50)
-                                isFailedAttempt -> Color(0xFFE53935)
-                                else -> Color(0xFFFF4081)
+                                strokeSuccess -> Color(0xFF22C55E)
+                                isFailedAttempt -> Color(0xFFEF4444)
+                                else -> Color(0xFFEC4899)
                             },
-                            style = Stroke(width = 36f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                            style = Stroke(width = 32f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Feedback Status Text Banner
             Text(
                 text = feedbackMessage,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isFailedAttempt) Color(0xFFC62828) else Color(0xFF1565C0),
+                color = if (isFailedAttempt) Color(0xFFDC2626) else Color(0xFF0369A1),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Reset / Clear Button
+            // Try Again Button
             Button(
                 onClick = {
                     userDrawnPoints = emptyList()
@@ -344,7 +430,7 @@ fun TracingGameScreen(
                     isFailedAttempt = false
                     feedbackMessage = "Start tracing at the GREEN dot! 🟢"
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB74D)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Icon(Icons.Filled.Refresh, contentDescription = "Clear", tint = Color.White)
@@ -354,15 +440,17 @@ fun TracingGameScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Mascot Lion
+            // Mascot Lion Encouragement
             KkLionMascot(
                 state = if (strokeSuccess) MascotState.CELEBRATE else MascotState.HAPPY,
                 speechBubbleText = if (strokeSuccess) "Super job tracing!" else "Start at green dot! 🟢",
                 onClick = {
-                    if (mode == "alphabet") {
-                        audioEngine.speakPhonetic(currentLetterItem.letter.toString(), currentLetterItem.word)
+                    if (mode == "uppercase") {
+                        audioEngine.speakPhonetic(currentItem.character, currentItem.word)
+                    } else if (mode == "lowercase") {
+                        audioEngine.speak("lowercase ${currentItem.character} for ${currentItem.word}")
                     } else {
-                        audioEngine.speak("${currentNumberItem.number}... ${currentNumberItem.word}!")
+                        audioEngine.speak("${currentItem.character}... ${currentItem.word}!")
                     }
                 }
             )
@@ -373,11 +461,11 @@ fun TracingGameScreen(
         StarRewardDialog(
             isVisible = showRewardDialog,
             title = "Super Writer!",
-            message = "You traced $itemTitle with great accuracy!",
+            message = "You traced ${currentItem.displayTitle} with excellent accuracy!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
-                val max = if (mode == "alphabet") repository.alphabetList.size else repository.numberList.size
+                val max = currentList.size
                 currentIndex = (currentIndex + 1) % max
             },
             onHome = {
@@ -387,56 +475,4 @@ fun TracingGameScreen(
             }
         )
     }
-}
-
-/**
- * Validates tracing for both high path coverage (>= 88%) AND high user accuracy (>= 82% of drawn points stay on the track).
- */
-private fun validateTracing(
-    userPoints: List<Offset>,
-    strokes: List<List<Pair<Float, Float>>>,
-    canvasSize: Float
-): Triple<Boolean, Float, Float> {
-    if (userPoints.size < 12) return Triple(false, 0f, 0f)
-
-    // Allowed tolerance radius (~45dp)
-    val allowedRadius = canvasSize * 0.16f
-
-    var totalGuidePoints = 0
-    var coveredGuidePoints = 0
-
-    strokes.forEach { stroke ->
-        stroke.forEach { guideP ->
-            totalGuidePoints++
-            val gx = guideP.first * canvasSize
-            val gy = guideP.second * canvasSize
-            val isCovered = userPoints.any { u -> hypot(u.x - gx, u.y - gy) <= allowedRadius }
-            if (isCovered) coveredGuidePoints++
-        }
-    }
-
-    val coverageRatio = if (totalGuidePoints > 0) coveredGuidePoints.toFloat() / totalGuidePoints.toFloat() else 1.0f
-
-    // User accuracy check: what percentage of user points were near the guide?
-    var pointsOnTrack = 0
-    userPoints.forEach { u ->
-        var onTrack = false
-        for (stroke in strokes) {
-            for (guideP in stroke) {
-                val gx = guideP.first * canvasSize
-                val gy = guideP.second * canvasSize
-                if (hypot(u.x - gx, u.y - gy) <= allowedRadius) {
-                    onTrack = true
-                    break
-                }
-            }
-            if (onTrack) break
-        }
-        if (onTrack) pointsOnTrack++
-    }
-
-    val accuracyRatio = pointsOnTrack.toFloat() / userPoints.size.toFloat()
-
-    val isValid = coverageRatio >= 0.85f && accuracyRatio >= 0.82f
-    return Triple(isValid, coverageRatio, accuracyRatio)
 }

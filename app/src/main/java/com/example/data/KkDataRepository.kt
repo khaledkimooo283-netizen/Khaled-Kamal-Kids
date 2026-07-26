@@ -55,49 +55,40 @@ class KkDataRepository(context: Context) {
         return prefs.getInt("user_streak", 3)
     }
 
-    // List of Alphabet items
-    val alphabetList = listOf(
-        LetterItem('A', "Apple", "🍎", "Ah ah Apple", 0xFFFF5252, getNormalizedLetterStroke('A')),
-        LetterItem('B', "Ball", "⚽", "Buh buh Ball", 0xFF448AFF, getNormalizedLetterStroke('B')),
-        LetterItem('C', "Cat", "🐱", "Cuh cuh Cat", 0xFFFFB74D, getNormalizedLetterStroke('C')),
-        LetterItem('D', "Dog", "🐶", "Duh duh Dog", 0xFF66BB6A, getNormalizedLetterStroke('D')),
-        LetterItem('E', "Elephant", "🐘", "Eh eh Elephant", 0xFFAB47BC, getNormalizedLetterStroke('E')),
-        LetterItem('F', "Fish", "🐟", "Fuh fuh Fish", 0xFF26C6DA, getNormalizedLetterStroke('F')),
-        LetterItem('G', "Giraffe", "🦒", "Guh guh Giraffe", 0xFFFFA726, getNormalizedLetterStroke('G')),
-        LetterItem('H', "Hat", "🎩", "Huh huh Hat", 0xFFEC407A, getNormalizedLetterStroke('H')),
-        LetterItem('I', "Ice Cream", "🍦", "Ih ih Ice Cream", 0xFFFF7043, getNormalizedLetterStroke('I')),
-        LetterItem('J', "Juice", "🧃", "Juh juh Juice", 0xFF26A69A, getNormalizedLetterStroke('J')),
-        LetterItem('K', "Kite", "🪁", "Kuh kuh Kite", 0xFF7E57C2, getNormalizedLetterStroke('K')),
-        LetterItem('L', "Lion", "🦁", "Luh luh Lion", 0xFFFFCA28, getNormalizedLetterStroke('L')),
-        LetterItem('M', "Monkey", "🐒", "Muh muh Monkey", 0xFF8D6E63, getNormalizedLetterStroke('M')),
-        LetterItem('N', "Nest", "🪹", "Nuh nuh Nest", 0xFF78909C, getNormalizedLetterStroke('N')),
-        LetterItem('O', "Owl", "🦉", "Ah ah Owl", 0xFF5C6BC0, getNormalizedLetterStroke('O')),
-        LetterItem('P', "Penguin", "🐧", "Puh puh Penguin", 0xFF42A5F5, getNormalizedLetterStroke('P')),
-        LetterItem('Q', "Queen", "👑", "Quah quah Queen", 0xFFD4E157, getNormalizedLetterStroke('Q')),
-        LetterItem('R', "Rabbit", "🐰", "Ruh ruh Rabbit", 0xFFFF8A65, getNormalizedLetterStroke('R')),
-        LetterItem('S', "Sun", "☀️", "Suh suh Sun", 0xFFFFD54F, getNormalizedLetterStroke('S')),
-        LetterItem('T', "Train", "🚂", "Tuh tuh Train", 0xFF26C6DA, getNormalizedLetterStroke('T')),
-        LetterItem('U', "Umbrella", "☂️", "Uh uh Umbrella", 0xFFBA68C8, getNormalizedLetterStroke('U')),
-        LetterItem('V', "Violin", "🎻", "Vuh vuh Violin", 0xFF81C784, getNormalizedLetterStroke('V')),
-        LetterItem('W', "Watermelon", "🍉", "Wuh wuh Watermelon", 0xFFFF5252, getNormalizedLetterStroke('W')),
-        LetterItem('X', "Xylophone", "🎼", "Ks ks Xylophone", 0xFF4DD0E1, getNormalizedLetterStroke('X')),
-        LetterItem('Y', "Yo-yo", "🪀", "Yuh yuh Yo-yo", 0xFFFFB74D, getNormalizedLetterStroke('Y')),
-        LetterItem('Z', "Zebra", "🦓", "Zuh zuh Zebra", 0xFFA1887F, getNormalizedLetterStroke('Z'))
-    )
+    // List of Alphabet items (Uppercase)
+    val alphabetList = HandwritingData.uppercaseLetters.map { item ->
+        LetterItem(
+            letter = item.character[0],
+            word = item.word,
+            emoji = item.emoji,
+            phonetic = "${item.character} for ${item.word}",
+            colorHex = 0xFFFF5252,
+            strokeGuidePoints = item.strokeGuidePoints
+        )
+    }
 
-    // List of Number items
-    val numberList = listOf(
-        NumberItem(1, "One", "🍎", 0xFFFF5252, getNormalizedNumberStroke(1)),
-        NumberItem(2, "Two", "🍌", 0xFFFFB74D, getNormalizedNumberStroke(2)),
-        NumberItem(3, "Three", "🍓", 0xFFFF4081, getNormalizedNumberStroke(3)),
-        NumberItem(4, "Four", "🍊", 0xFFFFA726, getNormalizedNumberStroke(4)),
-        NumberItem(5, "Five", "🧁", 0xFFAB47BC, getNormalizedNumberStroke(5)),
-        NumberItem(6, "Six", "⭐", 0xFFFFCA28, getNormalizedNumberStroke(6)),
-        NumberItem(7, "Seven", "🎈", 0xFF42A5F5, getNormalizedNumberStroke(7)),
-        NumberItem(8, "Eight", "🌸", 0xFFEC407A, getNormalizedNumberStroke(8)),
-        NumberItem(9, "Nine", "🍪", 0xFF8D6E63, getNormalizedNumberStroke(9)),
-        NumberItem(10, "Ten", "🦆", 0xFF26C6DA, getNormalizedNumberStroke(10))
-    )
+    // List of Lowercase items
+    val lowercaseList = HandwritingData.lowercaseLetters.map { item ->
+        LetterItem(
+            letter = item.character[0],
+            word = item.word,
+            emoji = item.emoji,
+            phonetic = "lowercase ${item.character}",
+            colorHex = 0xFF42A5F5,
+            strokeGuidePoints = item.strokeGuidePoints
+        )
+    }
+
+    // List of Number items (0 to 20)
+    val numberList = HandwritingData.numbers.mapIndexed { idx, item ->
+        NumberItem(
+            number = idx, // 0..20
+            word = item.word,
+            emoji = item.emoji,
+            colorHex = 0xFFAB47BC,
+            strokeGuidePoints = item.strokeGuidePoints
+        )
+    }
 
     // Animals list
     val animalsList = listOf(
