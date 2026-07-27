@@ -48,10 +48,10 @@ fun DragMatchGameScreen(
     LaunchedEffect(category) {
         matchedPairIds = emptySet()
         selectedPromptPair = null
-        if (category == "letters") {
-            audioEngine.speak("Match the letters to the right picture! 🍎")
-        } else {
-            audioEngine.speak("Match the numbers to the right count! 🔢")
+        when (category) {
+            "letters" -> audioEngine.speak("Match the letters to the right picture! 🍎")
+            "case" -> audioEngine.speak("Match big capital letters to small letters! 🔤")
+            else -> audioEngine.speak("Match the numbers to the right count! 🔢")
         }
     }
 
@@ -72,12 +72,12 @@ fun DragMatchGameScreen(
                 onMuteToggle = { audioEngine.isMuted = !audioEngine.isMuted }
             )
 
-            // Category Toggle
+            // Category Toggle (3 categories)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Button(
                     onClick = { category = "letters" },
@@ -85,12 +85,23 @@ fun DragMatchGameScreen(
                         containerColor = if (category == "letters") Color(0xFFFF9800) else Color(0xFFFFE0B2)
                     ),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
-                    Text("Letters & Words", color = if (category == "letters") Color.White else Color(0xFFE65100), fontWeight = FontWeight.Bold)
+                    Text("Letters", color = if (category == "letters") Color.White else Color(0xFFE65100), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Button(
+                    onClick = { category = "case" },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (category == "case") Color(0xFFFF9800) else Color(0xFFFFE0B2)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.weight(1.1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
+                ) {
+                    Text("Big ↔ Small", color = if (category == "case") Color.White else Color(0xFFE65100), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
 
                 Button(
                     onClick = { category = "numbers" },
@@ -98,9 +109,10 @@ fun DragMatchGameScreen(
                         containerColor = if (category == "numbers") Color(0xFFFF9800) else Color(0xFFFFE0B2)
                     ),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
-                    Text("Numbers & Quantities", color = if (category == "numbers") Color.White else Color(0xFFE65100), fontWeight = FontWeight.Bold)
+                    Text("Numbers", color = if (category == "numbers") Color.White else Color(0xFFE65100), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
 

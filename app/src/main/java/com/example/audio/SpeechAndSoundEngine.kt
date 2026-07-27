@@ -58,10 +58,20 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
         }
     }
 
+    private var lastSpokenText: String = ""
+    private var lastSpeakTimestamp: Long = 0L
+
     fun speak(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH) {
         if (isMuted || !isTtsReady) return
+        val now = System.currentTimeMillis()
+        // Avoid repeating the exact same utterance within 600ms to prevent rapid stuttering
+        if (text == lastSpokenText && (now - lastSpeakTimestamp) < 600) {
+            return
+        }
+        lastSpokenText = text
+        lastSpeakTimestamp = now
         try {
-            tts?.speak(text, queueMode, null, "UTTERANCE_${System.currentTimeMillis()}")
+            tts?.speak(text, queueMode, null, "UTTERANCE_$now")
         } catch (e: Exception) {
             Log.e("SpeechEngine", "Error speaking text", e)
         }

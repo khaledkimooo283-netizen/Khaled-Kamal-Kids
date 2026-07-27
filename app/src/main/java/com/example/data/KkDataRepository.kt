@@ -55,6 +55,99 @@ class KkDataRepository(context: Context) {
         return prefs.getInt("user_streak", 3)
     }
 
+    // --- Profile & Settings Data ---
+    fun getChildName(): String = prefs.getString("child_name", "Ahmed") ?: "Ahmed"
+    fun setChildName(name: String) = prefs.edit().putString("child_name", name).apply()
+
+    fun getChildAge(): Int = prefs.getInt("child_age", 4)
+    fun setChildAge(age: Int) = prefs.edit().putInt("child_age", age).apply()
+
+    fun getAvatarEmoji(): String = prefs.getString("avatar_emoji", "🦁") ?: "🦁"
+    fun setAvatarEmoji(emoji: String) = prefs.edit().putString("avatar_emoji", emoji).apply()
+
+    fun getCoins(): Int = prefs.getInt("user_coins", 120)
+    fun addCoins(count: Int) {
+        val current = getCoins()
+        prefs.edit().putInt("user_coins", current + count).apply()
+    }
+
+    fun getParentPin(): String = prefs.getString("parent_pin", "1234") ?: "1234"
+    fun setParentPin(pin: String) = prefs.edit().putString("parent_pin", pin).apply()
+
+    fun getVoiceVolume(): Float = prefs.getFloat("voice_volume", 1.0f)
+    fun setVoiceVolume(vol: Float) = prefs.edit().putFloat("voice_volume", vol).apply()
+
+    fun getMusicVolume(): Float = prefs.getFloat("music_volume", 0.8f)
+    fun setMusicVolume(vol: Float) = prefs.edit().putFloat("music_volume", vol).apply()
+
+    fun isSoundFxEnabled(): Boolean = prefs.getBoolean("sound_fx_enabled", true)
+    fun setSoundFxEnabled(enabled: Boolean) = prefs.edit().putBoolean("sound_fx_enabled", enabled).apply()
+
+    fun isMusicEnabled(): Boolean = prefs.getBoolean("bg_music_enabled", true)
+    fun setMusicEnabled(enabled: Boolean) = prefs.edit().putBoolean("bg_music_enabled", enabled).apply()
+
+    fun getVoiceType(): String = prefs.getString("voice_type", "Female Teacher") ?: "Female Teacher"
+    fun setVoiceType(type: String) = prefs.edit().putString("voice_type", type).apply()
+
+    fun getGameDifficulty(): String = prefs.getString("game_difficulty", "Easy") ?: "Easy"
+    fun setGameDifficulty(diff: String) = prefs.edit().putString("game_difficulty", diff).apply()
+
+    fun getTracingSensitivity(): String = prefs.getString("tracing_sensitivity", "Medium") ?: "Medium"
+    fun setTracingSensitivity(sens: String) = prefs.edit().putString("tracing_sensitivity", sens).apply()
+
+    fun isLargeTextMode(): Boolean = prefs.getBoolean("large_text_mode", false)
+    fun setLargeTextMode(enabled: Boolean) = prefs.edit().putBoolean("large_text_mode", enabled).apply()
+
+    fun getLanguage(): String = prefs.getString("app_language", "English") ?: "English"
+    fun setLanguage(lang: String) = prefs.edit().putString("app_language", lang).apply()
+
+    fun getReadingAccuracy(): Int = prefs.getInt("reading_accuracy", 88)
+    fun getMatchingAccuracy(): Int = prefs.getInt("matching_accuracy", 95)
+
+    fun resetAllProgress() {
+        prefs.edit().clear().apply()
+    }
+
+    // --- Adventure Mode & Parent Progress ---
+    fun getAdventureUnlockedWorld(): Int {
+        return prefs.getInt("adv_unlocked_world", 0)
+    }
+
+    fun unlockNextWorld(currentWorld: Int) {
+        val next = (currentWorld + 1).coerceAtMost(6)
+        if (next > getAdventureUnlockedWorld()) {
+            prefs.edit().putInt("adv_unlocked_world", next).apply()
+        }
+    }
+
+    fun getAdventureWorldProgress(worldIdx: Int): Int {
+        return prefs.getInt("adv_world_progress_$worldIdx", 0)
+    }
+
+    fun setAdventureWorldProgress(worldIdx: Int, progress: Int) {
+        prefs.edit().putInt("adv_world_progress_$worldIdx", progress).apply()
+    }
+
+    fun getLearnedWords(): Set<String> {
+        return prefs.getStringSet("learned_words_set", setOf("Apple", "Ant", "Animal", "Ball", "Banana", "Cat", "Dog", "Elephant")) ?: emptySet()
+    }
+
+    fun addLearnedWords(words: List<String>) {
+        val current = getLearnedWords().toMutableSet()
+        current.addAll(words)
+        prefs.edit().putStringSet("learned_words_set", current).apply()
+    }
+
+    fun getTracingAccuracy(): Int = prefs.getInt("tracing_accuracy", 94)
+    fun getListeningAccuracy(): Int = prefs.getInt("listening_accuracy", 96)
+    fun getTypingAccuracy(): Int = prefs.getInt("typing_accuracy", 91)
+    fun getLearningTimeMinutes(): Int = prefs.getInt("learning_time_mins", 65)
+
+    fun addLearningTimeMinutes(mins: Int) {
+        val current = getLearningTimeMinutes()
+        prefs.edit().putInt("learning_time_mins", current + mins).apply()
+    }
+
     // List of Alphabet items (Uppercase)
     val alphabetList = HandwritingData.uppercaseLetters.map { item ->
         LetterItem(
@@ -102,19 +195,47 @@ class KkDataRepository(context: Context) {
         AnimalItem("monkey", "Monkey", "🐒", "Ooh Ooh Aah Aah!", "Loves sweet bananas")
     )
 
-    // Logical Matching Pairs for Drag & Match Games
-    val matchPairsList = listOf(
-        MatchPair("m1", "Letter A", "🅰️", "Apple", "🍎", "letters"),
-        MatchPair("m2", "Letter B", "🅱️", "Ball", "⚽", "letters"),
-        MatchPair("m3", "Letter C", "🔤", "Cat", "🐱", "letters"),
-        MatchPair("m4", "Letter D", "🔤", "Dog", "🐶", "letters"),
-        MatchPair("m5", "Letter L", "🔤", "Lion", "🦁", "letters"),
-        MatchPair("m6", "Number 3", "3️⃣", "3 Apples", "🍎🍎🍎", "numbers"),
-        MatchPair("m7", "Number 2", "2️⃣", "2 Bananas", "🍌🍌", "numbers"),
-        MatchPair("m8", "Number 1", "1️⃣", "1 Star", "⭐", "numbers"),
-        MatchPair("m9", "Number 4", "4️⃣", "4 Cupcakes", "🧁🧁🧁🧁", "numbers"),
-        MatchPair("m10", "Number 5", "5️⃣", "5 Balloons", "🎈🎈🎈🎈🎈", "numbers")
-    )
+    // Logical Matching Pairs for Drag & Match Games (Full A-Z & 1-10)
+    val matchPairsList: List<MatchPair> by lazy {
+        val letterPairs = HandwritingData.uppercaseLetters.map { item ->
+            MatchPair(
+                id = "m_letter_${item.character}",
+                promptText = "Letter ${item.character}",
+                promptEmoji = item.character,
+                matchText = item.word,
+                matchEmoji = item.emoji,
+                category = "letters"
+            )
+        }
+
+        val numberEmojis = listOf("🍎", "🍌", "🍓", "🍊", "🧁", "⭐", "🎈", "🌸", "🍪", "🦆")
+        val numberPairs = (1..10).map { num ->
+            val emojiUnit = numberEmojis[(num - 1) % numberEmojis.size]
+            val repeatedEmojis = emojiUnit.repeat(num.coerceAtMost(5))
+            MatchPair(
+                id = "m_number_$num",
+                promptText = "Number $num",
+                promptEmoji = "$num",
+                matchText = "$num items",
+                matchEmoji = repeatedEmojis,
+                category = "numbers"
+            )
+        }
+
+        val casePairs = HandwritingData.uppercaseLetters.map { upperItem ->
+            val lowerChar = upperItem.character.lowercase()
+            MatchPair(
+                id = "m_case_${upperItem.character}",
+                promptText = "Big ${upperItem.character}",
+                promptEmoji = upperItem.character,
+                matchText = "Small $lowerChar",
+                matchEmoji = lowerChar,
+                category = "case"
+            )
+        }
+
+        letterPairs + numberPairs + casePairs
+    }
 
     /**
      * Normalized stroke guide paths for letters in a standard 0..1 bounding box.

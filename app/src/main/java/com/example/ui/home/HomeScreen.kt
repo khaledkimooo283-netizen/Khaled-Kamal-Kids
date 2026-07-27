@@ -49,6 +49,61 @@ fun HomeScreen(
     val bentoGames = remember {
         listOf(
             BentoGameItem(
+                id = "songs_music",
+                title = "Songs & Music",
+                subtitle = "Sing along, dance & learn ABCs & Numbers!",
+                emoji = "🎵",
+                category = "featured",
+                startColorHex = 0xFFEC4899,
+                endColorHex = 0xFFBE185D,
+                isSpanFull = true,
+                route = "songs_music"
+            ),
+            BentoGameItem(
+                id = "adventure_mode",
+                title = "KK Adventure Mode",
+                subtitle = "Help Lion explore learning worlds & find treasure!",
+                emoji = "🗺️",
+                category = "adventures",
+                startColorHex = 0xFFF59E0B,
+                endColorHex = 0xFFB45309,
+                isSpanFull = true,
+                route = "adventure_mode"
+            ),
+            BentoGameItem(
+                id = "dictionary",
+                title = "My Dictionary",
+                subtitle = "Explore A-Z vocabulary & audio pronunciation!",
+                emoji = "📖",
+                category = "featured",
+                startColorHex = 0xFFF59E0B,
+                endColorHex = 0xFFB45309,
+                isSpanFull = true,
+                route = "dictionary"
+            ),
+            BentoGameItem(
+                id = "parent_progress",
+                title = "Parent Dashboard",
+                subtitle = "View learning progress & accuracy analytics",
+                emoji = "📊",
+                category = "featured",
+                startColorHex = 0xFF3B82F6,
+                endColorHex = 0xFF1E3A8A,
+                isSpanFull = true,
+                route = "parent_progress"
+            ),
+            BentoGameItem(
+                id = "profile_settings",
+                title = "Profile & Settings",
+                subtitle = "Child profile, sound controls & Parent Gate 🔒",
+                emoji = "👤",
+                category = "featured",
+                startColorHex = 0xFF8B5CF6,
+                endColorHex = 0xFF5B21B6,
+                isSpanFull = true,
+                route = "profile_settings"
+            ),
+            BentoGameItem(
                 id = "fishing",
                 title = "Fishing Adventure",
                 subtitle = "Catch swimming letters & numbers!",
@@ -58,6 +113,46 @@ fun HomeScreen(
                 endColorHex = 0xFF2563EB,
                 isSpanFull = true,
                 route = "fishing"
+            ),
+            BentoGameItem(
+                id = "capital_small",
+                title = "Capital ↔ Small",
+                subtitle = "Match A with a, B with b!",
+                emoji = "🅰️",
+                category = "letters",
+                startColorHex = 0xFF60A5FA,
+                endColorHex = 0xFF1D4ED8,
+                route = "capital_small"
+            ),
+            BentoGameItem(
+                id = "missing_letter",
+                title = "Find Missing Letter",
+                subtitle = "Fill in C _ T for Cat!",
+                emoji = "🔍",
+                category = "letters",
+                startColorHex = 0xFFFBBF24,
+                endColorHex = 0xFFB45309,
+                route = "missing_letter"
+            ),
+            BentoGameItem(
+                id = "sequence_order",
+                title = "Sequence Order",
+                subtitle = "A B _ D & 1 2 _ 4!",
+                emoji = "🔢",
+                category = "numbers",
+                startColorHex = 0xFF34D399,
+                endColorHex = 0xFF047857,
+                route = "sequence_order"
+            ),
+            BentoGameItem(
+                id = "listen_choose",
+                title = "Listen & Choose",
+                subtitle = "Listen & tap the correct picture!",
+                emoji = "🎧",
+                category = "featured",
+                startColorHex = 0xFFA855F7,
+                endColorHex = 0xFF6B21A8,
+                route = "listen_choose"
             ),
             BentoGameItem(
                 id = "tracing",
@@ -141,9 +236,9 @@ fun HomeScreen(
             ),
             BentoGameItem(
                 id = "shadow_match",
-                title = "Shadow Matching",
-                subtitle = "Find silhouette pairs",
-                emoji = "👤",
+                title = "Listen & Choose",
+                subtitle = "Listen & pick picture!",
+                emoji = "🎧",
                 category = "puzzles",
                 startColorHex = 0xFFA78BFA,
                 endColorHex = 0xFF7C3AED,

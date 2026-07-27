@@ -1,11 +1,18 @@
 package com.example.ui.games
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,8 +24,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.audio.SpeechAndSoundEngine
+import com.example.data.HandwritingData
 import com.example.data.KkDataRepository
+import com.example.data.TracingGuideItem
 import com.example.ui.components.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 data class TreasureChestItem(
     val id: Int,
@@ -33,32 +44,52 @@ fun TreasureHuntScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
-    var targetWord by remember { mutableStateOf("A") }
+
+    var currentTargetItem by remember { mutableStateOf<TracingGuideItem?>(null) }
     var score by remember { mutableIntStateOf(0) }
 
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
+    var showVocabBanner by remember { mutableStateOf(false) }
+    var celebrationMessage by remember { mutableStateOf("") }
 
     var chests by remember { mutableStateOf(listOf<TreasureChestItem>()) }
+    var isRoundProcessing by remember { mutableStateOf(false) }
+
+    val encouragements = remember {
+        listOf("Excellent!", "Great Job!", "Super Finding!", "Wonderful!", "You Found It!")
+    }
+
+    val sourceLetters = remember { HandwritingData.uppercaseLetters }
 
     fun setupTreasureMap() {
-        val target = repository.alphabetList.random()
-        targetWord = target.letter.toString()
+        showVocabBanner = false
+        showConfetti = false
+        isRoundProcessing = false
 
-        val distractors = repository.alphabetList.filter { it.letter.toString() != targetWord }.shuffled().take(5).map { it.letter.toString() }
-        val allContent = (distractors + targetWord).shuffled()
+        val target = sourceLetters.random()
+        currentTargetItem = target
 
-        chests = allContent.mapIndexed { index, item ->
+        val distractors = sourceLetters
+            .filter { it.character != target.character }
+            .shuffled()
+            .take(5)
+            .map { it.character }
+
+        val allContent = (distractors + target.character).shuffled()
+
+        chests = allContent.mapIndexed { index, letterStr ->
             TreasureChestItem(
                 id = index,
-                content = item,
-                isTarget = item == targetWord,
+                content = letterStr,
+                isTarget = letterStr == target.character,
                 isOpen = false
             )
         }
 
-        audioEngine.speak("Treasure Hunt! Find the chest holding the letter $targetWord! 🏴‍☠️")
+        audioEngine.speak("Treasure Hunt! Find the chest holding letter ${target.character}! 🏴‍☠️")
     }
 
     LaunchedEffect(Unit) {
@@ -68,7 +99,7 @@ fun TreasureHuntScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF3E0)) // Beach Sand Warm Tone
+            .background(Color(0xFFFFF3E0)) // Warm Beach Sand Tone
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -82,25 +113,77 @@ fun TreasureHuntScreen(
                 onMuteToggle = { audioEngine.isMuted = !audioEngine.isMuted }
             )
 
-            // Mission Clue
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.88f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFFB8C00))
-                    .padding(14.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Find Treasure Chest: '$targetWord' 💎",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
-                )
+            // Mission Clue Banner
+            currentTargetItem?.let { item ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFFFB8C00))
+                        .border(3.dp, Color(0xFFE65100), RoundedCornerShape(20.dp))
+                        .padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Find Treasure Chest: '${item.character}'",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "💎", fontSize = 24.sp)
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Vocabulary Reinforcement Overlay Card during Correct Celebration
+            AnimatedVisibility(
+                visible = showVocabBanner && currentTargetItem != null,
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
+            ) {
+                currentTargetItem?.let { target ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth(0.88f)
+                            .padding(bottom = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF3C7)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = target.emoji,
+                                fontSize = 42.sp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = celebrationMessage,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFD97706)
+                                )
+                                Text(
+                                    text = "${target.character} is for ${target.word}",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFB45309)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             // Grid of Chests
             LazyVerticalGrid(
@@ -113,29 +196,61 @@ fun TreasureHuntScreen(
             ) {
                 items(chests.size) { idx ->
                     val chest = chests[idx]
+                    val isTargetChest = chest.isTarget && chest.isOpen
+
                     Box(
                         modifier = Modifier
-                            .height(120.dp)
+                            .height(115.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .background(if (chest.isOpen) Color(0xFFFFE082) else Color(0xFF8D6E63))
-                            .clickable {
-                                if (!chest.isOpen) {
-                                    chests = chests.map { if (it.id == chest.id) it.copy(isOpen = true) else it }
-                                    if (chest.isTarget) {
-                                        score++
-                                        audioEngine.speakPraise()
-                                        audioEngine.speak("You found $targetWord! Golden Treasure!")
+                            .background(
+                                when {
+                                    isTargetChest -> Color(0xFFFFD54F) // Golden Shine
+                                    chest.isOpen -> Color(0xFFE0E0E0) // Opened wrong chest
+                                    else -> Color(0xFF8D6E63) // Closed Wooden Chest
+                                }
+                            )
+                            .border(
+                                width = if (isTargetChest) 4.dp else 2.dp,
+                                color = if (isTargetChest) Color(0xFFF59E0B) else Color(0xFF5D4037),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .clickable(enabled = !chest.isOpen && !isRoundProcessing) {
+                                isRoundProcessing = true
+                                chests = chests.map { if (it.id == chest.id) it.copy(isOpen = true) else it }
 
-                                        if (score >= 3) {
-                                            showConfetti = true
-                                            repository.addStars(4)
+                                if (chest.isTarget) {
+                                    // Correct Treasure Chest!
+                                    score++
+                                    showConfetti = true
+                                    showVocabBanner = true
+                                    celebrationMessage = encouragements.random()
+
+                                    currentTargetItem?.let { target ->
+                                        audioEngine.speakPraise()
+                                        audioEngine.speak("${target.character}... ${target.word}! ${celebrationMessage}")
+                                    }
+
+                                    coroutineScope.launch {
+                                        // Keep chest open & show celebration for 3 seconds
+                                        delay(3200)
+
+                                        if (score >= 4) {
+                                            repository.addStars(5)
                                             userStars = repository.getStars()
                                             showRewardDialog = true
                                         } else {
                                             setupTreasureMap()
                                         }
-                                    } else {
-                                        audioEngine.speak("Not this chest! Keep hunting!")
+                                    }
+                                } else {
+                                    // Wrong Treasure Chest!
+                                    audioEngine.speak("Not this chest! Keep looking!")
+
+                                    coroutineScope.launch {
+                                        // Show wrong chest for 1.5 seconds then close
+                                        delay(1500)
+                                        chests = chests.map { if (it.id == chest.id) it.copy(isOpen = false) else it }
+                                        isRoundProcessing = false
                                     }
                                 }
                             },
@@ -143,15 +258,20 @@ fun TreasureHuntScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = if (chest.isOpen) (if (chest.isTarget) "💎" else "🪙") else "🧰",
-                                fontSize = 42.sp
+                                text = when {
+                                    isTargetChest -> "💎✨⭐"
+                                    chest.isOpen -> "🪙"
+                                    else -> "🧰"
+                                },
+                                fontSize = 36.sp
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             if (chest.isOpen) {
                                 Text(
                                     text = chest.content,
-                                    fontSize = 24.sp,
+                                    fontSize = 26.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF3E2723)
+                                    color = if (chest.isTarget) Color(0xFFB45309) else Color(0xFF424242)
                                 )
                             } else {
                                 Text(
@@ -166,12 +286,16 @@ fun TreasureHuntScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             KkLionMascot(
-                state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = "Find chest '$targetWord'!",
-                onClick = { audioEngine.speak("Tap a chest to find letter $targetWord!") }
+                state = if (showRewardDialog || showVocabBanner) MascotState.CELEBRATE else MascotState.HAPPY,
+                speechBubbleText = currentTargetItem?.let { "Find chest '${it.character}'!" } ?: "Find the treasure!",
+                onClick = {
+                    currentTargetItem?.let {
+                        audioEngine.speak("Find treasure chest with letter ${it.character}!")
+                    }
+                }
             )
         }
 
@@ -179,7 +303,7 @@ fun TreasureHuntScreen(
 
         StarRewardDialog(
             isVisible = showRewardDialog,
-            title = "Pirate Captain!",
+            title = "Pirate Captain! 🏴‍☠️💎",
             message = "You found all hidden letter treasures!",
             onNext = {
                 showRewardDialog = false

@@ -4,27 +4,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.audio.SpeechAndSoundEngine
+import com.example.data.HandwritingData
 import com.example.data.KkDataRepository
+import com.example.data.TracingGuideItem
 import com.example.ui.components.*
-
-data class ShadowMatchItem(
-    val id: String,
-    val name: String,
-    val emoji: String
-)
 
 @Composable
 fun ShadowMatchScreen(
@@ -33,37 +31,34 @@ fun ShadowMatchScreen(
     onBackClick: () -> Unit
 ) {
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
-    var currentItem by remember { mutableStateOf<ShadowMatchItem?>(null) }
-    var candidateOptions by remember { mutableStateOf(listOf<ShadowMatchItem>()) }
-    var matchedCount by remember { mutableIntStateOf(0) }
+    var currentQuestionIndex by remember { mutableIntStateOf(0) }
+    var targetItem by remember { mutableStateOf<TracingGuideItem?>(null) }
+    var optionList by remember { mutableStateOf<List<TracingGuideItem>>(emptyList()) }
+    var score by remember { mutableIntStateOf(0) }
 
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
-    val itemList = remember {
-        listOf(
-            ShadowMatchItem("lion", "Lion", "🦁"),
-            ShadowMatchItem("cat", "Cat", "🐱"),
-            ShadowMatchItem("dog", "Dog", "🐶"),
-            ShadowMatchItem("duck", "Duck", "🦆"),
-            ShadowMatchItem("apple", "Apple", "🍎"),
-            ShadowMatchItem("car", "Car", "🚗"),
-            ShadowMatchItem("rocket", "Rocket", "🚀"),
-            ShadowMatchItem("star", "Star", "⭐")
-        )
+    val allSourceItems = remember {
+        HandwritingData.uppercaseLetters + HandwritingData.lowercaseLetters
     }
 
-    fun newRound() {
-        val target = itemList.random()
-        currentItem = target
-        val distractors = itemList.filter { it.id != target.id }.shuffled().take(2)
-        candidateOptions = (distractors + target).shuffled()
+    fun nextQuestion() {
+        val target = allSourceItems.random()
+        targetItem = target
 
-        audioEngine.speak("Can you find which character matches this dark shadow? 🕵️")
+        val distractors = allSourceItems
+            .filter { it.character != target.character && it.word != target.word }
+            .shuffled()
+            .take(3)
+
+        optionList = (distractors + target).shuffled()
+
+        audioEngine.speak("Listen carefully! Touch ${target.word}! ${target.emoji}")
     }
 
     LaunchedEffect(Unit) {
-        newRound()
+        nextQuestion()
     }
 
     Box(
@@ -76,7 +71,7 @@ fun ShadowMatchScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Shadow Matching 👤",
+                title = "Listen & Choose 🎧",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
@@ -85,85 +80,111 @@ fun ShadowMatchScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Shadow Display Box
-            currentItem?.let { target ->
+            // Big Audio Prompt Replay Card
+            targetItem?.let { target ->
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(180.dp)
+                        .fillMaxWidth(0.88f)
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color.White)
-                        .border(3.dp, Color(0xFFAB47BC), RoundedCornerShape(24.dp)),
+                        .border(3.dp, Color(0xFFAB47BC), RoundedCornerShape(24.dp))
+                        .clickable {
+                            audioEngine.speak("Touch ${target.word}! ${target.emoji}")
+                        }
+                        .padding(20.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // Dark Shadow Emoji
-                        Box(
+                        IconButton(
+                            onClick = {
+                                audioEngine.speak("Touch ${target.word}! ${target.emoji}")
+                            },
                             modifier = Modifier
-                                .size(90.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(Color(0xFF263238)),
-                            contentAlignment = Alignment.Center
+                                .size(72.dp)
+                                .background(Color(0xFF8E24AA), CircleShape)
                         ) {
-                            Text(text = "❓", fontSize = 44.sp)
+                            Icon(
+                                imageVector = Icons.Filled.VolumeUp,
+                                contentDescription = "Play Sound",
+                                tint = Color.White,
+                                modifier = Modifier.size(40.dp)
+                            )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Text(
-                            text = "Who is this shadow?",
-                            fontSize = 18.sp,
+                            text = "Tap Speaker to Hear Again 🔊",
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF6A1B9A)
+                            color = Color(0xFF6A1B9A),
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Tap the matching picture below!",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                text = "Which picture did you hear?",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF4A148C)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Options Row
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // 2x2 Picture Choices
+            Column(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                candidateOptions.forEach { option ->
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White)
-                            .border(2.dp, Color(0xFFCE93D8), RoundedCornerShape(20.dp))
-                            .clickable {
-                                if (option.id == currentItem?.id) {
-                                    matchedCount++
-                                    audioEngine.speakPraise()
-                                    audioEngine.speak("Yes! It is the ${option.name}!")
-
-                                    if (matchedCount >= 3) {
-                                        showConfetti = true
-                                        repository.addStars(4)
-                                        userStars = repository.getStars()
-                                        showRewardDialog = true
-                                    } else {
-                                        newRound()
-                                    }
-                                } else {
-                                    audioEngine.speakTryAgain()
-                                }
-                            },
-                        contentAlignment = Alignment.Center
+                val chunks = optionList.chunked(2)
+                chunks.forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = option.emoji, fontSize = 36.sp)
-                            Text(text = option.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4A148C))
+                        rowItems.forEach { option ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(110.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White)
+                                    .border(2.5.dp, Color(0xFFCE93D8), RoundedCornerShape(20.dp))
+                                    .clickable {
+                                        if (option.character == targetItem?.character && option.word == targetItem?.word) {
+                                            score++
+                                            audioEngine.speakPraise()
+                                            audioEngine.speak("Correct! ${option.word}!")
+
+                                            if (score >= 4) {
+                                                showConfetti = true
+                                                repository.addStars(5)
+                                                userStars = repository.getStars()
+                                                showRewardDialog = true
+                                            } else {
+                                                nextQuestion()
+                                            }
+                                        } else {
+                                            audioEngine.speakTryAgain()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = option.emoji, fontSize = 42.sp)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${option.character} - ${option.word}",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF4A148C)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -173,8 +194,12 @@ fun ShadowMatchScreen(
 
             KkLionMascot(
                 state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = "Match the shadow!",
-                onClick = { audioEngine.speak("Look at the dark shadow and tap the matching item!") }
+                speechBubbleText = "Listen & tap correct picture!",
+                onClick = {
+                    targetItem?.let {
+                        audioEngine.speak("Touch ${it.word}!")
+                    }
+                }
             )
         }
 
@@ -182,13 +207,13 @@ fun ShadowMatchScreen(
 
         StarRewardDialog(
             isVisible = showRewardDialog,
-            title = "Shadow Detective!",
-            message = "You matched all shadow silhouettes perfectly!",
+            title = "Super Listener! 🎧",
+            message = "You identified all spoken letters and words!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
-                matchedCount = 0
-                newRound()
+                score = 0
+                nextQuestion()
             },
             onHome = {
                 showRewardDialog = false

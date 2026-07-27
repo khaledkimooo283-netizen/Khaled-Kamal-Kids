@@ -18,6 +18,10 @@ import com.example.ui.games.*
 import com.example.ui.home.HomeScreen
 import com.example.ui.theme.MyApplicationTheme
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioEngine: SpeechAndSoundEngine
@@ -32,8 +36,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MyApplicationTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    KkKidsApp(repository = repository, audioEngine = audioEngine)
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        KkKidsApp(repository = repository, audioEngine = audioEngine)
+                    }
                 }
             }
         }
@@ -70,6 +76,78 @@ fun KkKidsApp(
                 repository = repository,
                 audioEngine = audioEngine,
                 onNavigateToGame = { route -> navController.navigate(route) }
+            )
+        }
+
+        composable("songs_music") {
+            SongsAndMusicScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("adventure_mode") {
+            AdventureModeScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("dictionary") {
+            DictionaryScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("parent_progress") {
+            ParentProgressScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("profile_settings") {
+            ProfileSettingsScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("capital_small") {
+            CapitalSmallMatchScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("missing_letter") {
+            MissingLetterScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("sequence_order") {
+            SequenceOrderScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("listen_choose") {
+            ListenAndChooseScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
             )
         }
 
