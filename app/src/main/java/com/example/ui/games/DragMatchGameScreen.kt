@@ -5,14 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +20,8 @@ import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.data.MatchPair
 import com.example.ui.components.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun DragMatchGameScreen(
@@ -29,25 +29,32 @@ fun DragMatchGameScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
-    var category by remember { mutableStateOf("letters") } // "letters" or "numbers"
+    val coroutineScope = rememberCoroutineScope()
+    var category by remember { mutableStateOf("letters") } // "letters", "case", or "numbers"
+    var roundSeed by remember { mutableIntStateOf(0) }
+
     var selectedPromptPair by remember { mutableStateOf<MatchPair?>(null) }
+    var wrongMatchLeftId by remember { mutableStateOf<String?>(null) }
+    var wrongMatchRightId by remember { mutableStateOf<String?>(null) }
     var matchedPairIds by remember { mutableStateOf(setOf<String>()) }
 
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
-    var showRewardDialog by remember { mutableStateOf(showRewardDialogState(false)) }
+    var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
-    val activePairs = remember(category) {
-        repository.matchPairsList.filter { it.category == category }.shuffled()
+    // Generate round dynamically with full validation
+    val currentRound = remember(category, roundSeed) {
+        repository.generateMatchRound(category, count = 4)
     }
 
-    val rightOptions = remember(activePairs) {
-        activePairs.shuffled()
-    }
+    val leftColumnPairs = currentRound.leftPairs
+    val rightColumnPairs = currentRound.rightPairs
 
-    LaunchedEffect(category) {
+    LaunchedEffect(category, roundSeed) {
         matchedPairIds = emptySet()
         selectedPromptPair = null
+        wrongMatchLeftId = null
+        wrongMatchRightId = null
         when (category) {
             "letters" -> audioEngine.speak("Match the letters to the right picture! 🍎")
             "case" -> audioEngine.speak("Match big capital letters to small letters! 🔤")
@@ -72,7 +79,7 @@ fun DragMatchGameScreen(
                 onMuteToggle = { audioEngine.isMuted = !audioEngine.isMuted }
             )
 
-            // Category Toggle (3 categories)
+            // Category Toggle
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -80,7 +87,10 @@ fun DragMatchGameScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Button(
-                    onClick = { category = "letters" },
+                    onClick = {
+                        category = "letters"
+                        roundSeed++
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (category == "letters") Color(0xFFFF9800) else Color(0xFFFFE0B2)
                     ),
@@ -92,7 +102,10 @@ fun DragMatchGameScreen(
                 }
 
                 Button(
-                    onClick = { category = "case" },
+                    onClick = {
+                        category = "case"
+                        roundSeed++
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (category == "case") Color(0xFFFF9800) else Color(0xFFFFE0B2)
                     ),
@@ -104,7 +117,10 @@ fun DragMatchGameScreen(
                 }
 
                 Button(
-                    onClick = { category = "numbers" },
+                    onClick = {
+                        category = "numbers"
+                        roundSeed++
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (category == "numbers") Color(0xFFFF9800) else Color(0xFFFFE0B2)
                     ),
@@ -116,18 +132,18 @@ fun DragMatchGameScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Tap a item on the left, then tap its match on the right!",
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFF795548),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Two Matching Columns
             Row(
@@ -140,30 +156,42 @@ fun DragMatchGameScreen(
                 // Left Column (Prompts)
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    activePairs.forEach { pair ->
+                    leftColumnPairs.forEach { pair ->
                         val isMatched = matchedPairIds.contains(pair.id)
                         val isSelected = selectedPromptPair?.id == pair.id
+                        val isWrong = wrongMatchLeftId == pair.id
 
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(68.dp)
+                                .height(72.dp)
                                 .clip(RoundedCornerShape(18.dp))
-                                .clickable(enabled = !isMatched) {
+                                .border(
+                                    width = if (isMatched || isSelected || isWrong) 3.dp else 1.5.dp,
+                                    color = when {
+                                        isMatched -> Color(0xFF16A34A)
+                                        isWrong -> Color(0xFFDC2626)
+                                        isSelected -> Color(0xFFF59E0B)
+                                        else -> Color(0xFFCBD5E1)
+                                    },
+                                    shape = RoundedCornerShape(18.dp)
+                                )
+                                .clickable(enabled = !isMatched && wrongMatchLeftId == null) {
                                     selectedPromptPair = pair
                                     audioEngine.speak(pair.promptText)
                                 },
                             colors = CardDefaults.cardColors(
                                 containerColor = when {
-                                    isMatched -> Color(0xFFC8E6C9)
-                                    isSelected -> Color(0xFFFFCC80)
+                                    isMatched -> Color(0xFFDCFCE7)
+                                    isWrong -> Color(0xFFFEE2E2)
+                                    isSelected -> Color(0xFFFEF3C7)
                                     else -> Color.White
                                 }
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -173,61 +201,87 @@ fun DragMatchGameScreen(
                                 horizontalArrangement = Arrangement.Start
                             ) {
                                 Text(text = pair.promptEmoji, fontSize = 28.sp)
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = pair.promptText,
-                                    fontSize = 17.sp,
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (isMatched) Color(0xFF2E7D32) else Color(0xFF37474F)
+                                    color = when {
+                                        isMatched -> Color(0xFF15803D)
+                                        isWrong -> Color(0xFFB91C1C)
+                                        else -> Color(0xFF37474F)
+                                    }
                                 )
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 // Right Column (Matches)
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    rightOptions.forEach { pair ->
+                    rightColumnPairs.forEach { pair ->
                         val isMatched = matchedPairIds.contains(pair.id)
+                        val isWrong = wrongMatchRightId == pair.id
 
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(68.dp)
+                                .height(72.dp)
                                 .clip(RoundedCornerShape(18.dp))
-                                .clickable(enabled = !isMatched) {
+                                .border(
+                                    width = if (isMatched || isWrong) 3.dp else 1.5.dp,
+                                    color = when {
+                                        isMatched -> Color(0xFF16A34A)
+                                        isWrong -> Color(0xFFDC2626)
+                                        else -> Color(0xFFCBD5E1)
+                                    },
+                                    shape = RoundedCornerShape(18.dp)
+                                )
+                                .clickable(enabled = !isMatched && wrongMatchRightId == null) {
                                     if (selectedPromptPair != null) {
                                         if (selectedPromptPair?.id == pair.id) {
-                                            // Correct Match!
+                                            // Correct Match by unique ID!
                                             matchedPairIds = matchedPairIds + pair.id
                                             selectedPromptPair = null
                                             audioEngine.speakPraise()
                                             audioEngine.speak("${pair.matchText}!")
 
-                                            if (matchedPairIds.size == activePairs.size) {
+                                            if (matchedPairIds.size == currentRound.pairs.size) {
                                                 showConfetti = true
                                                 repository.addStars(5)
                                                 userStars = repository.getStars()
                                                 showRewardDialog = true
                                             }
                                         } else {
-                                            // Wrong Match!
+                                            // Wrong Match! Show red animation and wrong sound, keep cards available!
+                                            wrongMatchLeftId = selectedPromptPair?.id
+                                            wrongMatchRightId = pair.id
                                             audioEngine.speakTryAgain()
+                                            coroutineScope.launch {
+                                                delay(600)
+                                                selectedPromptPair = null
+                                                wrongMatchLeftId = null
+                                                wrongMatchRightId = null
+                                            }
                                         }
                                     } else {
                                         audioEngine.speak(pair.matchText)
                                     }
                                 },
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isMatched) Color(0xFFC8E6C9) else Color.White
+                                containerColor = when {
+                                    isMatched -> Color(0xFFDCFCE7)
+                                    isWrong -> Color(0xFFFEE2E2)
+                                    else -> Color.White
+                                }
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -237,12 +291,16 @@ fun DragMatchGameScreen(
                                 horizontalArrangement = Arrangement.Start
                             ) {
                                 Text(text = pair.matchEmoji, fontSize = 24.sp)
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = pair.matchText,
-                                    fontSize = 16.sp,
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isMatched) Color(0xFF2E7D32) else Color(0xFF37474F)
+                                    color = when {
+                                        isMatched -> Color(0xFF15803D)
+                                        isWrong -> Color(0xFFB91C1C)
+                                        else -> Color(0xFF37474F)
+                                    }
                                 )
                             }
                         }
@@ -250,12 +308,12 @@ fun DragMatchGameScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Mascot Guide
             KkLionMascot(
-                state = if (matchedPairIds.size == activePairs.size) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = if (matchedPairIds.size == activePairs.size) "You matched them all!" else "Tap pair to match! 🧩",
+                state = if (matchedPairIds.size == currentRound.pairs.size) MascotState.CELEBRATE else MascotState.HAPPY,
+                speechBubbleText = if (matchedPairIds.size == currentRound.pairs.size) "You matched them all!" else "Tap pair to match! 🧩",
                 onClick = { audioEngine.speak("Match the pictures with the correct letters or numbers!") }
             )
         }
@@ -269,8 +327,7 @@ fun DragMatchGameScreen(
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
-                matchedPairIds = emptySet()
-                selectedPromptPair = null
+                roundSeed++
             },
             onHome = {
                 showRewardDialog = false
@@ -281,4 +338,3 @@ fun DragMatchGameScreen(
     }
 }
 
-private fun showRewardDialogState(initial: Boolean) = initial

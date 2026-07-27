@@ -195,7 +195,148 @@ class KkDataRepository(context: Context) {
         AnimalItem("monkey", "Monkey", "🐒", "Ooh Ooh Aah Aah!", "Loves sweet bananas")
     )
 
-    // Logical Matching Pairs for Drag & Match Games (Full A-Z & 1-10)
+data class LetterVocab(
+    val letter: String,
+    val word: String,
+    val emoji: String
+)
+
+data class MatchRound(
+    val pairs: List<MatchPair>,
+    val leftPairs: List<MatchPair>,
+    val rightPairs: List<MatchPair>
+)
+
+    val letterVocabMap: Map<String, List<LetterVocab>> = mapOf(
+        "A" to listOf(LetterVocab("A", "Apple", "🍎"), LetterVocab("A", "Ant", "🐜"), LetterVocab("A", "Animal", "🦁")),
+        "B" to listOf(LetterVocab("B", "Ball", "⚽"), LetterVocab("B", "Banana", "🍌"), LetterVocab("B", "Bear", "🐻")),
+        "C" to listOf(LetterVocab("C", "Cat", "🐱"), LetterVocab("C", "Car", "🚗"), LetterVocab("C", "Cake", "🎂")),
+        "D" to listOf(LetterVocab("D", "Dog", "🐶"), LetterVocab("D", "Duck", "🦆"), LetterVocab("D", "Dolphin", "🐬")),
+        "E" to listOf(LetterVocab("E", "Elephant", "🐘"), LetterVocab("E", "Egg", "🥚"), LetterVocab("E", "Eagle", "🦅")),
+        "F" to listOf(LetterVocab("F", "Fish", "🐟"), LetterVocab("F", "Frog", "🐸"), LetterVocab("F", "Flower", "🌸")),
+        "G" to listOf(LetterVocab("G", "Giraffe", "🦒"), LetterVocab("G", "Grapes", "🍇"), LetterVocab("G", "Guitar", "🎸")),
+        "H" to listOf(LetterVocab("H", "House", "🏠"), LetterVocab("H", "Horse", "🐴"), LetterVocab("H", "Hat", "🎩")),
+        "I" to listOf(LetterVocab("I", "Ice Cream", "🍦"), LetterVocab("I", "Iguana", "🦎"), LetterVocab("I", "Island", "🏝️")),
+        "J" to listOf(LetterVocab("J", "Juice", "🧃"), LetterVocab("J", "Jellyfish", "🪼"), LetterVocab("J", "Jet", "✈️")),
+        "K" to listOf(LetterVocab("K", "Kite", "🪁"), LetterVocab("K", "Key", "🔑"), LetterVocab("K", "Kangaroo", "🦘")),
+        "L" to listOf(LetterVocab("L", "Lion", "🦁"), LetterVocab("L", "Lemon", "🍋"), LetterVocab("L", "Leaf", "🍃")),
+        "M" to listOf(LetterVocab("M", "Monkey", "🐒"), LetterVocab("M", "Moon", "🌙"), LetterVocab("M", "Milk", "🥛")),
+        "N" to listOf(LetterVocab("N", "Nest", "🪹"), LetterVocab("N", "Nut", "🥜"), LetterVocab("N", "Net", "🥅")),
+        "O" to listOf(LetterVocab("O", "Owl", "🦉"), LetterVocab("O", "Orange", "🍊"), LetterVocab("O", "Octopus", "🐙")),
+        "P" to listOf(LetterVocab("P", "Penguin", "🐧"), LetterVocab("P", "Pizza", "🍕"), LetterVocab("P", "Pencil", "✏️")),
+        "Q" to listOf(LetterVocab("Q", "Queen", "👸"), LetterVocab("Q", "Quail", "🐦"), LetterVocab("Q", "Question", "❓")),
+        "R" to listOf(LetterVocab("R", "Rabbit", "🐇"), LetterVocab("R", "Ring", "💍"), LetterVocab("R", "Robot", "🤖")),
+        "S" to listOf(LetterVocab("S", "Sun", "☀️"), LetterVocab("S", "Star", "⭐"), LetterVocab("S", "Strawberry", "🍓")),
+        "T" to listOf(LetterVocab("T", "Tiger", "🐯"), LetterVocab("T", "Tree", "🌳"), LetterVocab("T", "Turtle", "🐢")),
+        "U" to listOf(LetterVocab("U", "Umbrella", "☂️"), LetterVocab("U", "Unicorn", "🦄"), LetterVocab("U", "UFO", "🛸")),
+        "V" to listOf(LetterVocab("V", "Violin", "🎻"), LetterVocab("V", "Van", "🚐"), LetterVocab("V", "Volcano", "🌋")),
+        "W" to listOf(LetterVocab("W", "Watermelon", "🍉"), LetterVocab("W", "Watch", "⌚"), LetterVocab("W", "Whale", "🐋")),
+        "X" to listOf(LetterVocab("X", "Xylophone", "🎼"), LetterVocab("X", "X-ray", "🩻"), LetterVocab("X", "Fox", "🦊")),
+        "Y" to listOf(LetterVocab("Y", "Yo-Yo", "🪀"), LetterVocab("Y", "Yak", "🐂"), LetterVocab("Y", "Yacht", "🛥️")),
+        "Z" to listOf(LetterVocab("Z", "Zebra", "🦓"), LetterVocab("Z", "Zipper", "🤐"), LetterVocab("Z", "Zoo", "🦁"))
+    )
+
+    fun generateMatchRound(category: String, count: Int = 4): MatchRound {
+        val roundPairs = when (category) {
+            "letters" -> {
+                val selectedLetters = letterVocabMap.keys.shuffled().take(count)
+                selectedLetters.map { letter ->
+                    val vocabs = letterVocabMap[letter] ?: error("No vocab for $letter")
+                    val chosenVocab = vocabs.random()
+                    MatchPair(
+                        id = "m_letter_$letter",
+                        promptText = "Letter $letter",
+                        promptEmoji = letter,
+                        matchText = chosenVocab.word,
+                        matchEmoji = chosenVocab.emoji,
+                        category = "letters"
+                    )
+                }
+            }
+            "case" -> {
+                val selectedLetters = letterVocabMap.keys.shuffled().take(count)
+                selectedLetters.map { letter ->
+                    val lowerChar = letter.lowercase()
+                    MatchPair(
+                        id = "m_case_$letter",
+                        promptText = "Big $letter",
+                        promptEmoji = letter,
+                        matchText = "Small $lowerChar",
+                        matchEmoji = lowerChar,
+                        category = "case"
+                    )
+                }
+            }
+            "numbers" -> {
+                val selectedNumbers = HandwritingData.numbers.shuffled().take(count)
+                selectedNumbers.map { numItem ->
+                    MatchPair(
+                        id = "m_number_${numItem.character}",
+                        promptText = "Number ${numItem.character}",
+                        promptEmoji = numItem.character,
+                        matchText = numItem.word,
+                        matchEmoji = numItem.emoji,
+                        category = "numbers"
+                    )
+                }
+            }
+            else -> emptyList()
+        }
+
+        require(validateGeneratedRound(roundPairs, category)) {
+            "Generated invalid match round for category $category"
+        }
+
+        return MatchRound(
+            pairs = roundPairs,
+            leftPairs = roundPairs.shuffled(),
+            rightPairs = roundPairs.shuffled()
+        )
+    }
+
+    fun validateGeneratedRound(pairs: List<MatchPair>, category: String): Boolean {
+        if (pairs.isEmpty()) return false
+
+        // 1. Check unique IDs
+        val ids = pairs.map { it.id }
+        if (ids.distinct().size != pairs.size) return false
+
+        // 2. Check no duplicate prompt items
+        if (pairs.map { it.promptEmoji }.distinct().size != pairs.size) return false
+        if (pairs.map { it.promptText }.distinct().size != pairs.size) return false
+
+        // 3. Check no duplicate match items
+        if (pairs.map { it.matchText }.distinct().size != pairs.size) return false
+
+        // 4. Category specific rules
+        if (category == "letters") {
+            val displayedLetters = pairs.map { it.promptEmoji }.toSet()
+            pairs.forEach { pair ->
+                val letter = pair.promptEmoji
+                val word = pair.matchText
+                // Word MUST correspond to a letter displayed on the left
+                if (!displayedLetters.contains(letter)) return false
+                val expectedWords = letterVocabMap[letter]?.map { it.word } ?: emptyList()
+                if (!expectedWords.contains(word)) return false
+            }
+        } else if (category == "case") {
+            pairs.forEach { pair ->
+                val letter = pair.promptEmoji
+                val lowerChar = letter.lowercase()
+                if (pair.matchEmoji != lowerChar) return false
+            }
+        } else if (category == "numbers") {
+            pairs.forEach { pair ->
+                val numChar = pair.promptEmoji
+                val numItem = HandwritingData.numbers.find { it.character == numChar }
+                if (numItem == null || pair.matchText != numItem.word) return false
+            }
+        }
+
+        return true
+    }
+
+    // Logical Matching Pairs for Drag & Match Games (Full A-Z & 0-20)
     val matchPairsList: List<MatchPair> by lazy {
         val letterPairs = HandwritingData.uppercaseLetters.map { item ->
             MatchPair(
@@ -208,16 +349,13 @@ class KkDataRepository(context: Context) {
             )
         }
 
-        val numberEmojis = listOf("🍎", "🍌", "🍓", "🍊", "🧁", "⭐", "🎈", "🌸", "🍪", "🦆")
-        val numberPairs = (1..10).map { num ->
-            val emojiUnit = numberEmojis[(num - 1) % numberEmojis.size]
-            val repeatedEmojis = emojiUnit.repeat(num.coerceAtMost(5))
+        val numberPairs = HandwritingData.numbers.map { numItem ->
             MatchPair(
-                id = "m_number_$num",
-                promptText = "Number $num",
-                promptEmoji = "$num",
-                matchText = "$num items",
-                matchEmoji = repeatedEmojis,
+                id = "m_number_${numItem.character}",
+                promptText = "Number ${numItem.character}",
+                promptEmoji = numItem.character,
+                matchText = numItem.word,
+                matchEmoji = numItem.emoji,
                 category = "numbers"
             )
         }

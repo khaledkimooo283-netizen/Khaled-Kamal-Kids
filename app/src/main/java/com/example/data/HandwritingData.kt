@@ -523,58 +523,49 @@ object HandwritingData {
     }
 
     /**
-     * Evaluates user tracing input against guide stroke points.
-     * Evaluates stroke order, direction, coverage, and precision.
+     * Evaluates user tracing input against guide stroke points using shape recognition.
+     * Accepts tracing from any starting point or direction as long as the overall shape matches.
      */
     fun validateHandwritingTracing(
         drawnPoints: List<Pair<Float, Float>>,
         strokes: List<List<Pair<Float, Float>>>,
         canvasSize: Float
     ): TracingValidationResult {
-        if (drawnPoints.size < 3) {
+        if (drawnPoints.size < 5) {
             return TracingValidationResult(
                 isValid = false,
                 coverage = 0f,
                 accuracy = 0f,
-                directionCorrect = false,
+                directionCorrect = true,
                 failedStrokeIndex = 0,
-                message = "Keep drawing along the guide path!"
+                message = "Trace along the letter shape! ✏️"
             )
         }
 
-        // Allowed tolerance radius (~40 pixels on 300px canvas = ~0.13f)
-        val tolerance = canvasSize * 0.13f
+        // Child-friendly tolerance radius (~15% of canvas size)
+        val tolerance = canvasSize * 0.15f
 
         var totalGuidePoints = 0
         var coveredGuidePoints = 0
-        var failedStrokeIdx = -1
 
-        strokes.forEachIndexed { strokeIdx, stroke ->
-            if (stroke.isEmpty()) return@forEachIndexed
+        strokes.forEach { stroke ->
+            if (stroke.isEmpty()) return@forEach
 
             totalGuidePoints += stroke.size
 
-            // Check how many guide points in this stroke are near drawn points
-            var strokeCoveredCount = 0
             stroke.forEach { guideP ->
                 val gx = guideP.first * canvasSize
                 val gy = guideP.second * canvasSize
                 val covered = drawnPoints.any { (ux, uy) -> hypot(ux - gx, uy - gy) <= tolerance }
                 if (covered) {
-                    strokeCoveredCount++
                     coveredGuidePoints++
                 }
-            }
-
-            val strokeCoverage = strokeCoveredCount.toFloat() / stroke.size.toFloat()
-            if (strokeCoverage < 0.85f && failedStrokeIdx == -1) {
-                failedStrokeIdx = strokeIdx
             }
         }
 
         val coverageRatio = if (totalGuidePoints > 0) coveredGuidePoints.toFloat() / totalGuidePoints.toFloat() else 1f
 
-        // Check user point accuracy (points near any stroke)
+        // Check user point accuracy (points near any stroke to prevent wild scribbles)
         var pointsOnTrack = 0
         drawnPoints.forEach { (ux, uy) ->
             var onTrack = false
@@ -594,21 +585,12 @@ object HandwritingData {
 
         val accuracyRatio = pointsOnTrack.toFloat() / drawnPoints.size.toFloat()
 
-        // Direction check: start of user stroke must be near start of first stroke
-        val firstGuideP = strokes.firstOrNull()?.firstOrNull()
-        val startCorrect = if (firstGuideP != null) {
-            val gx = firstGuideP.first * canvasSize
-            val gy = firstGuideP.second * canvasSize
-            val (ux, uy) = drawnPoints.first()
-            hypot(ux - gx, uy - gy) <= tolerance * 1.5f
-        } else true
-
-        val isPassed = coverageRatio >= 0.88f && accuracyRatio >= 0.85f && startCorrect
+        // Flexible shape recognition: child can start ANYWHERE and draw in ANY order!
+        val isPassed = coverageRatio >= 0.58f && accuracyRatio >= 0.58f
 
         val msg = when {
-            !startCorrect -> "Start at the GREEN dot 🟢!"
-            coverageRatio < 0.88f -> "Cover the entire letter path! ✏️"
-            accuracyRatio < 0.85f -> "Stay close inside the dashed lines! 🎯"
+            coverageRatio < 0.58f -> "Trace a bit more of the letter shape! ✏️"
+            accuracyRatio < 0.58f -> "Try to stay near the letter shape! 🎯"
             else -> "Superb Handwriting! ⭐"
         }
 
@@ -616,8 +598,8 @@ object HandwritingData {
             isValid = isPassed,
             coverage = coverageRatio,
             accuracy = accuracyRatio,
-            directionCorrect = startCorrect,
-            failedStrokeIndex = if (isPassed) -1 else (if (failedStrokeIdx != -1) failedStrokeIdx else 0),
+            directionCorrect = true,
+            failedStrokeIndex = -1,
             message = msg
         )
     }

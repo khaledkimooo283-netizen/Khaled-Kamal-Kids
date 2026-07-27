@@ -61,7 +61,7 @@ fun TracingGameScreen(
     var userDrawnPoints by remember { mutableStateOf(listOf<Pair<Float, Float>>()) }
     var strokeSuccess by remember { mutableStateOf(false) }
     var isFailedAttempt by remember { mutableStateOf(false) }
-    var feedbackMessage by remember { mutableStateOf("Start tracing at the GREEN dot! 🟢") }
+    var feedbackMessage by remember { mutableStateOf("Start tracing anywhere on the letter! ✏️") }
 
     var isShaking by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
@@ -96,7 +96,7 @@ fun TracingGameScreen(
         userDrawnPoints = emptyList()
         strokeSuccess = false
         isFailedAttempt = false
-        feedbackMessage = "Start tracing at the GREEN dot! 🟢"
+        feedbackMessage = "Start tracing anywhere on the letter! ✏️"
 
         if (mode == "uppercase") {
             audioEngine.speakPhonetic(currentItem.character, currentItem.word)
@@ -276,11 +276,11 @@ fun TracingGameScreen(
                                         if (validation.isValid) {
                                             strokeSuccess = true
                                             isFailedAttempt = false
-                                            feedbackMessage = "⭐ Excellent Handwriting! +3 Stars"
+                                            feedbackMessage = "⭐ Excellent! I wrote the letter ${currentItem.character}! +3 Stars"
                                             showConfetti = true
                                             repository.addStars(3)
                                             userStars = repository.getStars()
-                                            audioEngine.speakPraise()
+                                            audioEngine.speak("Excellent! I wrote the letter ${currentItem.character}!")
                                             showRewardDialog = true
                                         } else {
                                             isFailedAttempt = true
@@ -320,7 +320,7 @@ fun TracingGameScreen(
                         strokeWidth = 3f
                     )
 
-                    // 2. Outer Gray Guide Track (Educational width)
+                    // 2. Outer Guide Track
                     guideStrokes.forEach { strokeList ->
                         if (strokeList.size > 1) {
                             val trackPath = Path()
@@ -328,61 +328,57 @@ fun TracingGameScreen(
                             for (i in 1 until strokeList.size) {
                                 trackPath.lineTo(strokeList[i].first * w, strokeList[i].second * h)
                             }
-                            drawPath(
-                                path = trackPath,
-                                color = Color(0xFFF1F5F9),
-                                style = Stroke(width = 50f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                            )
-                            // Inner Dashed Center Guide
-                            drawPath(
-                                path = trackPath,
-                                color = Color(0xFF0284C7),
-                                style = Stroke(
-                                    width = 8f,
-                                    cap = StrokeCap.Round,
-                                    join = StrokeJoin.Round,
-                                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
+
+                            if (strokeSuccess) {
+                                // Solid Vibrant Green/Gold Completion Path Animation replacing dotted lines
+                                drawPath(
+                                    path = trackPath,
+                                    color = Color(0xFF16A34A),
+                                    style = Stroke(width = 46f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                                 )
-                            )
+                                drawPath(
+                                    path = trackPath,
+                                    color = Color(0xFF86EFAC),
+                                    style = Stroke(width = 24f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                )
+                            } else {
+                                drawPath(
+                                    path = trackPath,
+                                    color = Color(0xFFF1F5F9),
+                                    style = Stroke(width = 50f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                )
+                                // Inner Dashed Center Guide
+                                drawPath(
+                                    path = trackPath,
+                                    color = Color(0xFF0284C7),
+                                    style = Stroke(
+                                        width = 8f,
+                                        cap = StrokeCap.Round,
+                                        join = StrokeJoin.Round,
+                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
+                                    )
+                                )
+                            }
                         }
                     }
 
-                    // 3. Start Dots 🟢 & End Dots 🔴 with Directional Arrows
-                    guideStrokes.forEachIndexed { strokeIdx, strokeList ->
-                        if (strokeList.isNotEmpty()) {
-                            val startX = strokeList.first().first * w
-                            val startY = strokeList.first().second * h
-                            val endX = strokeList.last().first * w
-                            val endY = strokeList.last().second * h
+                    // 3. Start & Guide Dots
+                    if (!strokeSuccess) {
+                        guideStrokes.forEachIndexed { strokeIdx, strokeList ->
+                            if (strokeList.isNotEmpty()) {
+                                val startX = strokeList.first().first * w
+                                val startY = strokeList.first().second * h
 
-                            // Green Start Dot
-                            drawCircle(
-                                color = Color(0xFF16A34A),
-                                radius = 18f,
-                                center = Offset(startX, startY)
-                            )
-                            drawCircle(
-                                color = Color.White,
-                                radius = 7f,
-                                center = Offset(startX, startY)
-                            )
-
-                            // Red Finish Dot
-                            drawCircle(
-                                color = Color(0xFFDC2626),
-                                radius = 14f,
-                                center = Offset(endX, endY)
-                            )
-
-                            // Directional Arrow Hint on stroke mid-point
-                            if (strokeList.size > 2) {
-                                val midIdx = strokeList.size / 2
-                                val midX = strokeList[midIdx].first * w
-                                val midY = strokeList[midIdx].second * h
+                                // Gentle Start Dot
                                 drawCircle(
-                                    color = Color(0xFF0284C7),
-                                    radius = 10f * arrowPulse,
-                                    center = Offset(midX, midY)
+                                    color = Color(0xFF16A34A),
+                                    radius = 16f,
+                                    center = Offset(startX, startY)
+                                )
+                                drawCircle(
+                                    color = Color.White,
+                                    radius = 6f,
+                                    center = Offset(startX, startY)
                                 )
                             }
                         }
@@ -402,7 +398,7 @@ fun TracingGameScreen(
                                 isFailedAttempt -> Color(0xFFEF4444)
                                 else -> Color(0xFFEC4899)
                             },
-                            style = Stroke(width = 32f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                            style = Stroke(width = 34f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                         )
                     }
                 }
@@ -422,13 +418,13 @@ fun TracingGameScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Try Again Button
+            // Try Again / Clear Button
             Button(
                 onClick = {
                     userDrawnPoints = emptyList()
                     strokeSuccess = false
                     isFailedAttempt = false
-                    feedbackMessage = "Start tracing at the GREEN dot! 🟢"
+                    feedbackMessage = "Start tracing anywhere on the letter! ✏️"
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
                 shape = RoundedCornerShape(16.dp)
@@ -443,7 +439,7 @@ fun TracingGameScreen(
             // Mascot Lion Encouragement
             KkLionMascot(
                 state = if (strokeSuccess) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = if (strokeSuccess) "Super job tracing!" else "Start at green dot! 🟢",
+                speechBubbleText = if (strokeSuccess) "Super job writing!" else "Start tracing anywhere on the letter! ✏️",
                 onClick = {
                     if (mode == "uppercase") {
                         audioEngine.speakPhonetic(currentItem.character, currentItem.word)
