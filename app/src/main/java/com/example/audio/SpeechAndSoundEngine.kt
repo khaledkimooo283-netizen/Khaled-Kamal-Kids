@@ -3,22 +3,34 @@ package com.example.audio
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.coroutines.resume
 
 /**
- * SpeechAndSoundEngine manages TextToSpeech (TTS) with pitch and rate tuned for a warm,
- * encouraging kindergarten teacher / friendly companion voice, alongside synthetic audio cues.
+ * SpeechAndSoundEngine manages TextToSpeech (TTS) with customizable pitch, rate, volume,
+ * and voice personas (Child Voice, Female Teacher, Male Teacher) across languages.
  */
 class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitListener {
 
     private var tts: TextToSpeech? = TextToSpeech(context.applicationContext, this)
-    private var isTtsReady = false
+    var isTtsReady = false
+        private set
     var isMuted = false
+
+    var currentVoiceType: String = "Female Teacher"
+    var voiceVolume: Float = 1.0f
+    var currentLanguage: String = "English"
+
+    private val utteranceCallbacks = ConcurrentHashMap<String, () -> Unit>()
 
     // SoundPool for instant feedback sound effects
     private var soundPool: SoundPool? = null
@@ -37,24 +49,78 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale.US)
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.e("SpeechEngine", "English language not supported")
-            } else {
-                // Pitch 1.25f gives a bright, cheerful, friendly kindergarten teacher tone
-                tts?.setPitch(1.25f)
-                // Speech rate 0.92f ensures ultra-clear, engaging pronunciation for young children
-                tts?.setSpeechRate(0.92f)
-                isTtsReady = true
+            isTtsReady = true
+            applyVoiceConfig(currentVoiceType, voiceVolume, currentLanguage)
 
-                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {}
-                    override fun onDone(utteranceId: String?) {}
-                    override fun onError(utteranceId: String?) {}
-                })
-            }
+            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {}
+
+                override fun onDone(utteranceId: String?) {
+                    if (utteranceId != null) {
+                        utteranceCallbacks.remove(utteranceId)?.invoke()
+                    }
+                }
+
+                override fun onError(utteranceId: String?) {
+                    if (utteranceId != null) {
+                        utteranceCallbacks.remove(utteranceId)?.invoke()
+                    }
+                }
+            })
         } else {
             Log.e("SpeechEngine", "TTS initialization failed")
+        }
+    }
+
+    fun applyVoiceConfig(voiceType: String, volume: Float, language: String) {
+        currentVoiceType = voiceType
+        voiceVolume = volume.coerceIn(0.0f, 1.0f)
+        currentLanguage = language
+
+        if (!isTtsReady || tts == null) return
+
+        val locale = if (language == "Arabic") Locale("ar", "EG") else Locale.US
+        val res = tts?.setLanguage(locale)
+        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+            // Fallback to US if specific language not fully supported
+            tts?.setLanguage(Locale.US)
+        }
+
+        when (voiceType) {
+            "Child Voice" -> {
+                tts?.setPitch(1.55f)
+                tts?.setSpeechRate(0.90f)
+            }
+            "Male Teacher" -> {
+                tts?.setPitch(0.80f)
+                tts?.setSpeechRate(0.85f)
+            }
+            else -> { // "Female Teacher"
+                tts?.setPitch(1.20f)
+                tts?.setSpeechRate(0.88f)
+            }
+        }
+
+        // Try selecting voice persona from installed TTS voices if available
+        try {
+            val voices = tts?.voices
+            if (!voices.isNullOrEmpty()) {
+                val targetVoice = voices.find { voice ->
+                    val isLangMatch = voice.locale.language == locale.language
+                    val nameLower = voice.name.lowercase()
+                    when (voiceType) {
+                        "Male Teacher" -> isLangMatch && (nameLower.contains("male") || nameLower.contains("man"))
+                        "Female Teacher" -> isLangMatch && (nameLower.contains("female") || nameLower.contains("woman"))
+                        "Child Voice" -> isLangMatch && (nameLower.contains("child") || nameLower.contains("kid"))
+                        else -> isLangMatch
+                    }
+                }
+                if (targetVoice != null) {
+                    tts?.voice = targetVoice
+                }
+            }
+        } catch (e: Exception) {
+            Log.d("SpeechEngine", "Voice selection fallback to pitch modulation")
         }
     }
 
@@ -62,18 +128,67 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
     private var lastSpeakTimestamp: Long = 0L
 
     fun speak(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH) {
-        if (isMuted || !isTtsReady) return
+        if (isMuted || !isTtsReady || voiceVolume <= 0.01f) return
         val now = System.currentTimeMillis()
-        // Avoid repeating the exact same utterance within 600ms to prevent rapid stuttering
         if (text == lastSpokenText && (now - lastSpeakTimestamp) < 600) {
             return
         }
         lastSpokenText = text
         lastSpeakTimestamp = now
+
+        val params = Bundle().apply {
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, voiceVolume)
+        }
+
         try {
-            tts?.speak(text, queueMode, null, "UTTERANCE_$now")
+            tts?.speak(text, queueMode, params, "UTTERANCE_$now")
         } catch (e: Exception) {
             Log.e("SpeechEngine", "Error speaking text", e)
+        }
+    }
+
+    /**
+     * Speaks text and suspends until the utterance completes.
+     * Guarantees no truncated or skipped words/letters.
+     */
+    suspend fun speakAndWait(text: String, queueMode: Int = TextToSpeech.QUEUE_FLUSH): Boolean {
+        if (isMuted || voiceVolume <= 0.01f) return true
+        if (!isTtsReady || tts == null) {
+            val estimatedDurationMs = (text.length * 90L + 400L).coerceIn(600L, 4000L)
+            delay(estimatedDurationMs)
+            return true
+        }
+
+        val utteranceId = "SONG_UTT_${System.currentTimeMillis()}_${(1000..9999).random()}"
+        lastSpokenText = text
+        lastSpeakTimestamp = System.currentTimeMillis()
+
+        return suspendCancellableCoroutine { continuation ->
+            utteranceCallbacks[utteranceId] = {
+                if (continuation.isActive) {
+                    continuation.resume(true)
+                }
+            }
+
+            continuation.invokeOnCancellation {
+                utteranceCallbacks.remove(utteranceId)
+            }
+
+            val params = Bundle().apply {
+                putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, voiceVolume)
+            }
+
+            try {
+                val result = tts?.speak(text, queueMode, params, utteranceId)
+                if (result != TextToSpeech.SUCCESS) {
+                    utteranceCallbacks.remove(utteranceId)
+                    if (continuation.isActive) continuation.resume(false)
+                }
+            } catch (e: Exception) {
+                Log.e("SpeechEngine", "Error in speakAndWait", e)
+                utteranceCallbacks.remove(utteranceId)
+                if (continuation.isActive) continuation.resume(false)
+            }
         }
     }
 
@@ -83,26 +198,20 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
     }
 
     fun speakPraise() {
-        val praises = listOf(
-            "Excellent!",
-            "Amazing!",
-            "Good Job!",
-            "Fantastic!",
-            "Super Star!",
-            "You did it!",
-            "Way to go!",
-            "Awesome!"
-        )
+        val praises = if (currentLanguage == "Arabic") {
+            listOf("ممتاز!", "رائع جداً!", "عمل رائع!", "أحسنت!", "نجم خارق!", "مذهل!")
+        } else {
+            listOf("Excellent!", "Amazing!", "Good Job!", "Fantastic!", "Super Star!", "You did it!")
+        }
         speak(praises.random())
     }
 
     fun speakTryAgain() {
-        val tryAgainPhrases = listOf(
-            "Let's try again! 😊",
-            "Almost there!",
-            "You can do it!",
-            "Try one more time!"
-        )
+        val tryAgainPhrases = if (currentLanguage == "Arabic") {
+            listOf("لنحاول مرة أخرى!", "اقتربت كثيراً!", "أنت تستطيع!")
+        } else {
+            listOf("Let's try again! 😊", "Almost there!", "You can do it!")
+        }
         speak(tryAgainPhrases.random())
     }
 
@@ -120,3 +229,4 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
         }
     }
 }
+

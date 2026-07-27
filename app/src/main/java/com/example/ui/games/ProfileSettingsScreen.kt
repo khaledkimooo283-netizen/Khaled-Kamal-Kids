@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.components.*
+import com.example.util.Localization
 
 @Composable
 fun ProfileSettingsScreen(
@@ -62,6 +63,8 @@ fun ProfileSettingsScreen(
 
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var showParentGatePinDialog by remember { mutableStateOf(false) }
+    var showChangePinDialog by remember { mutableStateOf(false) }
+    var newPinValue by remember { mutableStateOf("") }
     var pendingParentAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val avatars = remember { listOf("🦁", "🐘", "🐵", "🐶", "🐼", "🐧", "🦒", "🦊") }
@@ -264,30 +267,45 @@ fun ProfileSettingsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // Voice Volume
-                        Text(text = "Voice Volume", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                        Text(text = Localization.tr("voice_volume", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                         Slider(
                             value = voiceVolume,
                             onValueChange = {
                                 voiceVolume = it
                                 repository.setVoiceVolume(it)
+                                audioEngine.applyVoiceConfig(voiceType, it, appLanguage)
                             },
                             colors = SliderDefaults.colors(thumbColor = Color(0xFF2563EB), activeTrackColor = Color(0xFF3B82F6))
                         )
 
-                        // Voice Type Selector
-                        Text(text = "Voice Style", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                        // Voice Type Selector (Child Voice, Female Teacher, Male Teacher)
+                        Text(text = Localization.tr("voice_style", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            listOf("Female Teacher", "Child Voice").forEach { type ->
+                            val voiceOptions: List<Pair<String, String>> = listOf(
+                                Pair("Child Voice", Localization.tr("voice_child", appLanguage)),
+                                Pair("Female Teacher", Localization.tr("voice_female", appLanguage)),
+                                Pair("Male Teacher", Localization.tr("voice_male", appLanguage))
+                            )
+                            voiceOptions.forEach { option ->
+                                val typeKey = option.first
+                                val label = option.second
                                 FilterChip(
-                                    selected = voiceType == type,
+                                    selected = voiceType == typeKey,
                                     onClick = {
-                                        voiceType = type
-                                        repository.setVoiceType(type)
+                                        voiceType = typeKey
+                                        repository.setVoiceType(typeKey)
+                                        audioEngine.applyVoiceConfig(typeKey, voiceVolume, appLanguage)
+                                        val confirmMsg = if (appLanguage == "Arabic") {
+                                            "تم اختيار $label"
+                                        } else {
+                                            "$typeKey selected!"
+                                        }
+                                        audioEngine.speak(confirmMsg)
                                     },
-                                    label = { Text(type) },
+                                    label = { Text(label, fontSize = 12.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -301,7 +319,7 @@ fun ProfileSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Background Music 🎵", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Text(text = Localization.tr("bg_music", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                             Switch(
                                 checked = isMusicEnabled,
                                 onCheckedChange = {
@@ -327,7 +345,7 @@ fun ProfileSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Sound Effects 🔔", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Text(text = Localization.tr("sound_fx", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                             Switch(
                                 checked = isSoundFxEnabled,
                                 onCheckedChange = {
@@ -341,7 +359,7 @@ fun ProfileSettingsScreen(
 
                         // Gameplay & Tracing Settings
                         Text(
-                            text = "Gameplay & Difficulty 🎮",
+                            text = Localization.tr("gameplay_difficulty", appLanguage),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1E293B)
@@ -349,19 +367,26 @@ fun ProfileSettingsScreen(
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        Text(text = "Difficulty Level", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                        Text(text = Localization.tr("difficulty_level", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            listOf("Easy", "Medium", "Hard").forEach { level ->
+                            val diffList: List<Pair<String, String>> = listOf(
+                                Pair("Easy", Localization.tr("easy", appLanguage)),
+                                Pair("Medium", Localization.tr("medium", appLanguage)),
+                                Pair("Hard", Localization.tr("hard", appLanguage))
+                            )
+                            diffList.forEach { item ->
+                                val levelKey = item.first
+                                val label = item.second
                                 FilterChip(
-                                    selected = gameDifficulty == level,
+                                    selected = gameDifficulty == levelKey,
                                     onClick = {
-                                        gameDifficulty = level
-                                        repository.setGameDifficulty(level)
+                                        gameDifficulty = levelKey
+                                        repository.setGameDifficulty(levelKey)
                                     },
-                                    label = { Text(level) },
+                                    label = { Text(label) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -369,19 +394,26 @@ fun ProfileSettingsScreen(
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        Text(text = "Tracing Sensitivity ✏️", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                        Text(text = Localization.tr("tracing_sensitivity", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            listOf("Low", "Medium", "High").forEach { sens ->
+                            val sensList: List<Pair<String, String>> = listOf(
+                                Pair("Low", Localization.tr("low", appLanguage)),
+                                Pair("Medium", Localization.tr("medium", appLanguage)),
+                                Pair("High", Localization.tr("high", appLanguage))
+                            )
+                            sensList.forEach { item ->
+                                val sensKey = item.first
+                                val label = item.second
                                 FilterChip(
-                                    selected = tracingSensitivity == sens,
+                                    selected = tracingSensitivity == sensKey,
                                     onClick = {
-                                        tracingSensitivity = sens
-                                        repository.setTracingSensitivity(sens)
+                                        tracingSensitivity = sensKey
+                                        repository.setTracingSensitivity(sensKey)
                                     },
-                                    label = { Text(sens) },
+                                    label = { Text(label) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -391,7 +423,7 @@ fun ProfileSettingsScreen(
 
                         // Accessibility & Language
                         Text(
-                            text = "Accessibility & Language 🌐",
+                            text = Localization.tr("accessibility_lang", appLanguage),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1E293B)
@@ -404,7 +436,7 @@ fun ProfileSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Large Text Mode 🔤", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Text(text = Localization.tr("large_text_mode", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                             Switch(
                                 checked = isLargeTextMode,
                                 onCheckedChange = {
@@ -419,48 +451,71 @@ fun ProfileSettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "Language", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Text(text = Localization.tr("language", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(
                                     selected = appLanguage == "English",
                                     onClick = {
                                         appLanguage = "English"
                                         repository.setLanguage("English")
+                                        audioEngine.applyVoiceConfig(voiceType, voiceVolume, "English")
+                                        audioEngine.speak("Language changed to English!")
                                     },
-                                    label = { Text("🇬🇧 English") }
+                                    label = { Text(Localization.tr("english", appLanguage)) }
                                 )
                                 FilterChip(
                                     selected = appLanguage == "Arabic",
                                     onClick = {
                                         appLanguage = "Arabic"
                                         repository.setLanguage("Arabic")
+                                        audioEngine.applyVoiceConfig(voiceType, voiceVolume, "Arabic")
+                                        audioEngine.speak("تم تغيير اللغة إلى العربية!")
                                     },
-                                    label = { Text("🇪🇬 العربية") }
+                                    label = { Text(Localization.tr("arabic", appLanguage)) }
                                 )
                             }
                         }
 
                         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFE2E8F0))
 
-                        // Parent Protected Reset Button
-                        Button(
-                            onClick = {
-                                pendingParentAction = {
-                                    repository.resetAllProgress()
-                                    userStars = repository.getStars()
-                                    userCoins = repository.getCoins()
-                                    audioEngine.speak("Progress reset successfully!")
-                                }
-                                showParentGatePinDialog = true
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color.White)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Reset Progress (Parents Only 🔒)", fontWeight = FontWeight.Bold, color = Color.White)
-                        }
+                        // Change Parent PIN Button
+        OutlinedButton(
+            onClick = {
+                pendingParentAction = {
+                    newPinValue = ""
+                    showChangePinDialog = true
+                }
+                showParentGatePinDialog = true
+            },
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color(0xFF2563EB))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(Localization.tr("change_pin_btn", appLanguage), fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Parent Protected Reset Button
+        Button(
+            onClick = {
+                pendingParentAction = {
+                    repository.resetAllProgress()
+                    userStars = repository.getStars()
+                    userCoins = repository.getCoins()
+                    audioEngine.speak(if (appLanguage == "Arabic") "تم إعادة ضبط التقدم بنجاح" else "Progress reset successfully!")
+                }
+                showParentGatePinDialog = true
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(Localization.tr("reset_progress", appLanguage), fontWeight = FontWeight.Bold, color = Color.White)
+        }
                     }
                 }
             }
@@ -512,17 +567,20 @@ fun ProfileSettingsScreen(
             )
         }
 
-        // Parent Gate PIN Lock Dialog (Default PIN: 1234)
+        // Parent Gate PIN Lock Dialog
         if (showParentGatePinDialog) {
             var enteredPin by remember { mutableStateOf("") }
             var pinError by remember { mutableStateOf(false) }
 
             AlertDialog(
                 onDismissRequest = { showParentGatePinDialog = false },
-                title = { Text("Parental Gate 🔒", fontWeight = FontWeight.Bold) },
+                title = { Text(if (appLanguage == "Arabic") "بوابة الوالدين 🔒" else "Parental Gate 🔒", fontWeight = FontWeight.Bold) },
                 text = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Please enter Parent PIN (Default: 1234):", fontSize = 13.sp)
+                        Text(
+                            if (appLanguage == "Arabic") "الرجاء إدخال رمز الأمان (الافتراضي: 1234):" else "Please enter Parent PIN (Default: 1234):",
+                            fontSize = 13.sp
+                        )
                         Spacer(modifier = Modifier.height(10.dp))
                         OutlinedTextField(
                             value = enteredPin,
@@ -532,7 +590,11 @@ fun ProfileSettingsScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
                         if (pinError) {
-                            Text("Incorrect PIN! Try 1234.", color = Color.Red, fontSize = 12.sp)
+                            Text(
+                                if (appLanguage == "Arabic") "رمز الأمان غير صحيح!" else "Incorrect PIN! Try default 1234 or your new PIN.",
+                                color = Color.Red,
+                                fontSize = 12.sp
+                            )
                         }
                     }
                 },
@@ -541,13 +603,47 @@ fun ProfileSettingsScreen(
                         onClick = {
                             if (enteredPin == repository.getParentPin()) {
                                 showParentGatePinDialog = false
+                                pinError = false
                                 pendingParentAction?.invoke()
                             } else {
                                 pinError = true
                             }
                         }
                     ) {
-                        Text("Unlock")
+                        Text(if (appLanguage == "Arabic") "فتح" else "Unlock")
+                    }
+                }
+            )
+        }
+
+        // Change PIN Dialog
+        if (showChangePinDialog) {
+            AlertDialog(
+                onDismissRequest = { showChangePinDialog = false },
+                title = { Text(if (appLanguage == "Arabic") "تغيير رمز الأمان 🔒" else "Change Parent PIN 🔒", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (appLanguage == "Arabic") "أدخل رمز الأمان الجديد (4 أرقام):" else "Enter new 4-digit Parent PIN:", fontSize = 13.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = newPinValue,
+                            onValueChange = { if (it.length <= 4) newPinValue = it },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        enabled = newPinValue.length == 4,
+                        onClick = {
+                            repository.setParentPin(newPinValue)
+                            showChangePinDialog = false
+                            audioEngine.speak(if (appLanguage == "Arabic") "تم حفظ رمز الأمان الجديد بنجاح" else "New Parent PIN saved successfully!")
+                        }
+                    ) {
+                        Text(if (appLanguage == "Arabic") "حفظ" else "Save")
                     }
                 }
             )

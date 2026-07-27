@@ -32,30 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
+import com.example.data.MovementAction
+import com.example.data.SongDataRepository
+import com.example.data.SongItem
+import com.example.data.SongLyricLine
 import com.example.ui.components.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-data class SongItem(
-    val id: String,
-    val title: String,
-    val categoryEmoji: String,
-    val themeColor: Long,
-    val lyricsLines: List<SongLyricLine>,
-    val actionChallenge: MovementAction
-)
-
-data class SongLyricLine(
-    val lineText: String,
-    val highlightEmoji: String,
-    val wordPrompt: String
-)
-
-data class MovementAction(
-    val promptText: String,
-    val actionEmoji: String,
-    val targetType: String // "CLAP", "JUMP", "RAISE_HANDS", "WAVE", "SPIN"
-)
 
 data class DancePartner(
     val id: String,
@@ -77,6 +60,7 @@ fun SongsAndMusicScreen(
     var currentSongIndex by remember { mutableIntStateOf(0) }
     var isSongPlaying by remember { mutableStateOf(false) }
     var currentLineIndex by remember { mutableIntStateOf(0) }
+    var currentTokenIndex by remember { mutableIntStateOf(-1) }
 
     var isMovementPaused by remember { mutableStateOf(false) }
     var activeDancePartner by remember { mutableStateOf("lion") }
@@ -95,65 +79,7 @@ fun SongsAndMusicScreen(
         )
     }
 
-    val songsList = remember {
-        listOf(
-            SongItem(
-                id = "s_abc",
-                title = "Alphabet Song",
-                categoryEmoji = "🔤",
-                themeColor = 0xFFEC4899,
-                lyricsLines = listOf(
-                    SongLyricLine("A - B - C - D - E - F - G", "🅰️", "A B C"),
-                    SongLyricLine("H - I - J - K - L - M - N - O - P", "🔤", "H I J K"),
-                    SongLyricLine("Q - R - S, T - U - V", "🍎", "Q R S T"),
-                    SongLyricLine("W - X - Y and Z!", "🌟", "W X Y Z"),
-                    SongLyricLine("Now I know my ABCs!", "🎉", "Now I know my ABCs"),
-                    SongLyricLine("Next time won't you sing with me!", "🎵", "Sing with me!")
-                ),
-                actionChallenge = MovementAction("👏 Clap your hands 3 times!", "👏", "CLAP")
-            ),
-            SongItem(
-                id = "s_num",
-                title = "Numbers 1 to 10 Song",
-                categoryEmoji = "🔢",
-                themeColor = 0xFF3B82F6,
-                lyricsLines = listOf(
-                    SongLyricLine("1, 2, 3... Count with me!", "1️⃣", "One, Two, Three"),
-                    SongLyricLine("4, 5, 6... Fun and quick!", "4️⃣", "Four, Five, Six"),
-                    SongLyricLine("7, 8, 9... Feeling fine!", "7️⃣", "Seven, Eight, Nine"),
-                    SongLyricLine("Number 10! Let's count again!", "🔟", "Number Ten!")
-                ),
-                actionChallenge = MovementAction("👣 Jump up and down 2 times!", "👣", "JUMP")
-            ),
-            SongItem(
-                id = "s_col",
-                title = "Rainbow Colors Song",
-                categoryEmoji = "🎨",
-                themeColor = 0xFF10B981,
-                lyricsLines = listOf(
-                    SongLyricLine("Red is Apple, Sweet and round!", "🍎", "Red Apple"),
-                    SongLyricLine("Yellow Sun high off the ground!", "☀️", "Yellow Sun"),
-                    SongLyricLine("Blue Sky flying high above!", "☁️", "Blue Sky"),
-                    SongLyricLine("Green Leaf growing full of love!", "🍃", "Green Leaf")
-                ),
-                actionChallenge = MovementAction("🙌 Raise your hands high in the air!", "🙌", "RAISE_HANDS")
-            ),
-            SongItem(
-                id = "s_ani",
-                title = "Animal Friends Song",
-                categoryEmoji = "🦁",
-                themeColor = 0xFFF59E0B,
-                lyricsLines = listOf(
-                    SongLyricLine("The Lion roars... ROAR ROAR!", "🦁", "Lion Roars"),
-                    SongLyricLine("The Dog barks... WOOF WOOF!", "🐶", "Dog Barks"),
-                    SongLyricLine("The Cat meows... MEOW MEOW!", "🐱", "Cat Meows"),
-                    SongLyricLine("The Duck quacks... QUACK QUACK!", "🦆", "Duck Quacks")
-                ),
-                actionChallenge = MovementAction("👋 Wave hello to your animal friends!", "👋", "WAVE")
-            )
-        )
-    }
-
+    val songsList = remember { SongDataRepository.songsList }
     val currentSong = songsList[currentSongIndex]
 
     // Dancing Bounce Animation
@@ -168,10 +94,11 @@ fun SongsAndMusicScreen(
         label = "ScaleAnim"
     )
 
-    // Dynamic Song Singing Logic
+    // Synchronized Preloaded Audio & Singing Logic
     LaunchedEffect(isSongPlaying, currentSongIndex, isKaraokeMode) {
         if (isSongPlaying) {
             currentLineIndex = 0
+            currentTokenIndex = -1
             isMovementPaused = false
 
             for (i in currentSong.lyricsLines.indices) {
@@ -180,15 +107,36 @@ fun SongsAndMusicScreen(
                 val line = currentSong.lyricsLines[i]
 
                 if (!isKaraokeMode) {
-                    audioEngine.speak(line.lineText)
+                    if (line.tokens.isNotEmpty()) {
+                        for (tIdx in line.tokens.indices) {
+                            if (!isSongPlaying) break
+                            currentTokenIndex = tIdx
+                            val token = line.tokens[tIdx]
+                            audioEngine.speakAndWait(token)
+                            delay(180)
+                        }
+                        currentTokenIndex = -1
+                    } else {
+                        audioEngine.speakAndWait(line.spokenText)
+                        delay(250)
+                    }
+                } else {
+                    if (line.tokens.isNotEmpty()) {
+                        for (tIdx in line.tokens.indices) {
+                            if (!isSongPlaying) break
+                            currentTokenIndex = tIdx
+                            delay(600)
+                        }
+                        currentTokenIndex = -1
+                    } else {
+                        delay(2200)
+                    }
                 }
-
-                delay(2800)
 
                 // Trigger Movement Action Challenge at mid-song
                 if (i == currentSong.lyricsLines.size / 2) {
                     isMovementPaused = true
-                    audioEngine.speak("Pause! ${currentSong.actionChallenge.promptText}")
+                    audioEngine.speakAndWait("Pause! ${currentSong.actionChallenge.promptText}")
                     while (isMovementPaused && isSongPlaying) {
                         delay(300)
                     }
@@ -200,7 +148,7 @@ fun SongsAndMusicScreen(
                 repository.addStars(5)
                 userStars = repository.getStars()
                 audioEngine.speakPraise()
-                audioEngine.speak("Bravo! You sang ${currentSong.title}!")
+                audioEngine.speakAndWait("Bravo! You sang ${currentSong.title}!")
                 showRewardDialog = true
                 isSongPlaying = false
             }
@@ -418,9 +366,9 @@ fun SongsAndMusicScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(20.dp))
-                                .background(Color.White.copy(alpha = 0.92f))
+                                .background(Color.White.copy(alpha = 0.95f))
                                 .clickable {
-                                    audioEngine.speak(activeLine.lineText)
+                                    audioEngine.speak(activeLine.spokenText)
                                 }
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
@@ -438,6 +386,41 @@ fun SongsAndMusicScreen(
                                     color = Color(0xFF1E1B4B),
                                     textAlign = TextAlign.Center
                                 )
+
+                                if (activeLine.tokens.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        activeLine.tokens.forEachIndexed { tokenIdx, tokenStr ->
+                                            val isHighlighted = tokenIdx == currentTokenIndex
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 3.dp, vertical = 2.dp)
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(
+                                                        if (isHighlighted) Color(0xFFFACC15) else Color(0xFFF1F5F9)
+                                                    )
+                                                    .border(
+                                                        width = if (isHighlighted) 2.dp else 1.dp,
+                                                        color = if (isHighlighted) Color(0xFFEAB308) else Color(0xFFCBD5E1),
+                                                        shape = RoundedCornerShape(10.dp)
+                                                    )
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = tokenStr,
+                                                    fontSize = if (isHighlighted) 16.sp else 13.sp,
+                                                    fontWeight = if (isHighlighted) FontWeight.Black else FontWeight.Bold,
+                                                    color = if (isHighlighted) Color(0xFF713F12) else Color(0xFF475569)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

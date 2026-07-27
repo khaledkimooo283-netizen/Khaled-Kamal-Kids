@@ -34,9 +34,22 @@ class MainActivity : ComponentActivity() {
         audioEngine = SpeechAndSoundEngine(this)
         repository = KkDataRepository(this)
 
+        // Sync initial voice settings from persisted preferences
+        audioEngine.applyVoiceConfig(
+            voiceType = repository.getVoiceType(),
+            volume = repository.getVoiceVolume(),
+            language = repository.getLanguage()
+        )
+
         setContent {
+            val currentLang = repository.currentLanguageState.value
+            val layoutDirection = com.example.util.Localization.getLayoutDirection(currentLang)
+
             MyApplicationTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides layoutDirection,
+                    com.example.util.LocalLanguage provides currentLang
+                ) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         KkKidsApp(repository = repository, audioEngine = audioEngine)
                     }

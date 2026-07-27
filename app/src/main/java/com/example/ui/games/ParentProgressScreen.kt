@@ -200,13 +200,13 @@ fun ParentProgressScreen(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "22 / 26",
+                                    text = "${repository.getAdventureUnlockedWorld()} / 26",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color(0xFF1E3A8A)
                                 )
                                 Text(
-                                    text = "Letters Mastered",
+                                    text = "Worlds Mastered",
                                     fontSize = 11.sp,
                                     color = Color(0xFF3B82F6),
                                     textAlign = TextAlign.Center

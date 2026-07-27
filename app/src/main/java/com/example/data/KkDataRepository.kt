@@ -42,6 +42,24 @@ class KkDataRepository(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("kk_kids_prefs", Context.MODE_PRIVATE)
 
+    var currentLanguageState = androidx.compose.runtime.mutableStateOf(getLanguage())
+        private set
+
+    var currentVoiceTypeState = androidx.compose.runtime.mutableStateOf(getVoiceType())
+        private set
+
+    var currentVoiceVolumeState = androidx.compose.runtime.mutableFloatStateOf(getVoiceVolume())
+        private set
+
+    var isMusicEnabledState = androidx.compose.runtime.mutableStateOf(isMusicEnabled())
+        private set
+
+    var musicVolumeState = androidx.compose.runtime.mutableFloatStateOf(getMusicVolume())
+        private set
+
+    var isSoundFxEnabledState = androidx.compose.runtime.mutableStateOf(isSoundFxEnabled())
+        private set
+
     fun getStars(): Int {
         return prefs.getInt("user_stars", 15)
     }
@@ -75,19 +93,34 @@ class KkDataRepository(context: Context) {
     fun setParentPin(pin: String) = prefs.edit().putString("parent_pin", pin).apply()
 
     fun getVoiceVolume(): Float = prefs.getFloat("voice_volume", 1.0f)
-    fun setVoiceVolume(vol: Float) = prefs.edit().putFloat("voice_volume", vol).apply()
+    fun setVoiceVolume(vol: Float) {
+        prefs.edit().putFloat("voice_volume", vol).apply()
+        currentVoiceVolumeState.floatValue = vol
+    }
 
     fun getMusicVolume(): Float = prefs.getFloat("music_volume", 0.8f)
-    fun setMusicVolume(vol: Float) = prefs.edit().putFloat("music_volume", vol).apply()
+    fun setMusicVolume(vol: Float) {
+        prefs.edit().putFloat("music_volume", vol).apply()
+        musicVolumeState.floatValue = vol
+    }
 
     fun isSoundFxEnabled(): Boolean = prefs.getBoolean("sound_fx_enabled", true)
-    fun setSoundFxEnabled(enabled: Boolean) = prefs.edit().putBoolean("sound_fx_enabled", enabled).apply()
+    fun setSoundFxEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("sound_fx_enabled", enabled).apply()
+        isSoundFxEnabledState.value = enabled
+    }
 
     fun isMusicEnabled(): Boolean = prefs.getBoolean("bg_music_enabled", true)
-    fun setMusicEnabled(enabled: Boolean) = prefs.edit().putBoolean("bg_music_enabled", enabled).apply()
+    fun setMusicEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("bg_music_enabled", enabled).apply()
+        isMusicEnabledState.value = enabled
+    }
 
     fun getVoiceType(): String = prefs.getString("voice_type", "Female Teacher") ?: "Female Teacher"
-    fun setVoiceType(type: String) = prefs.edit().putString("voice_type", type).apply()
+    fun setVoiceType(type: String) {
+        prefs.edit().putString("voice_type", type).apply()
+        currentVoiceTypeState.value = type
+    }
 
     fun getGameDifficulty(): String = prefs.getString("game_difficulty", "Easy") ?: "Easy"
     fun setGameDifficulty(diff: String) = prefs.edit().putString("game_difficulty", diff).apply()
@@ -99,7 +132,10 @@ class KkDataRepository(context: Context) {
     fun setLargeTextMode(enabled: Boolean) = prefs.edit().putBoolean("large_text_mode", enabled).apply()
 
     fun getLanguage(): String = prefs.getString("app_language", "English") ?: "English"
-    fun setLanguage(lang: String) = prefs.edit().putString("app_language", lang).apply()
+    fun setLanguage(lang: String) {
+        prefs.edit().putString("app_language", lang).apply()
+        currentLanguageState.value = lang
+    }
 
     fun getReadingAccuracy(): Int = prefs.getInt("reading_accuracy", 88)
     fun getMatchingAccuracy(): Int = prefs.getInt("matching_accuracy", 95)
@@ -114,7 +150,7 @@ class KkDataRepository(context: Context) {
     }
 
     fun unlockNextWorld(currentWorld: Int) {
-        val next = (currentWorld + 1).coerceAtMost(6)
+        val next = (currentWorld + 1).coerceAtMost(25)
         if (next > getAdventureUnlockedWorld()) {
             prefs.edit().putInt("adv_unlocked_world", next).apply()
         }
@@ -146,6 +182,18 @@ class KkDataRepository(context: Context) {
     fun addLearningTimeMinutes(mins: Int) {
         val current = getLearningTimeMinutes()
         prefs.edit().putInt("learning_time_mins", current + mins).apply()
+    }
+
+    fun recordMemorySession(matches: Int, attempts: Int, timeSpentSecs: Int, wordsLearned: List<String>) {
+        if (wordsLearned.isNotEmpty()) {
+            addLearnedWords(wordsLearned)
+        }
+        if (attempts > 0) {
+            val sessionAccuracy = ((matches.toFloat() / attempts.toFloat()) * 100).toInt().coerceIn(40, 100)
+            prefs.edit().putInt("matching_accuracy", sessionAccuracy).apply()
+        }
+        val mins = (timeSpentSecs / 60).coerceAtLeast(1)
+        addLearningTimeMinutes(mins)
     }
 
     // List of Alphabet items (Uppercase)
