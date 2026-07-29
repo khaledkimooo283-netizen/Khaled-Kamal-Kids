@@ -45,6 +45,7 @@ fun ProfileSettingsScreen(
 ) {
     var childName by remember { mutableStateOf(repository.getChildName()) }
     var childAge by remember { mutableIntStateOf(repository.getChildAge()) }
+    var childDob by remember { mutableStateOf(repository.getChildDob()) }
     var avatarEmoji by remember { mutableStateOf(repository.getAvatarEmoji()) }
     var userCoins by remember { mutableIntStateOf(repository.getCoins()) }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
@@ -147,8 +148,8 @@ fun ProfileSettingsScreen(
                                     color = Color(0xFF1E293B)
                                 )
                                 Text(
-                                    text = "Age $childAge • Level 3 Explorer",
-                                    fontSize = 13.sp,
+                                    text = "Age $childAge • Born: $childDob • Difficulty: $gameDifficulty",
+                                    fontSize = 12.sp,
                                     color = Color(0xFF64748B)
                                 )
                             }
@@ -532,7 +533,37 @@ fun ProfileSettingsScreen(
                             value = childName,
                             onValueChange = { childName = it },
                             label = { Text("Child Name") },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Child Age: $childAge years", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                (2..8).forEach { ageVal ->
+                                    FilterChip(
+                                        selected = childAge == ageVal,
+                                        onClick = {
+                                            childAge = ageVal
+                                            repository.setChildAge(ageVal)
+                                            gameDifficulty = repository.getGameDifficulty()
+                                        },
+                                        label = { Text("$ageVal") }
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = childDob,
+                            onValueChange = { childDob = it },
+                            label = { Text("Date of Birth (YYYY-MM-DD)") },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
                         )
 
                         Text("Choose Avatar:", fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -550,13 +581,23 @@ fun ProfileSettingsScreen(
                                 }
                             }
                         }
+
+                        Text(
+                            text = "💡 Age adjusts game difficulty automatically to $gameDifficulty mode!",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2563EB)
+                        )
                     }
                 },
                 confirmButton = {
                     Button(
                         onClick = {
                             repository.setChildName(childName)
+                            repository.setChildAge(childAge)
+                            repository.setChildDob(childDob)
                             repository.setAvatarEmoji(avatarEmoji)
+                            gameDifficulty = repository.getGameDifficulty()
                             showEditProfileDialog = false
                             audioEngine.speak("Profile updated for $childName!")
                         }

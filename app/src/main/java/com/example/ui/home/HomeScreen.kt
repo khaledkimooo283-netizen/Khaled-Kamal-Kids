@@ -1,17 +1,17 @@
 package com.example.ui.home
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +34,60 @@ import androidx.compose.ui.unit.sp
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 
+enum class TileType {
+    ABC,
+    NUMBERS,
+    EMOJI
+}
+
+data class KkHomeCardItem(
+    val id: String,
+    val title: String,
+    val subtitle: String = "",
+    val tileType: TileType,
+    val emoji: String = "",
+    val category: String, // "featured", "letters", "numbers", "games", "parents"
+    val bgColorHex: Long,
+    val route: String
+)
+
+@Composable
+fun RainbowHeaderCanvas(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val strokeWidth = 12.dp.toPx()
+        val colors = listOf(
+            Color(0xFFFF7BB0), // Pink
+            Color(0xFFFF9E7A), // Coral
+            Color(0xFFFFD56B), // Yellow
+            Color(0xFF5CDBB5), // Mint Green
+            Color(0xFF67C6FF), // Cyan Blue
+            Color(0xFFA78BFA)  // Soft Violet
+        )
+
+        val baseRadius = size.width * 0.44f
+        val centerX = size.width / 2f
+        val centerY = size.height * 0.96f
+
+        colors.forEachIndexed { index, color ->
+            val radius = baseRadius - (index * (strokeWidth * 0.86f))
+            if (radius > 0) {
+                drawArc(
+                    color = color,
+                    startAngle = 180f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    topLeft = Offset(centerX - radius, centerY - radius),
+                    size = Size(radius * 2f, radius * 2f),
+                    style = Stroke(
+                        width = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun HomeScreen(
     repository: KkDataRepository,
@@ -41,653 +95,575 @@ fun HomeScreen(
     onNavigateToGame: (String) -> Unit
 ) {
     val totalStars by remember { mutableIntStateOf(repository.getStars()) }
-    val appLanguage by remember { derivedStateOf { repository.getLanguage() } }
+    var selectedCategory by remember { mutableStateOf("All") }
+    val currentLang = remember { repository.getLanguage() }
 
-    var activeHubDialog by remember { mutableStateOf<String?>(null) } // "letters", "numbers", "games"
+    val homeCards = remember {
+        listOf(
+            KkHomeCardItem(
+                id = "speak_pronunciation",
+                title = "Speak & Repeat",
+                subtitle = "Microphone Speaking Games",
+                tileType = TileType.EMOJI,
+                emoji = "🎤",
+                category = "featured",
+                bgColorHex = 0xFFEC4899, // Vibrant Pink
+                route = "speak_pronunciation"
+            ),
+            KkHomeCardItem(
+                id = "letters",
+                title = "Learn Letters",
+                subtitle = "A to Z Phonics & Tracing",
+                tileType = TileType.ABC,
+                category = "letters",
+                bgColorHex = 0xFF8B5CF6, // Pastel Purple
+                route = "capital_small"
+            ),
+            KkHomeCardItem(
+                id = "numbers",
+                title = "Learn Numbers",
+                subtitle = "1 2 3 Counting & Math",
+                tileType = TileType.NUMBERS,
+                category = "numbers",
+                bgColorHex = 0xFFFF6B9B, // Pastel Pink
+                route = "sequence_order"
+            ),
+            KkHomeCardItem(
+                id = "games",
+                title = "Games",
+                subtitle = "Fun & Interactive Puzzles",
+                tileType = TileType.EMOJI,
+                emoji = "🎮",
+                category = "games",
+                bgColorHex = 0xFF38BDF8, // Soft Sky Blue
+                route = "drag_match"
+            ),
+            KkHomeCardItem(
+                id = "rewards",
+                title = "Rewards",
+                subtitle = "Trophy Room & Badges",
+                tileType = TileType.EMOJI,
+                emoji = "🏆",
+                category = "featured",
+                bgColorHex = 0xFFFBBF24, // Soft Yellow
+                route = "rewards"
+            ),
+            KkHomeCardItem(
+                id = "settings",
+                title = "Settings",
+                subtitle = "Child Profile & Audio",
+                tileType = TileType.EMOJI,
+                emoji = "⚙️",
+                category = "featured",
+                bgColorHex = 0xFF34D399, // Mint Green
+                route = "profile_settings"
+            ),
+            KkHomeCardItem(
+                id = "parents",
+                title = "Parents Area",
+                subtitle = "Progress & Analytics",
+                tileType = TileType.EMOJI,
+                emoji = "👥",
+                category = "parents",
+                bgColorHex = 0xFFFB923C, // Warm Orange
+                route = "parent_progress"
+            ),
+            KkHomeCardItem(
+                id = "adventure_mode",
+                title = "Adventure Mode",
+                subtitle = "Explore 26 Learning Worlds",
+                tileType = TileType.EMOJI,
+                emoji = "🗺️",
+                category = "featured",
+                bgColorHex = 0xFFF59E0B, // Warm Amber
+                route = "adventure_mode"
+            ),
+            KkHomeCardItem(
+                id = "songs_music",
+                title = "Songs & Karaoke",
+                subtitle = "Sing, Record & Dance",
+                tileType = TileType.EMOJI,
+                emoji = "🎵",
+                category = "featured",
+                bgColorHex = 0xFFEC4899, // Deep Pink
+                route = "songs_music"
+            ),
+            KkHomeCardItem(
+                id = "dictionary",
+                title = "Vocabulary Book",
+                subtitle = "My A-Z Word Dictionary",
+                tileType = TileType.EMOJI,
+                emoji = "📖",
+                category = "letters",
+                bgColorHex = 0xFF3B82F6, // Royal Blue
+                route = "dictionary"
+            ),
+            KkHomeCardItem(
+                id = "feed_animal",
+                title = "Leo AI Coach",
+                subtitle = "Feed & Speak with Lion",
+                tileType = TileType.EMOJI,
+                emoji = "🦁",
+                category = "featured",
+                bgColorHex = 0xFFA855F7, // Lavender Purple
+                route = "feed_animal"
+            ),
+            KkHomeCardItem(
+                id = "tracing",
+                title = "Handwriting Tracing",
+                subtitle = "Trace ABCs & 123s",
+                tileType = TileType.EMOJI,
+                emoji = "✏️",
+                category = "letters",
+                bgColorHex = 0xFF22C55E, // Bright Green
+                route = "tracing"
+            ),
+            KkHomeCardItem(
+                id = "drag_match",
+                title = "Match & Learn",
+                subtitle = "Drag & Drop Pair Matching",
+                tileType = TileType.EMOJI,
+                emoji = "🎯",
+                category = "games",
+                bgColorHex = 0xFF14B8A6, // Teal
+                route = "drag_match"
+            ),
+            KkHomeCardItem(
+                id = "memory",
+                title = "Memory Cards",
+                subtitle = "Brain Flip & Match",
+                tileType = TileType.EMOJI,
+                emoji = "🧠",
+                category = "games",
+                bgColorHex = 0xFF6366F1, // Indigo
+                route = "memory"
+            ),
+            KkHomeCardItem(
+                id = "coloring",
+                title = "Coloring Game",
+                subtitle = "Color by ABC Paint",
+                tileType = TileType.EMOJI,
+                emoji = "🎨",
+                category = "games",
+                bgColorHex = 0xFFF43F5E, // Rose Pink
+                route = "coloring"
+            ),
+            KkHomeCardItem(
+                id = "treasure_hunt",
+                title = "Treasure Hunt",
+                subtitle = "Discover Hidden Golden Chests",
+                tileType = TileType.EMOJI,
+                emoji = "💎",
+                category = "featured",
+                bgColorHex = 0xFFEAB308, // Gold
+                route = "treasure_hunt"
+            ),
+            KkHomeCardItem(
+                id = "missing_letter",
+                title = "Find Missing Letter",
+                subtitle = "Complete the words",
+                tileType = TileType.EMOJI,
+                emoji = "🔍",
+                category = "letters",
+                bgColorHex = 0xFFF59E0B, // Amber
+                route = "missing_letter"
+            ),
+            KkHomeCardItem(
+                id = "typing",
+                title = "Typing & Spelling",
+                subtitle = "Build Fun Words",
+                tileType = TileType.EMOJI,
+                emoji = "⌨️",
+                category = "letters",
+                bgColorHex = 0xFFC084FC, // Light Purple
+                route = "typing"
+            ),
+            KkHomeCardItem(
+                id = "fishing",
+                title = "Fishing Adventure",
+                subtitle = "Catch Swimming Letters",
+                tileType = TileType.EMOJI,
+                emoji = "🎣",
+                category = "games",
+                bgColorHex = 0xFF0284C7, // Ocean Blue
+                route = "fishing"
+            ),
+            KkHomeCardItem(
+                id = "balloon_pop",
+                title = "Balloon Pop",
+                subtitle = "Pop Target Bubbles",
+                tileType = TileType.EMOJI,
+                emoji = "🎈",
+                category = "games",
+                bgColorHex = 0xFFFB7185, // Coral Pink
+                route = "balloon_pop"
+            ),
+            KkHomeCardItem(
+                id = "train",
+                title = "Alphabet Train",
+                subtitle = "Fill Sequence Wagons",
+                tileType = TileType.EMOJI,
+                emoji = "🚂",
+                category = "letters",
+                bgColorHex = 0xFFA16207, // Golden Brown
+                route = "train"
+            ),
+            KkHomeCardItem(
+                id = "ice_cream",
+                title = "Ice Cream Shop",
+                subtitle = "Count Delicious Scoops",
+                tileType = TileType.EMOJI,
+                emoji = "🍦",
+                category = "numbers",
+                bgColorHex = 0xFFF472B6, // Soft Pink
+                route = "ice_cream"
+            ),
+            KkHomeCardItem(
+                id = "animals",
+                title = "Animal Kingdom",
+                subtitle = "Listen to Animal Sounds",
+                tileType = TileType.EMOJI,
+                emoji = "🐶",
+                category = "games",
+                bgColorHex = 0xFF4ADE80, // Bright Green
+                route = "animals"
+            ),
+            KkHomeCardItem(
+                id = "listen_choose",
+                title = "Listen & Choose",
+                subtitle = "Listen & Pick Picture",
+                tileType = TileType.EMOJI,
+                emoji = "🎧",
+                category = "games",
+                bgColorHex = 0xFFA78BFA, // Soft Violet
+                route = "listen_choose"
+            ),
+            KkHomeCardItem(
+                id = "space_adv",
+                title = "Space Adventure",
+                subtitle = "Collect Cosmic Stars",
+                tileType = TileType.EMOJI,
+                emoji = "🚀",
+                category = "games",
+                bgColorHex = 0xFF0EA5E9, // Electric Cyan
+                route = "space_adv"
+            ),
+            KkHomeCardItem(
+                id = "dino_hatch",
+                title = "Dino Hatch",
+                subtitle = "Hatch Baby Dinos",
+                tileType = TileType.EMOJI,
+                emoji = "🦖",
+                category = "numbers",
+                bgColorHex = 0xFFA3E635, // Lime Green
+                route = "dino_hatch"
+            ),
+            KkHomeCardItem(
+                id = "odd_one_out",
+                title = "Spot Difference",
+                subtitle = "Find Odd Letters",
+                tileType = TileType.EMOJI,
+                emoji = "🔍",
+                category = "letters",
+                bgColorHex = 0xFF0E7490, // Deep Cyan
+                route = "odd_one_out"
+            )
+        )
+    }
+
+    val filteredCards = remember(selectedCategory) {
+        if (selectedCategory == "All") homeCards
+        else homeCards.filter { it.category == selectedCategory.lowercase() }
+    }
 
     LaunchedEffect(Unit) {
-        val welcomeSpeech = if (appLanguage == "Arabic") {
-            "مرحباً بك في تطبيقات خالد كمال للأطفال! اختر أقسام التعلم أو الألعاب! ✨"
-        } else {
-            "Welcome to Khaled Kamal Kids! Choose a fun section below! ✨"
-        }
-        audioEngine.speak(welcomeSpeech)
+        audioEngine.speak("Welcome to Khaled Kamal Kids!")
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                brush = Brush.verticalGradient(
+                Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFEDE9FE), // Soft Lavender Top
-                        Color(0xFFFCE7F3), // Pastel Pink Middle
-                        Color(0xFFFAF5FF)  // Off-white Soft Violet Bottom
+                        Color(0xFFF8F5FF), // Soft Lavender Tint Top
+                        Color(0xFFF0F7FF), // Soft Cyan Tint Middle
+                        Color(0xFFFFFBF5)  // Soft Warm Bottom
                     )
                 )
             )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(bottom = 80.dp),
+            modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(10.dp))
+            // Sound Mute Controls Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { audioEngine.isMuted = !audioEngine.isMuted },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.8f))
+                ) {
+                    Icon(
+                        imageVector = if (audioEngine.isMuted) Icons.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Mute Toggle",
+                        tint = Color(0xFF6366F1)
+                    )
+                }
+            }
 
-            // 1. Rainbow Header Arch Graphic
+            // Rainbow Header Graphic
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(115.dp),
-                contentAlignment = Alignment.Center
+                    .height(130.dp),
+                contentAlignment = Alignment.TopCenter
             ) {
-                Canvas(
+                RainbowHeaderCanvas(
                     modifier = Modifier
-                        .width(220.dp)
-                        .height(110.dp)
-                ) {
-                    val strokeWidth = 11.dp.toPx()
-                    val colors = listOf(
-                        Color(0xFFEC4899), // Pink (outer)
-                        Color(0xFFFB923C), // Orange
-                        Color(0xFF34D399), // Green
-                        Color(0xFF38BDF8), // Cyan
-                        Color(0xFFA78BFA)  // Purple (inner)
-                    )
+                        .width(280.dp)
+                        .height(125.dp)
+                )
 
-                    val center = Offset(size.width / 2f, size.height * 0.98f)
-                    val baseRadius = size.width * 0.22f
-
-                    colors.forEachIndexed { index, color ->
-                        val r = baseRadius + (4 - index) * (strokeWidth + 2.5.dp.toPx())
-                        drawArc(
-                            color = color,
-                            startAngle = 180f,
-                            sweepAngle = 180f,
-                            useCenter = false,
-                            topLeft = Offset(center.x - r, center.y - r),
-                            size = Size(r * 2, r * 2),
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                        )
-                    }
-                }
+                Text(
+                    text = "✨",
+                    fontSize = 20.sp,
+                    modifier = Modifier.align(Alignment.TopStart).padding(start = 40.dp, top = 20.dp)
+                )
+                Text(
+                    text = "✨",
+                    fontSize = 24.sp,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(end = 40.dp, top = 20.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 2. Title "Khaled Kamal Kids"
-            val titleAnnotated = buildAnnotatedString {
-                withStyle(style = SpanStyle(color = Color(0xFF4F46E5), fontWeight = FontWeight.Black)) {
-                    append("Khaled ")
-                }
-                withStyle(style = SpanStyle(color = Color(0xFFA855F7), fontWeight = FontWeight.Black)) {
-                    append("Kamal ")
-                }
-                withStyle(style = SpanStyle(color = Color(0xFFEC4899), fontWeight = FontWeight.Black)) {
-                    append("Kids")
+            // Khaled Kamal Kids Multi-Color Styled Title
+            val titleAnnotated = remember {
+                buildAnnotatedString {
+                    val text = "Khaled Kamal Kids"
+                    val colors = listOf(
+                        Color(0xFF7C3AED), // K - Purple
+                        Color(0xFF2563EB), // h - Blue
+                        Color(0xFF059669), // a - Green
+                        Color(0xFFD97706), // l - Amber
+                        Color(0xFFDC2626), // e - Red
+                        Color(0xFFDB2777), // d - Pink
+                        Color(0xFF7C3AED), // K
+                        Color(0xFF2563EB), // a
+                        Color(0xFF059669), // m
+                        Color(0xFFD97706), // a
+                        Color(0xFFDC2626), // l
+                        Color(0xFFDB2777), // K
+                        Color(0xFF7C3AED), // i
+                        Color(0xFF2563EB), // d
+                        Color(0xFF059669)  // s
+                    )
+                    var colorIdx = 0
+                    text.forEach { ch ->
+                        if (ch != ' ') {
+                            val color = colors[colorIdx % colors.size]
+                            withStyle(SpanStyle(color = color)) {
+                                append(ch.toString())
+                            }
+                            colorIdx++
+                        } else {
+                            append(" ")
+                        }
+                    }
                 }
             }
 
             Text(
                 text = titleAnnotated,
-                fontSize = 30.sp,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 3. Arabic / English Subtitle Banner
+            // Subtitle
             Text(
-                text = if (appLanguage == "Arabic") "تعلّم اللغة الإنجليزية بمتعة وسحر ✨" else "Learn English with Fun & Magic ✨",
+                text = if (currentLang == "Arabic") "✨ تعلّم اللغة الإنجليزية بمتعة وسحر ✨" else "✨ Learn English with Fun & Magic ✨",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B21A8),
+                color = Color(0xFF64748B),
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 4. Main 6 Navigation Cards Grid
+            // Filter Category Pills
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                listOf("All", "Letters", "Numbers", "Games", "Parents").forEach { categoryName ->
+                    val isSelected = selectedCategory == categoryName
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(if (isSelected) Color(0xFF8B5CF6) else Color.White)
+                            .clickable {
+                                selectedCategory = categoryName
+                                audioEngine.speak("$categoryName games!")
+                            }
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = categoryName,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) Color.White else Color(0xFF64748B)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 2-Column Grid of Colorful Rounded Cards
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(bottom = 80.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                // Card 1: Learn Letters (Purple)
-                item {
-                    OriginalHomeCard(
-                        title = if (appLanguage == "Arabic") "تعلم الحروف" else "Learn Letters",
-                        backgroundColor = Color(0xFF8B5CF6),
-                        badgeContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFFCCFBF1))
-                                    .border(2.dp, Color(0xFF0D9488), RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "abc",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF0F766E)
-                                )
-                            }
-                        },
+                items(filteredCards) { cardItem ->
+                    KkKidsHomeCard(
+                        item = cardItem,
                         onClick = {
-                            audioEngine.speak("Learn Letters!")
-                            activeHubDialog = "letters"
-                        }
-                    )
-                }
-
-                // Card 2: Learn Numbers (Pink)
-                item {
-                    OriginalHomeCard(
-                        title = if (appLanguage == "Arabic") "تعلم الأرقام" else "Learn Numbers",
-                        backgroundColor = Color(0xFFF472B6),
-                        badgeContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color(0xFFCCFBF1))
-                                    .border(2.dp, Color(0xFF0D9488), RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "1 2\n3 4",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF0F766E),
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 11.sp
-                                )
-                            }
-                        },
-                        onClick = {
-                            audioEngine.speak("Learn Numbers!")
-                            activeHubDialog = "numbers"
-                        }
-                    )
-                }
-
-                // Card 3: Games (Sky Blue)
-                item {
-                    OriginalHomeCard(
-                        title = if (appLanguage == "Arabic") "الألعاب" else "Games",
-                        backgroundColor = Color(0xFF38BDF8),
-                        badgeContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color.White.copy(alpha = 0.9f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "🎮", fontSize = 24.sp)
-                            }
-                        },
-                        onClick = {
-                            audioEngine.speak("Educational Mini Games!")
-                            activeHubDialog = "games"
-                        }
-                    )
-                }
-
-                // Card 4: Rewards (Amber Yellow)
-                item {
-                    OriginalHomeCard(
-                        title = if (appLanguage == "Arabic") "المكافآت" else "Rewards",
-                        backgroundColor = Color(0xFFFBBF24),
-                        badgeContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color.White.copy(alpha = 0.9f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "🏆", fontSize = 24.sp)
-                            }
-                        },
-                        onClick = {
-                            audioEngine.speak("Trophy & Rewards Room!")
-                            onNavigateToGame("rewards")
-                        }
-                    )
-                }
-
-                // Card 5: Settings (Mint Green)
-                item {
-                    OriginalHomeCard(
-                        title = if (appLanguage == "Arabic") "الإعدادات" else "Settings",
-                        backgroundColor = Color(0xFF34D399),
-                        badgeContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color.White.copy(alpha = 0.9f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Settings,
-                                    contentDescription = "Settings",
-                                    tint = Color(0xFF047857),
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                        },
-                        onClick = {
-                            audioEngine.speak("Settings & Profile!")
-                            onNavigateToGame("profile_settings")
-                        }
-                    )
-                }
-
-                // Card 6: Parents Area (Coral Orange)
-                item {
-                    OriginalHomeCard(
-                        title = if (appLanguage == "Arabic") "منطقة الوالدين" else "Parents Area",
-                        backgroundColor = Color(0xFFFB923C),
-                        badgeContent = {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color.White.copy(alpha = 0.9f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Groups,
-                                    contentDescription = "Parents Area",
-                                    tint = Color(0xFFC2410C),
-                                    modifier = Modifier.size(26.dp)
-                                )
-                            }
-                        },
-                        onClick = {
-                            audioEngine.speak("Parent Dashboard!")
-                            onNavigateToGame("parent_progress")
+                            audioEngine.speak(cardItem.title)
+                            onNavigateToGame(cardItem.route)
                         }
                     )
                 }
             }
         }
 
-        // 5. Floating Bottom Star Pill
+        // Floating Stars Pill at Bottom
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
                 .padding(bottom = 16.dp)
-        ) {
-            Surface(
-                modifier = Modifier
-                    .shadow(elevation = 6.dp, shape = CircleShape)
-                    .clickable {
-                        audioEngine.speak("You collected $totalStars stars!")
-                        onNavigateToGame("rewards")
-                    },
-                shape = CircleShape,
-                color = Color.White
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "Stars",
-                        tint = Color(0xFFF59E0B),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (appLanguage == "Arabic") "تم جمع $totalStars نجوم ✨" else "$totalStars stars collected",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6D28D9)
-                    )
+                .shadow(10.dp, RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White)
+                .clickable {
+                    audioEngine.speak("You have collected $totalStars stars!")
+                    onNavigateToGame("rewards")
                 }
-            }
-        }
-
-        // 6. Hub Selection Dialogs for Letters, Numbers & Games
-        activeHubDialog?.let { category ->
-            AlertDialog(
-                onDismissRequest = { activeHubDialog = null },
-                confirmButton = {
-                    TextButton(onClick = { activeHubDialog = null }) {
-                        Text(if (appLanguage == "Arabic") "إغلاق" else "Close", fontWeight = FontWeight.Bold)
-                    }
-                },
-                shape = RoundedCornerShape(28.dp),
-                containerColor = Color.White,
-                title = {
-                    Text(
-                        text = when (category) {
-                            "letters" -> if (appLanguage == "Arabic") "ألعاب أنشطة الحروف 🔤" else "Letter Learning Games 🔤"
-                            "numbers" -> if (appLanguage == "Arabic") "ألعاب أنشطة الأرقام 🔢" else "Number Learning Games 🔢"
-                            else -> if (appLanguage == "Arabic") "مكتبة الألعاب التعليمية 🎮" else "Educational Games Hub 🎮"
-                        },
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF4C1D95)
-                    )
-                },
-                text = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        when (category) {
-                            "letters" -> {
-                                HubOptionRow(
-                                    emoji = "🗺️",
-                                    title = if (appLanguage == "Arabic") "نمط المغامرة (A-Z)" else "KK Adventure Mode (A-Z)",
-                                    subtitle = if (appLanguage == "Arabic") "26 عالم مع قصة وحيوان وكلمات وطبقات!" else "26 unique story worlds & treasure chests!",
-                                    badge = "MAIN",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("adventure_mode")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "✏️",
-                                    title = if (appLanguage == "Arabic") "الكتابة والتتبع" else "Handwriting Tracing",
-                                    subtitle = if (appLanguage == "Arabic") "تتبع الحروف الكبيرة والصغيرة والأرقام" else "Trace uppercase & lowercase letters!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("tracing")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "📖",
-                                    title = if (appLanguage == "Arabic") "قاموس المفردات المصور" else "Vocabulary Picture Dictionary",
-                                    subtitle = if (appLanguage == "Arabic") "استكشف كلمات الحروف والنطق الصوتي" else "A-Z word dictionary with clear audio!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("dictionary")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🅰️",
-                                    title = if (appLanguage == "Arabic") "مطابقة الكبيرة والصغيرة" else "Capital ↔ Small Match",
-                                    subtitle = if (appLanguage == "Arabic") "طابق الحرف الكبير بالحرف الصغير" else "Match uppercase A with lowercase a!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("capital_small")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🔍",
-                                    title = if (appLanguage == "Arabic") "البحث عن الحرف المفقود" else "Find Missing Letter",
-                                    subtitle = if (appLanguage == "Arabic") "أكمل الحروف المفقودة في الكلمة" else "Fill in missing letters in words!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("missing_letter")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "⌨️",
-                                    title = if (appLanguage == "Arabic") "التهجئة والكتابة" else "Typing & Spelling",
-                                    subtitle = if (appLanguage == "Arabic") "اكتب الكلمات الإنجليزية بالكامل" else "Type & spell full English words!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("typing")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🚂",
-                                    title = if (appLanguage == "Arabic") "قطار الحروف" else "Alphabet Train",
-                                    subtitle = if (appLanguage == "Arabic") "أكمل تسلسل عربات الحروف" else "Complete train letter sequence!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("train")
-                                    }
-                                )
-                            }
-                            "numbers" -> {
-                                HubOptionRow(
-                                    emoji = "🔢",
-                                    title = if (appLanguage == "Arabic") "ترتيب الأرقام (1-20)" else "Sequence Order (1-20)",
-                                    subtitle = if (appLanguage == "Arabic") "أكمل تسلسل الأرقام بشكل صحيح" else "Complete number sequence 1 to 20!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("sequence_order")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "✏️",
-                                    title = if (appLanguage == "Arabic") "تتبع الأرقام (0-20)" else "Number Tracing (0-20)",
-                                    subtitle = if (appLanguage == "Arabic") "تعلم كتابة الأرقام الإنجليزية" else "Learn standard number handwriting!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("tracing")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🍦",
-                                    title = if (appLanguage == "Arabic") "متجر الآيس كريم" else "Ice Cream Counting Shop",
-                                    subtitle = if (appLanguage == "Arabic") "عد كرات الآيس كريم اللذيذة" else "Count scoops & serve animals!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("ice_cream")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🦖",
-                                    title = if (appLanguage == "Arabic") "فقس بيض الديناصورات" else "Dino Egg Hatching",
-                                    subtitle = if (appLanguage == "Arabic") "عد وافقس بيض الديناصور الصغير" else "Count & hatch cute baby dinosaurs!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("dino_hatch")
-                                    }
-                                )
-                            }
-                            else -> {
-                                HubOptionRow(
-                                    emoji = "🎵",
-                                    title = if (appLanguage == "Arabic") "الأغاني والموسيقى" else "Songs & Music Studio",
-                                    subtitle = if (appLanguage == "Arabic") "أغاني ABC وكاريوكي رائع" else "Sing along to ABC songs & karaoke!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("songs_music")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🎣",
-                                    title = if (appLanguage == "Arabic") "مغامرة الصيد" else "Fishing Adventure",
-                                    subtitle = if (appLanguage == "Arabic") "اصطد الحروف والأرقام السابحة" else "Catch swimming letters & numbers!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("fishing")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🧠",
-                                    title = if (appLanguage == "Arabic") "بطاقات الذاكرة" else "Memory Cards Game",
-                                    subtitle = if (appLanguage == "Arabic") "اقلب واكتشف الأزواج المتطابقة" else "Flip & match pair cards!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("memory")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🎈",
-                                    title = if (appLanguage == "Arabic") "فرقعة البالونات" else "Balloon Pop",
-                                    subtitle = if (appLanguage == "Arabic") "فرقع البالونات التي تحتوي الحرف المطلوب" else "Pop balloons with target letters!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("balloon_pop")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🎯",
-                                    title = if (appLanguage == "Arabic") "المطابقة والتعلم" else "Match & Learn",
-                                    subtitle = if (appLanguage == "Arabic") "طابق الصور بالكلمات والأشكال" else "Match objects & words!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("drag_match")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🎧",
-                                    title = if (appLanguage == "Arabic") "استمع واختر" else "Listen & Choose",
-                                    subtitle = if (appLanguage == "Arabic") "استمع للصوت واكتشف الصورة الصحيحة" else "Listen to audio & pick picture!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("listen_choose")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🐶",
-                                    title = if (appLanguage == "Arabic") "أصوات الحيوانات" else "Animal Sounds Kingdom",
-                                    subtitle = if (appLanguage == "Arabic") "تعرف على أسماء وأصوات الحيوانات" else "Learn animal names & sounds!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("animals")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🚀",
-                                    title = if (appLanguage == "Arabic") "مغامرة الفضاء" else "Space Adventure",
-                                    subtitle = if (appLanguage == "Arabic") "اجمع النجوم الفضائية" else "Fly in space & collect stars!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("space_adv")
-                                    }
-                                )
-                                HubOptionRow(
-                                    emoji = "🎨",
-                                    title = if (appLanguage == "Arabic") "كتاب التلوين" else "Coloring Book",
-                                    subtitle = if (appLanguage == "Arabic") "لون الرسومات بالألوان الممتعة" else "Color fun letter drawings!",
-                                    onClick = {
-                                        activeHubDialog = null
-                                        onNavigateToGame("coloring")
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun OriginalHomeCard(
-    title: String,
-    backgroundColor: Color,
-    badgeContent: @Composable () -> Unit,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(148.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(backgroundColor)
-            .clickable { onClick() }
-    ) {
-        // Bottom-Right Soft Circle Overlay for Aesthetic Depth
-        Box(
-            modifier = Modifier
-                .size(110.dp)
-                .align(Alignment.BottomEnd)
-                .offset(x = 20.dp, y = 20.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.18f))
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 22.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Top Left Badge Container
-            badgeContent()
-
-            // Bottom Title Text
-            Text(
-                text = title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                lineHeight = 22.sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun HubOptionRow(
-    emoji: String,
-    title: String,
-    subtitle: String,
-    badge: String? = null,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
-        color = Color(0xFFF8FAFC),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = emoji, fontSize = 28.sp)
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = title,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
-                    )
-                    if (badge != null) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFFF59E0B))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(text = badge, fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.White)
-                        }
-                    }
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "⭐", fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = subtitle,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF64748B)
+                    text = "$totalStars stars collected",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF6366F1)
                 )
             }
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = "Open",
-                tint = Color(0xFF94A3B8)
+        }
+    }
+}
+
+@Composable
+fun KkKidsHomeCard(
+    item: KkHomeCardItem,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .shadow(6.dp, RoundedCornerShape(32.dp), spotColor = Color(item.bgColorHex).copy(alpha = 0.35f))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(item.bgColorHex))
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Translucent light overlay circle in bottom right corner (from screenshot reference!)
+            Box(
+                modifier = Modifier
+                    .size(105.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 24.dp, y = 24.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.18f))
             )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Top Left Icon Container
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.28f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (item.tileType) {
+                        TileType.ABC -> {
+                            Text(
+                                text = "abc",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                        }
+                        TileType.NUMBERS -> {
+                            Text(
+                                text = "1 2\n3 4",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White,
+                                lineHeight = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        TileType.EMOJI -> {
+                            Text(
+                                text = item.emoji,
+                                fontSize = 28.sp
+                            )
+                        }
+                    }
+                }
+
+                // Bottom Left Title
+                Text(
+                    text = item.title,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    lineHeight = 21.sp
+                )
+            }
         }
     }
 }

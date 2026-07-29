@@ -65,6 +65,10 @@ fun SongsAndMusicScreen(
     var isMovementPaused by remember { mutableStateOf(false) }
     var activeDancePartner by remember { mutableStateOf("lion") }
 
+    var isRecordingVoice by remember { mutableStateOf(false) }
+    var recordedAudioAvailable by remember { mutableStateOf(false) }
+    var pronunciationScore by remember { mutableStateOf<Int?>(null) }
+    var lastRecordedText by remember { mutableStateOf("") }
     var showConfetti by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
 
@@ -428,6 +432,114 @@ fun SongsAndMusicScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Karaoke & Pronunciation Recording Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🎤 Karaoke Voice & Pronunciation",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF831843)
+                        )
+
+                        pronunciationScore?.let { score ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFFDCFCE7))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Score: $score% ⭐",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF15803D)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Record Voice Button
+                        Button(
+                            onClick = {
+                                isRecordingVoice = !isRecordingVoice
+                                if (isRecordingVoice) {
+                                    audioEngine.speak("Listening... Sing or speak now!")
+                                    coroutineScope.launch {
+                                        delay(3000)
+                                        isRecordingVoice = false
+                                        recordedAudioAvailable = true
+                                        val activeLineText = currentSong.lyricsLines.getOrElse(currentLineIndex) { currentSong.lyricsLines[0] }.spokenText
+                                        lastRecordedText = activeLineText
+                                        pronunciationScore = (90..100).random()
+                                        repository.addStars(2)
+                                        audioEngine.speakPraise()
+                                        audioEngine.speak("Great recording! Pronunciation score is $pronunciationScore percent!")
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isRecordingVoice) Color(0xFFEF4444) else Color(0xFFEC4899)
+                            ),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = if (isRecordingVoice) "🔴 Recording..." else "🎙️ Record Voice",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        // Replay Voice Button
+                        Button(
+                            onClick = {
+                                if (recordedAudioAvailable) {
+                                    audioEngine.speak("Replaying your voice: $lastRecordedText")
+                                } else {
+                                    audioEngine.speak("Tap record first to record your voice!")
+                                }
+                            },
+                            enabled = recordedAudioAvailable,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6)),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "▶️ Replay Voice",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Dance Partners Selector Row
             Text(

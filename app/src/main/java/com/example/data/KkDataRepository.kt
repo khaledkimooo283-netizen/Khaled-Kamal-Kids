@@ -78,7 +78,19 @@ class KkDataRepository(context: Context) {
     fun setChildName(name: String) = prefs.edit().putString("child_name", name).apply()
 
     fun getChildAge(): Int = prefs.getInt("child_age", 4)
-    fun setChildAge(age: Int) = prefs.edit().putInt("child_age", age).apply()
+    fun setChildAge(age: Int) {
+        prefs.edit().putInt("child_age", age).apply()
+        // Auto-adjust game difficulty based on child's age
+        val autoDiff = when {
+            age <= 3 -> "Easy"
+            age in 4..5 -> "Medium"
+            else -> "Hard"
+        }
+        setGameDifficulty(autoDiff)
+    }
+
+    fun getChildDob(): String = prefs.getString("child_dob", "2022-05-15") ?: "2022-05-15"
+    fun setChildDob(dob: String) = prefs.edit().putString("child_dob", dob).apply()
 
     fun getAvatarEmoji(): String = prefs.getString("avatar_emoji", "🦁") ?: "🦁"
     fun setAvatarEmoji(emoji: String) = prefs.edit().putString("avatar_emoji", emoji).apply()
