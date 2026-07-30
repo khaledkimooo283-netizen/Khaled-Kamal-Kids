@@ -38,9 +38,10 @@ data class SwimmingFish(
 fun FishingGameScreen(
     repository: KkDataRepository,
     audioEngine: SpeechAndSoundEngine,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    initialMode: String = "letters"
 ) {
-    var mode by remember { mutableStateOf("letters") }
+    var mode by remember { mutableStateOf(initialMode) }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
     var currentTarget by remember { mutableStateOf("A") }

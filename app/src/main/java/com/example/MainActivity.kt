@@ -299,5 +299,63 @@ fun KkKidsApp(
                 onBackClick = { navController.popBackStack() }
             )
         }
+
+        composable("fishing_letters") {
+            FishingGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() },
+                initialMode = "letters"
+            )
+        }
+
+        composable("fishing_numbers") {
+            FishingGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() },
+                initialMode = "numbers"
+            )
+        }
+
+        composable("shopping_game") {
+            ShoppingGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("listen_tap") {
+            ListenTapGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("build_sentence") {
+            BuildSentenceGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("color_by_number") {
+            ColorByNumberGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("real_speaking") {
+            RealSpeakingGameScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     }
 }
