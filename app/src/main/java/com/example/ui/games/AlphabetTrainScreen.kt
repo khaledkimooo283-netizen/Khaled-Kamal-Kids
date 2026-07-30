@@ -26,6 +26,63 @@ fun AlphabetTrainScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    var selectedMathTab by remember { mutableStateOf("train") } // "train", "sequence_order", "ice_cream"
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Hub Top Tab Selector
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF713F12))
+                .padding(vertical = 6.dp, horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            listOf(
+                Triple("train", "Sequence Train", "🚂"),
+                Triple("sequence_order", "Sequence Order", "🔢"),
+                Triple("ice_cream", "Ice Cream Shop", "🍦")
+            ).forEach { (modeId, modeTitle, emoji) ->
+                val isSelected = selectedMathTab == modeId
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isSelected) Color(0xFFD97706) else Color(0xFFA16207))
+                        .clickable {
+                            selectedMathTab = modeId
+                            audioEngine.speak("$modeTitle!")
+                        }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$emoji $modeTitle",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
+            when (selectedMathTab) {
+                "train" -> AlphabetTrainContent(repository, audioEngine, onBackClick)
+                "sequence_order" -> SequenceOrderScreen(repository, audioEngine, onBackClick)
+                "ice_cream" -> IceCreamShopScreen(repository, audioEngine, onBackClick)
+            }
+        }
+    }
+}
+
+@Composable
+fun AlphabetTrainContent(
+    repository: KkDataRepository,
+    audioEngine: SpeechAndSoundEngine,
+    onBackClick: () -> Unit
+) {
     var mode by remember { mutableStateOf("alphabet") }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -60,7 +117,7 @@ fun AlphabetTrainScreen(
             val distractors = repository.numberList.filter { !seq.contains(it.number.toString()) }.map { it.number.toString() }.shuffled().take(2)
             candidateOptions = (distractors + missingItem).shuffled()
 
-            audioEngine.speak("Choo Choo! What missing number completes the train sequence? 🚂")
+            audioEngine.speak("Choo Choo! What missing number belongs on the train? 🔢")
         }
     }
 
@@ -71,125 +128,136 @@ fun AlphabetTrainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFEFEBE9))
+            .background(Color(0xFFFEF3C7))
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Alphabet Train 🚂",
+                title = "Math & Sequence Train 🚂",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
                 onMuteToggle = { audioEngine.isMuted = !audioEngine.isMuted }
             )
 
-            // Mode Toggle
+            // Mode Toggle Bar (Letters vs Numbers Train)
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.Center
+                    .fillMaxWidth(0.9f)
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Button(
-                    onClick = { mode = "alphabet" },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (mode == "alphabet") Color(0xFF795548) else Color(0xFFD7CCC8)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("ABC Train", color = if (mode == "alphabet") Color.White else Color(0xFF3E2723), fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Button(
-                    onClick = { mode = "numbers" },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (mode == "numbers") Color(0xFF795548) else Color(0xFFD7CCC8)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("123 Train", color = if (mode == "numbers") Color.White else Color(0xFF3E2723), fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Train Cars Display
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White)
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Locomotive Engine
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFD32F2F)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("🚂", fontSize = 32.sp)
-                }
-
-                // Train Cars
-                trainCars.forEach { car ->
+                listOf(
+                    Pair("alphabet", "🔤 Alphabet Train"),
+                    Pair("numbers", "🔢 Numbers Train")
+                ).forEach { (mKey, mLabel) ->
+                    val isSelected = mode == mKey
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (car == "?") Color(0xFFFFF9C4) else Color(0xFF4CAF50))
-                            .border(2.dp, if (car == "?") Color(0xFFFBC02D) else Color(0xFF2E7D32), RoundedCornerShape(12.dp)),
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isSelected) Color(0xFFD97706) else Color.White)
+                            .border(2.dp, Color(0xFFB45309), RoundedCornerShape(16.dp))
+                            .clickable { mode = mKey }
+                            .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = car,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (car == "?") Color(0xFFE65100) else Color.White
+                            text = mLabel,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) Color.White else Color(0xFF78350F)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Train Graphic Row
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .padding(8.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF92400E)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "🚂 KK KIDS EXPRESS 🚂",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFFDE68A)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        trainCars.forEach { car ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(70.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (car == "?") Color(0xFFFBBF24) else Color(0xFFF59E0B))
+                                    .border(3.dp, Color(0xFF78350F), RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = car,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (car == "?") Color(0xFF92400E) else Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Tap the correct block to fill the missing train car!",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF5D4037),
-                textAlign = TextAlign.Center
+                text = "Tap the missing car piece below:",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF78350F)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Candidate Options
+            // Candidate Option Buttons
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(0.85f),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                candidateOptions.forEach { opt ->
+                candidateOptions.forEach { option ->
                     Box(
                         modifier = Modifier
-                            .size(70.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Color(0xFF0288D1))
+                            .weight(1f)
+                            .height(75.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White)
+                            .border(3.dp, Color(0xFFD97706), RoundedCornerShape(20.dp))
                             .clickable {
-                                if (opt == missingItem) {
+                                if (option == missingItem) {
                                     audioEngine.speakPraise()
-                                    audioEngine.speak("Choo Choo! $opt is correct!")
-                                    showConfetti = true
-                                    repository.addStars(4)
+                                    audioEngine.speak("Choo Choo! $option is correct!")
+                                    repository.addStars(2)
                                     userStars = repository.getStars()
+                                    showConfetti = true
                                     showRewardDialog = true
                                 } else {
                                     audioEngine.speakTryAgain()
@@ -198,10 +266,10 @@ fun AlphabetTrainScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = opt,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            text = option,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFB45309)
                         )
                     }
                 }
@@ -209,11 +277,12 @@ fun AlphabetTrainScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Mascot Guide
             KkLionMascot(
                 state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = "Find missing block '$missingItem'!",
-                onClick = { audioEngine.speak("Which block belongs in the missing train car?") }
+                speechBubbleText = "Help Lion complete the train sequence!",
+                onClick = {
+                    audioEngine.speak("Choo Choo! Find the missing car for Lion's train!")
+                }
             )
         }
 
@@ -221,8 +290,8 @@ fun AlphabetTrainScreen(
 
         StarRewardDialog(
             isVisible = showRewardDialog,
-            title = "Choo Choo Train Conductor!",
-            message = "You completed the train sequence!",
+            title = "Train Conductor! 🚂⭐",
+            message = "You filled in the missing sequence perfectly!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
@@ -236,3 +305,4 @@ fun AlphabetTrainScreen(
         )
     }
 }
+

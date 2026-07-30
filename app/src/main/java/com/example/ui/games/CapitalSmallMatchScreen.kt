@@ -44,6 +44,63 @@ fun CapitalSmallMatchScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    var selectedMatchTab by remember { mutableStateOf("capital_small") } // "capital_small", "drag_match", "shadow_match"
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Hub Top Tab Selector
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1E293B))
+                .padding(vertical = 6.dp, horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            listOf(
+                Triple("capital_small", "Capital ↔ Small", "🅰️a"),
+                Triple("drag_match", "Drag Match", "🎯"),
+                Triple("shadow_match", "Shadow Match", "👤")
+            ).forEach { (modeId, modeTitle, emoji) ->
+                val isSelected = selectedMatchTab == modeId
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isSelected) Color(0xFF2563EB) else Color(0xFF334155))
+                        .clickable {
+                            selectedMatchTab = modeId
+                            audioEngine.speak("$modeTitle!")
+                        }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$emoji $modeTitle",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
+            when (selectedMatchTab) {
+                "capital_small" -> CapitalSmallMatchContent(repository, audioEngine, onBackClick)
+                "drag_match" -> DragMatchGameScreen(repository, audioEngine, onBackClick)
+                "shadow_match" -> ShadowMatchScreen(repository, audioEngine, onBackClick)
+            }
+        }
+    }
+}
+
+@Composable
+fun CapitalSmallMatchContent(
+    repository: KkDataRepository,
+    audioEngine: SpeechAndSoundEngine,
+    onBackClick: () -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -94,7 +151,7 @@ fun CapitalSmallMatchScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Capital ↔ Small Letters 🅰️a",
+                title = "Match & Learn Lab 🎯",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
@@ -279,3 +336,4 @@ fun CapitalSmallMatchScreen(
         )
     }
 }
+

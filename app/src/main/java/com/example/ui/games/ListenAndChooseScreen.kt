@@ -35,6 +35,63 @@ fun ListenAndChooseScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    var selectedPhonicsTab by remember { mutableStateOf("listen_choose") } // "listen_choose", "missing_letter", "typing"
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Hub Top Tab Selector
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF581C87))
+                .padding(vertical = 6.dp, horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            listOf(
+                Triple("listen_choose", "Listen & Pick", "🎧"),
+                Triple("missing_letter", "Missing Letter", "🔍"),
+                Triple("typing", "Word Builder", "⌨️")
+            ).forEach { (modeId, modeTitle, emoji) ->
+                val isSelected = selectedPhonicsTab == modeId
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isSelected) Color(0xFFA855F7) else Color(0xFF6B21A8))
+                        .clickable {
+                            selectedPhonicsTab = modeId
+                            audioEngine.speak("$modeTitle!")
+                        }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$emoji $modeTitle",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
+            when (selectedPhonicsTab) {
+                "listen_choose" -> ListenAndChooseContent(repository, audioEngine, onBackClick)
+                "missing_letter" -> MissingLetterScreen(repository, audioEngine, onBackClick)
+                "typing" -> TypingGameScreen(repository, audioEngine, onBackClick)
+            }
+        }
+    }
+}
+
+@Composable
+fun ListenAndChooseContent(
+    repository: KkDataRepository,
+    audioEngine: SpeechAndSoundEngine,
+    onBackClick: () -> Unit
+) {
     val coroutineScope = rememberCoroutineScope()
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -73,7 +130,7 @@ fun ListenAndChooseScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Listen & Choose 🎧",
+                title = "Phonics & Listening Hub 🎧",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
@@ -101,59 +158,43 @@ fun ListenAndChooseScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(54.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.VolumeUp,
-                            contentDescription = "Listen Audio",
-                            tint = Color(0xFFA855F7),
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column {
-                        Text(
-                            text = "Tap Speaker to Hear:",
-                            fontSize = 12.sp,
-                            color = Color(0xFFE9D5FF)
-                        )
-                        Text(
-                            text = "Find '${currentTarget?.word ?: ""}'",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Filled.VolumeUp,
+                        contentDescription = "Speaker",
+                        tint = Color.White,
+                        modifier = Modifier.size(38.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Tap Speaker to Replay Sound 🔊",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Choice Picture Grid
+            // Choices Grid
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier
-                    .fillMaxWidth(0.88f)
+                    .fillMaxWidth(0.9f)
                     .weight(1f)
             ) {
-                items(choices.size) { idx ->
-                    val item = choices[idx]
+                items(choices.size) { index ->
+                    val item = choices[index]
                     val isSelected = selectedItem == item
                     val isCorrect = item.character == currentTarget?.character
 
                     Box(
                         modifier = Modifier
-                            .height(130.dp)
-                            .clip(RoundedCornerShape(24.dp))
+                            .fillMaxWidth()
+                            .height(115.dp)
+                            .clip(RoundedCornerShape(20.dp))
                             .background(
                                 when {
                                     isSelected && isCorrect -> Color(0xFF86EFAC)
@@ -162,20 +203,22 @@ fun ListenAndChooseScreen(
                                 }
                             )
                             .border(
-                                width = if (isSelected) 3.dp else 1.5.dp,
-                                color = if (isSelected && isCorrect) Color(0xFF16A34A) else if (isSelected) Color(0xFFDC2626) else Color(0xFFE9D5FF),
-                                shape = RoundedCornerShape(24.dp)
+                                width = 2.dp,
+                                color = when {
+                                    isSelected && isCorrect -> Color(0xFF16A34A)
+                                    isSelected && !isCorrect -> Color(0xFFDC2626)
+                                    else -> Color(0xFFE9D5FF)
+                                },
+                                shape = RoundedCornerShape(20.dp)
                             )
                             .clickable {
                                 selectedItem = item
-
                                 if (isCorrect) {
-                                    score++
                                     audioEngine.speakPraise()
-                                    audioEngine.speak("Yes! ${item.character} is for ${item.word}!")
-
+                                    audioEngine.speak("${item.word}! Great job!")
+                                    score++
                                     coroutineScope.launch {
-                                        delay(1400)
+                                        delay(1000)
                                         if (score >= 4) {
                                             repository.addStars(5)
                                             userStars = repository.getStars()
@@ -186,33 +229,33 @@ fun ListenAndChooseScreen(
                                         }
                                     }
                                 } else {
-                                    audioEngine.speak("That is ${item.word}! Listen again for ${currentTarget?.word}!")
+                                    audioEngine.speak("Try again! Listen closely for ${currentTarget?.word}!")
                                 }
                             },
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = item.emoji, fontSize = 48.sp)
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(text = item.emoji, fontSize = 42.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = item.word,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF581C87)
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF6B21A8)
                             )
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             KkLionMascot(
                 state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = currentTarget?.let { "Find '${it.word}'!" } ?: "Listen to the word!",
+                speechBubbleText = "Listen to the word & tap the picture!",
                 onClick = {
                     currentTarget?.let {
-                        audioEngine.speak("Find ${it.word}!")
+                        audioEngine.speak("Tap the picture for ${it.word}!")
                     }
                 }
             )
@@ -222,8 +265,8 @@ fun ListenAndChooseScreen(
 
         StarRewardDialog(
             isVisible = showRewardDialog,
-            title = "Listening Star! 🎧⭐",
-            message = "You identified all spoken vocabulary correctly!",
+            title = "Listening Master! 🎧⭐",
+            message = "You identified all spoken vocabulary words!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
@@ -238,3 +281,4 @@ fun ListenAndChooseScreen(
         )
     }
 }
+

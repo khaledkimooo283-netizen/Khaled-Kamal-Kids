@@ -92,14 +92,6 @@ fun KkKidsApp(
             )
         }
 
-        composable("speak_pronunciation") {
-            SpeakAndPronunciationScreen(
-                repository = repository,
-                audioEngine = audioEngine,
-                onBackClick = { navController.popBackStack() }
-            )
-        }
-
         composable("songs_music") {
             SongsAndMusicScreen(
                 repository = repository,

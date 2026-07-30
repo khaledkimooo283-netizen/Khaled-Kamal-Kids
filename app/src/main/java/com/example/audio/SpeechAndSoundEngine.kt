@@ -197,6 +197,60 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
         speak(prompt)
     }
 
+    val bgmEngine = BackgroundMusicEngine()
+    val soundFxEngine = SoundFxEngine()
+
+    fun playClickSound() {
+        if (!isMuted) soundFxEngine.playClick()
+    }
+
+    fun playCorrectSound() {
+        if (!isMuted) {
+            soundFxEngine.playCorrect()
+            speakPraise()
+        }
+    }
+
+    fun playWrongSound() {
+        if (!isMuted) {
+            soundFxEngine.playWrong()
+            speakTryAgain()
+        }
+    }
+
+    fun playStarSound() {
+        if (!isMuted) soundFxEngine.playStarCollect()
+    }
+
+    fun playVictorySound() {
+        if (!isMuted) soundFxEngine.playVictoryFanfare()
+    }
+
+    fun startBgm() {
+        if (!isMuted) bgmEngine.start()
+    }
+
+    fun pauseBgm() {
+        bgmEngine.pause()
+    }
+
+    fun resumeBgm() {
+        if (!isMuted) bgmEngine.resume()
+    }
+
+    fun setBgmVolume(volume: Float) {
+        bgmEngine.volume = volume
+    }
+
+    fun setBgmEnabled(enabled: Boolean) {
+        bgmEngine.isEnabled = enabled
+        if (!enabled) bgmEngine.pause() else if (!isMuted) bgmEngine.resume()
+    }
+
+    fun setSoundFxEnabled(enabled: Boolean) {
+        soundFxEngine.isEnabled = enabled
+    }
+
     fun speakPraise() {
         val praises = if (currentLanguage == "Arabic") {
             listOf("ممتاز!", "رائع جداً!", "عمل رائع!", "أحسنت!", "نجم خارق!", "مذهل!")
@@ -217,6 +271,7 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
 
     fun stop() {
         tts?.stop()
+        bgmEngine.pause()
     }
 
     fun shutdown() {
@@ -224,6 +279,7 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
             tts?.stop()
             tts?.shutdown()
             soundPool?.release()
+            bgmEngine.stop()
         } catch (e: Exception) {
             Log.e("SpeechEngine", "Error shutting down speech engine", e)
         }
