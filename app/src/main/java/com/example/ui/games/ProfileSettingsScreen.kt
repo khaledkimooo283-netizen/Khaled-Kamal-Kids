@@ -521,11 +521,116 @@ fun ProfileSettingsScreen(
         }
                     }
                 }
+
+                // Help & Support Section Card (Rule 16)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "Help & Support ❓",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
+                        )
+
+                        Divider(color = Color(0xFFF1F5F9))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFEFF6FF))
+                                .clickable { audioEngine.speak("Contact Support email: support@kkkids.app") }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("📧", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("Contact Support", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
+                                Text("support@kkkids.app • 24/7 Parent Help", fontSize = 12.sp, color = Color(0xFF64748B))
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF0FDF4))
+                                .clickable { audioEngine.speak("FAQ: KK Kids is an offline-safe educational environment for kids.") }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("💡", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("Frequently Asked Questions (FAQ)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
+                                Text("100% Safe, No Ads, Offline Compatible", fontSize = 12.sp, color = Color(0xFF166534))
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFAF5FF))
+                                .clickable { audioEngine.speak("Privacy Policy and Terms: 100% KidSafe Certified") }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🛡️", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("Privacy Policy & Terms", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
+                                Text("COPPA & KidSafe Certified Privacy Standard", fontSize = 12.sp, color = Color(0xFF6B21A8))
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFEF3C7))
+                                .clickable { audioEngine.speak("Thank you for rating KK Kids 5 stars!") }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("⭐", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("Rate KK Kids", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
+                                Text("Love the app? Leave us a 5-star review!", fontSize = 12.sp, color = Color(0xFF92400E))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Khaled Kamal Kids (KK Kids) v1.0 Final Release • Production Build",
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             }
         }
 
         // Edit Profile Dialog
         if (showEditProfileDialog) {
+            var dobDayText by remember { mutableStateOf(repository.getDobDay().toString()) }
+            var dobMonthText by remember { mutableStateOf(repository.getDobMonth().toString()) }
+            var dobYearText by remember { mutableStateOf(repository.getDobYear().toString()) }
+
             AlertDialog(
                 onDismissRequest = { showEditProfileDialog = false },
                 title = { Text("Edit Child Profile 👤", fontWeight = FontWeight.Bold) },
@@ -535,8 +640,51 @@ fun ProfileSettingsScreen(
                             value = childName,
                             onValueChange = { childName = it },
                             label = { Text("Child Name") },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
                         )
+
+                        Text("Date of Birth (DD / MM / YYYY):", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedTextField(
+                                value = dobDayText,
+                                onValueChange = { if (it.length <= 2) dobDayText = it },
+                                label = { Text("Day") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            OutlinedTextField(
+                                value = dobMonthText,
+                                onValueChange = { if (it.length <= 2) dobMonthText = it },
+                                label = { Text("Month") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            OutlinedTextField(
+                                value = dobYearText,
+                                onValueChange = { if (it.length <= 4) dobYearText = it },
+                                label = { Text("Year") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1.2f),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+
+                        val calculatedAge = remember(dobDayText, dobMonthText, dobYearText) {
+                            val d = dobDayText.toIntOrNull() ?: 15
+                            val m = dobMonthText.toIntOrNull() ?: 6
+                            val y = dobYearText.toIntOrNull() ?: 2021
+                            val cal = java.util.Calendar.getInstance()
+                            var a = cal.get(java.util.Calendar.YEAR) - y
+                            if (cal.get(java.util.Calendar.MONTH) + 1 < m || (cal.get(java.util.Calendar.MONTH) + 1 == m && cal.get(java.util.Calendar.DAY_OF_MONTH) < d)) {
+                                a--
+                            }
+                            a.coerceAtLeast(1)
+                        }
+
+                        Text("Calculated Age: $calculatedAge years old (Auto)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
 
                         Text("Choose Avatar:", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -558,13 +706,18 @@ fun ProfileSettingsScreen(
                 confirmButton = {
                     Button(
                         onClick = {
+                            val d = dobDayText.toIntOrNull() ?: 15
+                            val m = dobMonthText.toIntOrNull() ?: 6
+                            val y = dobYearText.toIntOrNull() ?: 2021
                             repository.setChildName(childName)
                             repository.setAvatarEmoji(avatarEmoji)
+                            repository.setDob(d, m, y)
+                            childAge = repository.getChildAge()
                             showEditProfileDialog = false
                             audioEngine.speak("Profile updated for $childName!")
                         }
                     ) {
-                        Text("Save")
+                        Text("Save Profile")
                     }
                 }
             )

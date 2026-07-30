@@ -77,7 +77,31 @@ class KkDataRepository(context: Context) {
     fun getChildName(): String = prefs.getString("child_name", "Ahmed") ?: "Ahmed"
     fun setChildName(name: String) = prefs.edit().putString("child_name", name).apply()
 
-    fun getChildAge(): Int = prefs.getInt("child_age", 4)
+    fun getDobDay(): Int = prefs.getInt("dob_day", 15)
+    fun getDobMonth(): Int = prefs.getInt("dob_month", 6) // 1-12
+    fun getDobYear(): Int = prefs.getInt("dob_year", 2021)
+
+    fun setDob(day: Int, month: Int, year: Int) {
+        prefs.edit().putInt("dob_day", day).putInt("dob_month", month).putInt("dob_year", year).apply()
+    }
+
+    fun getChildAge(): Int {
+        val cal = java.util.Calendar.getInstance()
+        val currentYear = cal.get(java.util.Calendar.YEAR)
+        val currentMonth = cal.get(java.util.Calendar.MONTH) + 1
+        val currentDay = cal.get(java.util.Calendar.DAY_OF_MONTH)
+
+        val birthYear = getDobYear()
+        val birthMonth = getDobMonth()
+        val birthDay = getDobDay()
+
+        var age = currentYear - birthYear
+        if (currentMonth < birthMonth || (currentMonth == birthMonth && currentDay < birthDay)) {
+            age--
+        }
+        return age.coerceAtLeast(1)
+    }
+
     fun setChildAge(age: Int) = prefs.edit().putInt("child_age", age).apply()
 
     fun getAvatarEmoji(): String = prefs.getString("avatar_emoji", "🦁") ?: "🦁"

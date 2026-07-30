@@ -99,9 +99,9 @@ object SongDataRepository {
             categoryEmoji = "📅",
             themeColor = 0xFF8B5CF6,
             lyricsLines = listOf(
-                SongLyricLine("Monday, Tuesday, Wednesday!", "Monday, Tuesday, Wednesday!", "🌅", listOf("Monday", "Tuesday", "Wednesday")),
-                SongLyricLine("Thursday, Friday, Saturday!", "Thursday, Friday, Saturday!", "☀️", listOf("Thursday", "Friday", "Saturday")),
-                SongLyricLine("And Sunday makes seven days!", "And Sunday makes seven days!", "🌈", listOf("Sunday")),
+                SongLyricLine("Sunday, Monday, Tuesday!", "Sunday, Monday, Tuesday!", "🌅", listOf("Sunday", "Monday", "Tuesday")),
+                SongLyricLine("Wednesday, Thursday, Friday!", "Wednesday, Thursday, Friday!", "☀️", listOf("Wednesday", "Thursday", "Friday")),
+                SongLyricLine("And Saturday makes seven days!", "And Saturday makes seven days!", "🌈", listOf("Saturday")),
                 SongLyricLine("Seven days in every week!", "Seven days in every week!", "🎉", listOf("Seven Days"))
             ),
             actionChallenge = MovementAction("🔄 Spin around in a circle!", "🔄", "SPIN")
@@ -123,7 +123,7 @@ object SongDataRepository {
             actionChallenge = MovementAction("👏 Clap your hands for twelve months!", "👏", "CLAP")
         ),
 
-        // 7. Greetings & Politeness Song
+        // 7. Greetings & Magic Words Song
         SongItem(
             id = "s_greet",
             title = "Greetings & Magic Words Song",
@@ -139,10 +139,10 @@ object SongDataRepository {
             actionChallenge = MovementAction("👋 Wave hello and smile!", "👋", "WAVE")
         ),
 
-        // 8. Vocabulary & Phonics Song
+        // 8. Vocabulary & Phonics Song (A to Z Phonics)
         SongItem(
             id = "s_vocab",
-            title = "Phonics & Vocabulary Song",
+            title = "Phonics & Vocabulary Song (A-Z)",
             categoryEmoji = "🔤",
             themeColor = 0xFF14B8A6,
             lyricsLines = listOf(
@@ -151,7 +151,8 @@ object SongDataRepository {
                 SongLyricLine("C is for Cat... C C Cat!", "C is for Cat! C, C, Cat!", "🐱", listOf("C", "Cat")),
                 SongLyricLine("D is for Dog... D D Dog!", "D is for Dog! D, D, Dog!", "🐶", listOf("D", "Dog")),
                 SongLyricLine("E is for Elephant... E E Elephant!", "E is for Elephant! E, E, Elephant!", "🐘", listOf("E", "Elephant")),
-                SongLyricLine("F is for Fish... F F Fish!", "F is for Fish! F, F, Fish!", "🐟", listOf("F", "Fish"))
+                SongLyricLine("F is for Fish... F F Fish!", "F is for Fish! F, F, Fish!", "🐟", listOf("F", "Fish")),
+                SongLyricLine("G to Z Phonics fun for everyone!", "G to Z Phonics fun for everyone!", "🌟", listOf("Phonics"))
             ),
             actionChallenge = MovementAction("👣 Jump like an elephant!", "🐘", "JUMP")
         )

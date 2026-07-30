@@ -68,44 +68,29 @@ fun HomeScreen(
             HomeCardItem("learn_letters", "Learn Letters", "🔤", "Letters", 0xFF6366F1, route = "capital_small"),
             HomeCardItem("learn_numbers", "Learn Numbers", "🔢", "Numbers", 0xFFEC4899, route = "train"),
             HomeCardItem("games", "Games", "🎮", "Adventure", 0xFF3B82F6, route = "drag_match"),
-            HomeCardItem("songs", "Songs", "🎵", "Speaking", 0xFFF59E0B, route = "songs_music"),
-            HomeCardItem("karaoke", "Karaoke", "🎤", "Speaking", 0xFF8B5CF6, route = "songs_music"),
+            HomeCardItem("songs_karaoke", "Songs & Karaoke", "🎵", "Speaking", 0xFFF59E0B, route = "songs_music"),
             HomeCardItem("speak_repeat", "Speak & Repeat", "🗣️", "Speaking", 0xFF10B981, route = "songs_music"),
 
             HomeCardItem("adventure_mode", "Adventure Mode", "🚀", "Adventure", 0xFFF97316, route = "adventure_mode"),
             HomeCardItem("leo_coach", "Leo Coach", "🦁", "Speaking", 0xFF14B8A6, route = "adventure_mode"),
             HomeCardItem("vocabulary_book", "Vocabulary Book", "📖", "Reading", 0xFF6366F1, route = "dictionary"),
-            HomeCardItem("coloring", "Coloring", "🎨", "Creativity", 0xFF06B6D4, route = "coloring"),
+            HomeCardItem("coloring", "Coloring Studio", "🎨", "Creativity", 0xFF06B6D4, route = "coloring"),
             HomeCardItem("memory_game", "Memory Game", "🧠", "Creativity", 0xFFA855F7, route = "memory"),
-            HomeCardItem("handwriting", "Handwriting", "✏️", "Writing", 0xFFEAB308, route = "tracing"),
+            HomeCardItem("handwriting", "Handwriting Tracing", "✏️", "Writing", 0xFFEAB308, route = "tracing"),
 
-            HomeCardItem("match_learn", "Match & Learn", "🧩", "Letters", 0xFF0284C7, route = "capital_small"),
             HomeCardItem("puzzle_game", "Puzzle Game", "🧩", "Creativity", 0xFFA855F7, route = "odd_one_out"),
             HomeCardItem("treasure_hunt", "Treasure Hunt", "💎", "Adventure", 0xFFD97706, route = "treasure_hunt"),
             HomeCardItem("listening_game", "Listening Game", "🎧", "Reading", 0xFFEC4899, route = "listen_choose"),
-            HomeCardItem("reading_game", "Reading Game", "📖", "Reading", 0xFFF59E0B, route = "dictionary"),
             HomeCardItem("phonics_game", "Phonics Game", "🔤", "Letters", 0xFF10B981, route = "listen_choose"),
-
             HomeCardItem("spelling_game", "Spelling Game", "📝", "Writing", 0xFFF43F5E, route = "typing"),
-            HomeCardItem("pronunciation_game", "Pronunciation Game", "👄", "Speaking", 0xFFF59E0B, route = "songs_music"),
             HomeCardItem("sorting_game", "Sorting Game", "🔷", "Numbers", 0xFF3B82F6, route = "drag_match"),
+
             HomeCardItem("find_letter", "Find the Letter", "🔍", "Letters", 0xFF6366F1, route = "missing_letter"),
-            HomeCardItem("find_number", "Find the Number", "🔢", "Numbers", 0xFF10B981, route = "sequence_order"),
-            HomeCardItem("math_game", "Math Game", "➕", "Numbers", 0xFFE11D48, route = "ice_cream"),
-
-            HomeCardItem("arrange_letters", "Arrange Letters", "🔤", "Letters", 0xFF06B6D4, route = "capital_small"),
-            HomeCardItem("arrange_numbers", "Arrange Numbers", "🔢", "Numbers", 0xFF3B82F6, route = "sequence_order"),
-            HomeCardItem("word_builder", "Word Builder", "🧱", "Writing", 0xFFEC4899, route = "typing"),
-            HomeCardItem("sentence_builder", "Sentence Builder", "💬", "Reading", 0xFFEAB308, route = "typing"),
+            HomeCardItem("math_game", "Math & Ice Cream", "➕", "Numbers", 0xFFE11D48, route = "ice_cream"),
             HomeCardItem("daily_challenge", "Daily Challenge", "📅", "Adventure", 0xFF8B5CF6, route = "dino_hatch"),
-            HomeCardItem("certificates", "Certificates", "📜", "Rewards", 0xFF0284C7, route = "rewards"),
-
-            HomeCardItem("progress", "Progress", "📊", "Rewards", 0xFFF97316, route = "parent_progress"),
-            HomeCardItem("rewards", "Rewards", "🏆", "Rewards", 0xFFEAB308, route = "rewards"),
-            HomeCardItem("stickers", "Stickers", "⭐", "Rewards", 0xFF10B981, route = "rewards"),
+            HomeCardItem("rewards", "Rewards & Badges", "🏆", "Rewards", 0xFFEAB308, route = "rewards"),
             HomeCardItem("parent_dashboard", "Parent Dashboard", "👨‍👩‍👧", "Rewards", 0xFFEC4899, route = "parent_progress"),
-            HomeCardItem("settings", "Settings", "⚙️", "Rewards", 0xFF8B5CF6, route = "profile_settings"),
-            HomeCardItem("help_support", "Help & Support", "❓", "Rewards", 0xFFF59E0B, route = "profile_settings")
+            HomeCardItem("settings", "Settings & Profile", "⚙️", "Rewards", 0xFF8B5CF6, route = "profile_settings")
         )
     }
 

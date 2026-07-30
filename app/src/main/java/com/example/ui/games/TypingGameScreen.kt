@@ -37,12 +37,21 @@ fun TypingGameScreen(
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
-    val currentLetterItem = repository.alphabetList.getOrNull(currentItemIndex) ?: repository.alphabetList.first()
-    val targetWord = currentLetterItem.word.uppercase()
+    val currentWordItem = remember(currentItemIndex, keyMode) {
+        if (keyMode == "NUMBERS") {
+            val numItem = repository.numberList.getOrNull(currentItemIndex % repository.numberList.size) ?: repository.numberList.first()
+            Pair(numItem.word.uppercase(), numItem.emoji)
+        } else {
+            val letItem = repository.alphabetList.getOrNull(currentItemIndex % repository.alphabetList.size) ?: repository.alphabetList.first()
+            Pair(letItem.word.uppercase(), letItem.emoji)
+        }
+    }
+    val targetWord = currentWordItem.first
+    val currentEmoji = currentWordItem.second
 
     LaunchedEffect(currentItemIndex, keyMode) {
         typedInput = ""
-        audioEngine.speak("Spell the word ${currentLetterItem.word}! ${currentLetterItem.emoji}")
+        audioEngine.speak("Spell ${currentWordItem.first}! $currentEmoji")
     }
 
     val keysList = remember(keyMode) {
@@ -101,7 +110,7 @@ fun TypingGameScreen(
                     .border(3.dp, Color(0xFFBA68C8), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = currentLetterItem.emoji, fontSize = 54.sp)
+                Text(text = currentEmoji, fontSize = 54.sp)
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -177,7 +186,7 @@ fun TypingGameScreen(
                                             repository.addStars(3)
                                             userStars = repository.getStars()
                                             audioEngine.speakPraise()
-                                            audioEngine.speak("${currentLetterItem.word}!")
+                                            audioEngine.speak("$targetWord!")
                                             showRewardDialog = true
                                         }
                                     } else {
@@ -202,8 +211,8 @@ fun TypingGameScreen(
             // Mascot Guide
             KkLionMascot(
                 state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = "Type '${currentLetterItem.word}'!",
-                onClick = { audioEngine.speak("Tap the correct key to spell ${currentLetterItem.word}!") }
+                speechBubbleText = "Type '$targetWord'!",
+                onClick = { audioEngine.speak("Tap the correct key to spell $targetWord!") }
             )
         }
 
@@ -212,11 +221,11 @@ fun TypingGameScreen(
         StarRewardDialog(
             isVisible = showRewardDialog,
             title = "Spelling Champion!",
-            message = "You spelled ${currentLetterItem.word} ${currentLetterItem.emoji}!",
+            message = "You spelled $targetWord $currentEmoji!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
-                currentItemIndex = (currentItemIndex + 1) % repository.alphabetList.size
+                currentItemIndex = currentItemIndex + 1
             },
             onHome = {
                 showRewardDialog = false
