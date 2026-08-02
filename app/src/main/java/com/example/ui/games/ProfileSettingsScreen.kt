@@ -46,7 +46,7 @@ fun ProfileSettingsScreen(
     var childName by remember { mutableStateOf(repository.getChildName()) }
     var childAge by remember { mutableIntStateOf(repository.getChildAge()) }
     var avatarEmoji by remember { mutableStateOf(repository.getAvatarEmoji()) }
-    var userCoins by remember { mutableIntStateOf(repository.getCoins()) }
+    val userCoins = repository.coinsState.intValue
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
     var userStreak by remember { mutableIntStateOf(repository.getStreak()) }
 
@@ -509,7 +509,7 @@ fun ProfileSettingsScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Application Version 1.0.15 (Build 15) ✅",
+                text = "Application Version 1.0.23 (Build 23) ✅",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF1E293B)
@@ -524,7 +524,6 @@ fun ProfileSettingsScreen(
                 pendingParentAction = {
                     repository.resetAllProgress()
                     userStars = repository.getStars()
-                    userCoins = repository.getCoins()
                     audioEngine.speak(if (appLanguage == "Arabic") "تم إعادة ضبط التقدم بنجاح" else "Progress reset successfully!")
                 }
                 showParentGatePinDialog = true

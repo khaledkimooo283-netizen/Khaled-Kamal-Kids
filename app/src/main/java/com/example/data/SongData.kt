@@ -48,11 +48,11 @@ object SongDataRepository {
             categoryEmoji = "🔢",
             themeColor = 0xFF3B82F6,
             lyricsLines = listOf(
-                SongLyricLine("0, 1, 2, 3, 4, 5... Count with me!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("0", "1", "2", "3", "4", "5")),
-                SongLyricLine("6, 7, 8, 9, 10... Fun and quick!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("6", "7", "8", "9", "10")),
-                SongLyricLine("11, 12, 13, 14, 15... Flying high!", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("11", "12", "13", "14", "15")),
-                SongLyricLine("16, 17, 18, 19, 20... Reached the top!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("16", "17", "18", "19", "20")),
-                SongLyricLine("We counted from zero all the way to twenty!", "We counted from zero all the way to twenty!", "🌟", listOf("Counted 0 to 20"))
+                SongLyricLine("0, 1, 2, 3, 4, 5... Count with me!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("Zero", "One", "Two", "Three", "Four", "Five")),
+                SongLyricLine("6, 7, 8, 9, 10... Fun and quick!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("Six", "Seven", "Eight", "Nine", "Ten")),
+                SongLyricLine("11, 12, 13, 14, 15... Flying high!", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen")),
+                SongLyricLine("16, 17, 18, 19, 20... Reached the top!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
+                SongLyricLine("We counted zero all the way to twenty!", "We counted zero all the way to twenty!", "🌟", listOf("Zero to Twenty"))
             ),
             actionChallenge = MovementAction("👣 Jump up and down 2 times!", "👣", "JUMP")
         ),
@@ -102,7 +102,7 @@ object SongDataRepository {
                 SongLyricLine("Monday, Tuesday, Wednesday!", "Monday, Tuesday, Wednesday!", "🌅", listOf("Monday", "Tuesday", "Wednesday")),
                 SongLyricLine("Thursday, Friday, Saturday!", "Thursday, Friday, Saturday!", "☀️", listOf("Thursday", "Friday", "Saturday")),
                 SongLyricLine("And Sunday makes seven days!", "And Sunday makes seven days!", "🌈", listOf("Sunday")),
-                SongLyricLine("Seven days in every week!", "Seven days in every week!", "🎉", listOf("Seven Days"))
+                SongLyricLine("Monday to Sunday, seven days in a week!", "Monday to Sunday, seven days in a week!", "🎉", listOf("Seven Days"))
             ),
             actionChallenge = MovementAction("🔄 Spin around in a circle!", "🔄", "SPIN")
         ),
@@ -117,8 +117,7 @@ object SongDataRepository {
                 SongLyricLine("January, February, March, and April!", "January, February, March, and April!", "❄️", listOf("January", "February", "March", "April")),
                 SongLyricLine("May, June, July, and August!", "May, June, July, and August!", "🌻", listOf("May", "June", "July", "August")),
                 SongLyricLine("September, October, November, December!", "September, October, November, December!", "🍂", listOf("September", "October", "November", "December")),
-                SongLyricLine("Twelve Months in a happy year!", "Twelve Months in a happy year!", "🎄", listOf("December")),
-                SongLyricLine("All twelve months of the year!", "All twelve months of the year!", "✨", listOf("Twelve Months"))
+                SongLyricLine("All twelve months of the year!", "All twelve months of the year from January to December!", "🎄", listOf("Twelve", "Months"))
             ),
             actionChallenge = MovementAction("👏 Clap your hands for twelve months!", "👏", "CLAP")
         ),

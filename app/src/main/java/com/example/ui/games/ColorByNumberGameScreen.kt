@@ -38,6 +38,7 @@ fun ColorByNumberGameScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    // Game 8: Numbers Notebook & Color by Numbers (0 to 20)
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
     var pictureIndex by remember { mutableIntStateOf(0) }
 
@@ -204,9 +205,11 @@ fun ColorByNumberGameScreen(
                                                 if (it.regionId == reg.regionId) it.copy(isColored = true) else it
                                             }
                                             repository.addStars(2)
+                                            repository.rewardColoring()
                                             userStars = repository.getStars()
 
                                             if (regions.all { it.isColored }) {
+                                                repository.rewardFinishGame()
                                                 showRewardDialog = true
                                                 showConfetti = true
                                             }
@@ -246,9 +249,11 @@ fun ColorByNumberGameScreen(
                                                 if (it.regionId == reg.regionId) it.copy(isColored = true) else it
                                             }
                                             repository.addStars(2)
+                                            repository.rewardColoring()
                                             userStars = repository.getStars()
 
                                             if (regions.all { it.isColored }) {
+                                                repository.rewardFinishGame()
                                                 showRewardDialog = true
                                                 showConfetti = true
                                             }

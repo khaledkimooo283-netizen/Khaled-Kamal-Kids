@@ -50,9 +50,9 @@ fun HomeScreen(
     onNavigateToGame: (String) -> Unit
 ) {
     val totalStars by remember { mutableIntStateOf(repository.getStars()) }
-    val totalCoins by remember { mutableIntStateOf(repository.getCoins()) }
-    val childName by remember { mutableStateOf(repository.getChildName()) }
-    val avatarEmoji by remember { mutableStateOf(repository.getAvatarEmoji()) }
+    val totalCoins = repository.coinsState.intValue
+    val childName = repository.getChildName()
+    val avatarEmoji = repository.getAvatarEmoji()
     var selectedCategory by remember { mutableStateOf("All") }
 
     // Start / Resume BGM when entering Home Screen
@@ -162,7 +162,7 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "v1.0.15",
+                                    text = "v1.0.23",
                                     fontSize = 9.sp,
                                     color = Color(0xFF475569),
                                     fontWeight = FontWeight.Bold,

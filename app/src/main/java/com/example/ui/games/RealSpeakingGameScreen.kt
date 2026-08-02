@@ -2,6 +2,8 @@ package com.example.ui.games
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioFormat
+import android.media.AudioRecord
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
@@ -112,35 +114,106 @@ private fun createValidWavFallback(file: File) {
 }
 
 private class AudioRecordHelper(private val context: Context) {
-    private var mediaRecorder: MediaRecorder? = null
+    @Volatile
+    private var isRecording = false
+    private var recordThread: Thread? = null
     private var mediaPlayer: MediaPlayer? = null
     var audioFile: File? = null
         private set
 
     fun startRecording(): Boolean {
-        return try {
-            stopRecording()
-            stopPlayback()
-            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
-            audioFile = outputFile
+        stopRecording()
+        stopPlayback()
+        val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
+        audioFile = outputFile
 
-            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                MediaRecorder(context)
-            } else {
-                @Suppress("DEPRECATION")
-                MediaRecorder()
-            }.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setOutputFile(outputFile.absolutePath)
-                prepare()
-                start()
+        return try {
+            val sampleRate = 16000
+            val channelConfig = AudioFormat.CHANNEL_IN_MONO
+            val audioFormat = AudioFormat.ENCODING_PCM_16BIT
+            val minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+            val bufferSize = Math.max(minBufferSize, 2048)
+
+            val audioRecord = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                sampleRate,
+                channelConfig,
+                audioFormat,
+                bufferSize
+            )
+
+            if (audioRecord.state != AudioRecord.STATE_INITIALIZED) {
+                createValidWavFallback(outputFile)
+                return true
             }
+
+            audioRecord.startRecording()
+            isRecording = true
+
+            recordThread = Thread {
+                val pcmBuffer = ByteArray(bufferSize)
+                val outputStream = java.io.ByteArrayOutputStream()
+
+                while (isRecording) {
+                    val readBytes = audioRecord.read(pcmBuffer, 0, pcmBuffer.size)
+                    if (readBytes > 0) {
+                        outputStream.write(pcmBuffer, 0, readBytes)
+                    }
+                }
+
+                try {
+                    audioRecord.stop()
+                    audioRecord.release()
+                } catch (e: Exception) {
+                    Log.e("AudioRecordHelper", "Error stopping AudioRecord", e)
+                }
+
+                val pcmData = outputStream.toByteArray()
+                if (pcmData.size > 500) {
+                    try {
+                        outputFile.outputStream().use { out ->
+                            val totalDataLen = pcmData.size + 36
+                            val byteRate = sampleRate * 2
+                            val header = ByteArray(44)
+                            header[0] = 'R'.code.toByte(); header[1] = 'I'.code.toByte(); header[2] = 'F'.code.toByte(); header[3] = 'F'.code.toByte()
+                            header[4] = (totalDataLen and 0xff).toByte()
+                            header[5] = ((totalDataLen shr 8) and 0xff).toByte()
+                            header[6] = ((totalDataLen shr 16) and 0xff).toByte()
+                            header[7] = ((totalDataLen shr 24) and 0xff).toByte()
+                            header[8] = 'W'.code.toByte(); header[9] = 'A'.code.toByte(); header[10] = 'V'.code.toByte(); header[11] = 'E'.code.toByte()
+                            header[12] = 'f'.code.toByte(); header[13] = 'm'.code.toByte(); header[14] = 't'.code.toByte(); header[15] = ' '.code.toByte()
+                            header[16] = 16; header[17] = 0; header[18] = 0; header[19] = 0
+                            header[20] = 1; header[21] = 0
+                            header[22] = 1; header[23] = 0
+                            header[24] = (sampleRate and 0xff).toByte()
+                            header[25] = ((sampleRate shr 8) and 0xff).toByte()
+                            header[26] = ((sampleRate shr 16) and 0xff).toByte()
+                            header[27] = ((sampleRate shr 24) and 0xff).toByte()
+                            header[28] = (byteRate and 0xff).toByte()
+                            header[29] = ((byteRate shr 8) and 0xff).toByte()
+                            header[30] = ((byteRate shr 16) and 0xff).toByte()
+                            header[31] = ((byteRate shr 24) and 0xff).toByte()
+                            header[32] = 2; header[33] = 0
+                            header[34] = 16; header[35] = 0
+                            header[36] = 'd'.code.toByte(); header[37] = 'a'.code.toByte(); header[38] = 't'.code.toByte(); header[39] = 'a'.code.toByte()
+                            header[40] = (pcmData.size and 0xff).toByte()
+                            header[41] = ((pcmData.size shr 8) and 0xff).toByte()
+                            header[42] = ((pcmData.size shr 16) and 0xff).toByte()
+                            header[43] = ((pcmData.size shr 24) and 0xff).toByte()
+                            out.write(header)
+                            out.write(pcmData)
+                        }
+                    } catch (e: Exception) {
+                        createValidWavFallback(outputFile)
+                    }
+                } else {
+                    createValidWavFallback(outputFile)
+                }
+            }
+            recordThread?.start()
             true
         } catch (e: Exception) {
-            Log.e("AudioRecordHelper", "Failed to start MediaRecorder, using fallback audio file", e)
-            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
+            Log.e("AudioRecordHelper", "Failed to start MediaRecorder", e)
             createValidWavFallback(outputFile)
             audioFile = outputFile
             true
@@ -148,26 +221,21 @@ private class AudioRecordHelper(private val context: Context) {
     }
 
     fun stopRecording(): Boolean {
-        return try {
-            mediaRecorder?.stop()
-            mediaRecorder?.release()
-            mediaRecorder = null
-            if (audioFile == null || !audioFile!!.exists() || audioFile!!.length() < 100) {
-                val outputFile = audioFile ?: File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
-                createValidWavFallback(outputFile)
-                audioFile = outputFile
-            }
-            true
+        isRecording = false
+        try {
+            recordThread?.join(500)
         } catch (e: Exception) {
-            Log.e("AudioRecordHelper", "Failed to stop recording", e)
-            mediaRecorder = null
-            val outputFile = audioFile ?: File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
-            if (!outputFile.exists() || outputFile.length() < 100) {
-                createValidWavFallback(outputFile)
-            }
-            audioFile = outputFile
-            true
+            Log.e("AudioRecordHelper", "Join thread error", e)
         }
+        recordThread = null
+
+        val file = audioFile
+        if (file == null || !file.exists() || file.length() < 100) {
+            val outputFile = file ?: File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
+            createValidWavFallback(outputFile)
+            audioFile = outputFile
+        }
+        return true
     }
 
     fun playRecordedVoice(onComplete: () -> Unit = {}) {
@@ -493,6 +561,10 @@ fun RealSpeakingGameScreen(
                 else -> 3
             }
             repository.addStars(starsAwarded)
+            repository.rewardPronunciation()
+            if (result.scoreRange == "95–100%") {
+                repository.rewardPerfectScore()
+            }
             userStars = repository.getStars()
             showRewardDialog = true
             showConfetti = true

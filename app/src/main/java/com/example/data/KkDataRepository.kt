@@ -107,10 +107,44 @@ class KkDataRepository(context: Context) {
     fun getAvatarEmoji(): String = prefs.getString("avatar_emoji", "🦁") ?: "🦁"
     fun setAvatarEmoji(emoji: String) = prefs.edit().putString("avatar_emoji", emoji).apply()
 
-    fun getCoins(): Int = prefs.getInt("user_coins", 120)
-    fun addCoins(count: Int) {
-        val current = getCoins()
-        prefs.edit().putInt("user_coins", current + count).apply()
+    var coinsState = androidx.compose.runtime.mutableIntStateOf(getCoins())
+        private set
+
+    var latestCoinEarnedState = androidx.compose.runtime.mutableStateOf<Int?>(null)
+
+    fun getCoins(profileName: String = getChildName()): Int {
+        val key = "user_coins_${profileName.trim().lowercase()}"
+        return prefs.getInt(key, 0)
+    }
+
+    fun addCoins(count: Int, profileName: String = getChildName()): Int {
+        if (count <= 0) return getCoins(profileName)
+        val key = "user_coins_${profileName.trim().lowercase()}"
+        val current = getCoins(profileName)
+        val newTotal = (current + count).coerceAtLeast(0)
+        prefs.edit().putInt(key, newTotal).putInt("user_coins", newTotal).apply()
+        if (profileName.equals(getChildName(), ignoreCase = true)) {
+            coinsState.intValue = newTotal
+            latestCoinEarnedState.value = count
+        }
+        return newTotal
+    }
+
+    fun rewardCorrectAnswer(): Int = addCoins(2)
+    fun rewardFinishGame(): Int = addCoins(10)
+    fun rewardPerfectScore(): Int = addCoins(20)
+    fun rewardDailyChallenge(): Int = addCoins(30)
+    fun rewardPronunciation(): Int = addCoins(5)
+    fun rewardHandwriting(): Int = addCoins(5)
+    fun rewardColoring(): Int = addCoins(3)
+
+    fun clearLatestCoinEarned() {
+        latestCoinEarnedState.value = null
+    }
+
+    fun setChildName(name: String) {
+        prefs.edit().putString("child_name", name).apply()
+        coinsState.intValue = getCoins(name)
     }
 
     fun getParentPin(): String = prefs.getString("parent_pin", "1234") ?: "1234"
@@ -166,6 +200,7 @@ class KkDataRepository(context: Context) {
 
     fun resetAllProgress() {
         prefs.edit().clear().apply()
+        coinsState.intValue = 0
     }
 
     // --- Adventure Mode & Parent Progress ---

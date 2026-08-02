@@ -35,6 +35,8 @@ fun BuildSentenceGameScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    // Game Mode: "Build Sentence" & "Build Letter Parts"
+    var puzzleMode by remember { mutableStateOf("Sentence") }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
     var selectedDifficulty by remember { mutableStateOf("Easy") }
 

@@ -657,49 +657,34 @@ object HandwritingData {
     }
 
     /**
-     * Evaluates user tracing input against guide stroke points using shape recognition.
-     * Accepts tracing from any starting point or direction as long as the overall shape matches.
+     * Intelligent evaluation of user handwriting input against letter stroke guide points.
+     * Checks:
+     * 1. Minimum path points & stroke length
+     * 2. Writing inside guidelines (Accuracy Ratio >= 70%)
+     * 3. Full letter stroke coverage (Coverage Ratio >= 65% & individual stroke completion)
+     * 4. Bounding box & shape similarity
+     * 5. Stroke direction & flow trajectory
      */
     fun validateHandwritingTracing(
         drawnPoints: List<Pair<Float, Float>>,
         strokes: List<List<Pair<Float, Float>>>,
         canvasSize: Float
     ): TracingValidationResult {
-        if (drawnPoints.size < 5) {
+        if (drawnPoints.size < 12) {
             return TracingValidationResult(
                 isValid = false,
                 coverage = 0f,
                 accuracy = 0f,
-                directionCorrect = true,
+                directionCorrect = false,
                 failedStrokeIndex = 0,
-                message = "Trace along the letter shape! ✏️"
+                message = "Try Again! Trace the complete letter. ❌"
             )
         }
 
-        // Child-friendly tolerance radius (~15% of canvas size)
-        val tolerance = canvasSize * 0.15f
+        // Child-friendly guideline tolerance (~13% of canvas size)
+        val tolerance = canvasSize * 0.13f
 
-        var totalGuidePoints = 0
-        var coveredGuidePoints = 0
-
-        strokes.forEach { stroke ->
-            if (stroke.isEmpty()) return@forEach
-
-            totalGuidePoints += stroke.size
-
-            stroke.forEach { guideP ->
-                val gx = guideP.first * canvasSize
-                val gy = guideP.second * canvasSize
-                val covered = drawnPoints.any { (ux, uy) -> hypot(ux - gx, uy - gy) <= tolerance }
-                if (covered) {
-                    coveredGuidePoints++
-                }
-            }
-        }
-
-        val coverageRatio = if (totalGuidePoints > 0) coveredGuidePoints.toFloat() / totalGuidePoints.toFloat() else 1f
-
-        // Check user point accuracy (points near any stroke to prevent wild scribbles)
+        // 1. Accuracy Check: Percentage of drawn points that lie strictly inside letter guidelines
         var pointsOnTrack = 0
         drawnPoints.forEach { (ux, uy) ->
             var onTrack = false
@@ -718,23 +703,142 @@ object HandwritingData {
         }
 
         val accuracyRatio = pointsOnTrack.toFloat() / drawnPoints.size.toFloat()
+        if (accuracyRatio < 0.70f) {
+            return TracingValidationResult(
+                isValid = false,
+                coverage = 0f,
+                accuracy = accuracyRatio,
+                directionCorrect = false,
+                failedStrokeIndex = 0,
+                message = "Try Again! Stay inside the letter guide lines. ❌"
+            )
+        }
 
-        // Flexible shape recognition: child can start ANYWHERE and draw in ANY order!
-        val isPassed = coverageRatio >= 0.58f && accuracyRatio >= 0.58f
+        // 2. Stroke Coverage Check: Overall letter completion and individual stroke completion
+        var totalGuidePoints = 0
+        var totalCoveredGuidePoints = 0
+        var allStrokesSatisfied = true
 
-        val msg = when {
-            coverageRatio < 0.58f -> "Trace a bit more of the letter shape! ✏️"
-            accuracyRatio < 0.58f -> "Try to stay near the letter shape! 🎯"
-            else -> "Superb Handwriting! ⭐"
+        strokes.forEach { stroke ->
+            if (stroke.isEmpty()) return@forEach
+            totalGuidePoints += stroke.size
+
+            var strokeCoveredCount = 0
+            stroke.forEach { guideP ->
+                val gx = guideP.first * canvasSize
+                val gy = guideP.second * canvasSize
+                val isCovered = drawnPoints.any { (ux, uy) -> hypot(ux - gx, uy - gy) <= tolerance }
+                if (isCovered) {
+                    strokeCoveredCount++
+                }
+            }
+            totalCoveredGuidePoints += strokeCoveredCount
+
+            val singleStrokeRatio = strokeCoveredCount.toFloat() / stroke.size.toFloat()
+            if (singleStrokeRatio < 0.48f) {
+                allStrokesSatisfied = false
+            }
+        }
+
+        val coverageRatio = if (totalGuidePoints > 0) totalCoveredGuidePoints.toFloat() / totalGuidePoints.toFloat() else 1f
+        if (coverageRatio < 0.65f || !allStrokesSatisfied) {
+            return TracingValidationResult(
+                isValid = false,
+                coverage = coverageRatio,
+                accuracy = accuracyRatio,
+                directionCorrect = false,
+                failedStrokeIndex = 0,
+                message = "Try Again! Trace all parts of the letter. ❌"
+            )
+        }
+
+        // 3. Shape & Bounding Box Similarity Check
+        val allGuidePts = strokes.flatten()
+        if (allGuidePts.isNotEmpty()) {
+            val gMinX = allGuidePts.minOf { it.first } * canvasSize
+            val gMaxX = allGuidePts.maxOf { it.first } * canvasSize
+            val gMinY = allGuidePts.minOf { it.second } * canvasSize
+            val gMaxY = allGuidePts.maxOf { it.second } * canvasSize
+            val gWidth = (gMaxX - gMinX).coerceAtLeast(10f)
+            val gHeight = (gMaxY - gMinY).coerceAtLeast(10f)
+
+            val uMinX = drawnPoints.minOf { it.first }
+            val uMaxX = drawnPoints.maxOf { it.first }
+            val uMinY = drawnPoints.minOf { it.second }
+            val uMaxY = drawnPoints.maxOf { it.second }
+            val uWidth = uMaxX - uMinX
+            val uHeight = uMaxY - uMinY
+
+            val widthRatio = uWidth / gWidth
+            val heightRatio = uHeight / gHeight
+
+            if (widthRatio < 0.55f || heightRatio < 0.55f) {
+                return TracingValidationResult(
+                    isValid = false,
+                    coverage = coverageRatio,
+                    accuracy = accuracyRatio,
+                    directionCorrect = false,
+                    failedStrokeIndex = 0,
+                    message = "Try Again! Draw the full shape of the letter. ❌"
+                )
+            }
+        }
+
+        // 4. Direction & Trajectory Flow Check
+        var directionScore = 0
+        var totalSegmentChecks = 0
+        val flatStrokes = strokes.flatten()
+        if (flatStrokes.size > 5) {
+            for (i in 0 until drawnPoints.size - 3 step 3) {
+                val p1 = drawnPoints[i]
+                val p2 = drawnPoints[i + 3]
+                val dx = p2.first - p1.first
+                val dy = p2.second - p1.second
+                if (hypot(dx, dy) > 4f) {
+                    var bestGuideIdx = -1
+                    var bestDist = Float.MAX_VALUE
+                    flatStrokes.forEachIndexed { gIdx, gPt ->
+                        val d = hypot(p1.first - gPt.first * canvasSize, p1.second - gPt.second * canvasSize)
+                        if (d < bestDist) {
+                            bestDist = d
+                            bestGuideIdx = gIdx
+                        }
+                    }
+
+                    if (bestGuideIdx >= 0 && bestGuideIdx + 2 < flatStrokes.size) {
+                        val gPt1 = flatStrokes[bestGuideIdx]
+                        val gPt2 = flatStrokes[bestGuideIdx + 2]
+                        val gdx = gPt2.first * canvasSize - gPt1.first * canvasSize
+                        val gdy = gPt2.second * canvasSize - gPt1.second * canvasSize
+                        val dot = dx * gdx + dy * gdy
+                        totalSegmentChecks++
+                        if (dot >= -120f) {
+                            directionScore++
+                        }
+                    }
+                }
+            }
+        }
+
+        val directionRatio = if (totalSegmentChecks > 0) directionScore.toFloat() / totalSegmentChecks.toFloat() else 1f
+        if (directionRatio < 0.48f) {
+            return TracingValidationResult(
+                isValid = false,
+                coverage = coverageRatio,
+                accuracy = accuracyRatio,
+                directionCorrect = false,
+                failedStrokeIndex = 0,
+                message = "Try Again! Follow the stroke direction. ❌"
+            )
         }
 
         return TracingValidationResult(
-            isValid = isPassed,
+            isValid = true,
             coverage = coverageRatio,
             accuracy = accuracyRatio,
             directionCorrect = true,
             failedStrokeIndex = -1,
-            message = msg
+            message = "Superb Handwriting! ⭐"
         )
     }
 }

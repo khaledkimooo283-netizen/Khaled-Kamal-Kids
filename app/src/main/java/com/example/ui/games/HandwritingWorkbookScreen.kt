@@ -49,14 +49,14 @@ fun HandwritingWorkbookScreen(
     onBackClick: () -> Unit
 ) {
     // 8 Sub-Game Modes:
-    // 1. "copybook" - English Copybook Writing
-    // 2. "rainbow" - Rainbow Tracing
-    // 3. "dots" - Connect The Dots
+    // 1. "copybook" - English Copybook Notebook
+    // 2. "rainbow" - Rainbow Tracing (Multi-stroke)
+    // 3. "dots" - Connect The Dots Puzzle
     // 4. "color_letter" - Color The Letter
-    // 5. "copy_memory" - Copy After Me
-    // 6. "numbers" - Number Handwriting (0-20)
-    // 7. "shape_prep" - Shape Preparation
-    // 8. "pencil_control" - Pencil Control (Follow the Road)
+    // 5. "copy_memory" - Watch Then Copy
+    // 6. "numbers" - Numbers Notebook (0-20)
+    // 7. "shape_prep" - Letter Puzzle & Shape Prep
+    // 8. "pencil_control" - Color Then Write Road Control
     var activeGameMode by remember { mutableStateOf("copybook") }
 
     // Content Category: "uppercase", "lowercase", "numbers", "words", "shape_prep", "pencil_control"
@@ -388,6 +388,7 @@ fun HandwritingWorkbookScreen(
                                                         strokeSuccess = true
                                                         showConfetti = true
                                                         repository.addStars(4)
+                                                        repository.rewardHandwriting()
                                                         userStars = repository.getStars()
                                                         audioEngine.speak("Connected all dots! Great job!")
                                                         showRewardDialog = true
@@ -471,6 +472,7 @@ fun HandwritingWorkbookScreen(
                                                     feedbackMessage = "🌈 Rainbow Master! 5 Passes Completed! +5 Stars"
                                                     showConfetti = true
                                                     repository.addStars(5)
+                                                    repository.rewardHandwriting()
                                                     userStars = repository.getStars()
                                                     audioEngine.speak("Rainbow Master! Excellent!")
                                                     showRewardDialog = true
@@ -481,6 +483,7 @@ fun HandwritingWorkbookScreen(
                                                 feedbackMessage = "⭐ Excellent handwriting! Perfect stroke! +3 Stars"
                                                 showConfetti = true
                                                 repository.addStars(3)
+                                                repository.rewardHandwriting()
                                                 userStars = repository.getStars()
                                                 audioEngine.speak("Superb! You wrote ${currentItem.character}!")
                                                 showRewardDialog = true
@@ -488,6 +491,7 @@ fun HandwritingWorkbookScreen(
                                         } else {
                                             isFailedAttempt = true
                                             isShaking = true
+                                            userDrawnPoints = emptyList()
                                             feedbackMessage = "❌ ${validation.message}"
                                             audioEngine.speakTryAgain()
                                             // Replay stroke animation to show child correct stroke path

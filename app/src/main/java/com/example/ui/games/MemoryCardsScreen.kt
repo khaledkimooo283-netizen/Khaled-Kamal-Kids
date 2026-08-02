@@ -369,7 +369,7 @@ fun MemoryCardsScreen(
 
                                     // Praise & Reward
                                     repository.addStars(2)
-                                    repository.addCoins(5)
+                                    repository.rewardCorrectAnswer()
                                     userStars = repository.getStars()
                                     userCoins = repository.getCoins()
 
@@ -399,6 +399,10 @@ fun MemoryCardsScreen(
                                                 timeSpentSecs = timeSpentSecs,
                                                 wordsLearned = learnedList
                                             )
+                                            repository.rewardFinishGame()
+                                            if (totalMistakes == 0) {
+                                                repository.rewardPerfectScore()
+                                            }
                                             showConfetti = true
                                             showVictoryDialog = true
                                         }

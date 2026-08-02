@@ -58,6 +58,7 @@ fun ColoringGameScreen(
     onBackClick: () -> Unit
 ) {
     // Categories: "letters", "numbers", "animals", "fruits", "vehicles", "shapes", "vocab"
+    // Color The Letter mode: Pick colors to fill and outline the target letter & numbers
     var categoryMode by remember { mutableStateOf("letters") }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -142,6 +143,8 @@ fun ColoringGameScreen(
             isFinished = true
             showConfetti = true
             repository.addStars(5)
+            repository.rewardColoring()
+            repository.rewardFinishGame()
             userStars = repository.getStars()
 
             audioEngine.speak("Great job coloring ${currentItem.displayTitle}! +5 Stars!")

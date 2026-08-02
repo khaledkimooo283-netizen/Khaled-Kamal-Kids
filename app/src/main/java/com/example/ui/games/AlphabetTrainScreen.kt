@@ -39,7 +39,7 @@ fun AlphabetTrainScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             listOf(
-                Triple("train", "Sequence Train", "🚂"),
+                Triple("train", "Watch then Copy Train", "🚂"),
                 Triple("sequence_order", "Sequence Order", "🔢"),
                 Triple("ice_cream", "Ice Cream Shop", "🍦")
             ).forEach { (modeId, modeTitle, emoji) ->

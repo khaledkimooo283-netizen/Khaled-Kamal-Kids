@@ -47,6 +47,7 @@ fun TracingGameScreen(
 ) {
     // Mode: "uppercase", "lowercase", "numbers"
     var mode by remember { mutableStateOf("uppercase") }
+    var rainbowModeEnabled by remember { mutableStateOf(true) }
     var currentIndex by remember { mutableIntStateOf(0) }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -63,9 +64,26 @@ fun TracingGameScreen(
     var isFailedAttempt by remember { mutableStateOf(false) }
     var feedbackMessage by remember { mutableStateOf("Start tracing anywhere on the letter! ✏️") }
 
+    var isDemoPlaying by remember { mutableStateOf(false) }
+    var demoProgress by remember { mutableFloatStateOf(0f) }
+
     var isShaking by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
+
+    // Demo Coach Animation loop on mistake
+    LaunchedEffect(isDemoPlaying) {
+        if (isDemoPlaying) {
+            demoProgress = 0f
+            while (isDemoPlaying && demoProgress < 1.0f) {
+                kotlinx.coroutines.delay(25)
+                demoProgress += 0.02f
+            }
+            demoProgress = 1.0f
+            kotlinx.coroutines.delay(400)
+            isDemoPlaying = false
+        }
+    }
 
     // Shake animation on mistake
     val shakeOffset = remember { Animatable(0f) }
@@ -254,8 +272,8 @@ fun TracingGameScreen(
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(currentIndex, mode, strokeSuccess) {
-                            if (!strokeSuccess) {
+                        .pointerInput(currentIndex, mode, strokeSuccess, isDemoPlaying) {
+                            if (!strokeSuccess && !isDemoPlaying) {
                                 detectDragGestures(
                                     onDragStart = { offset ->
                                         userDrawnPoints = listOf(Pair(offset.x, offset.y))
@@ -285,8 +303,10 @@ fun TracingGameScreen(
                                         } else {
                                             isFailedAttempt = true
                                             isShaking = true
+                                            userDrawnPoints = emptyList()
                                             feedbackMessage = "❌ ${validation.message}"
                                             audioEngine.speakTryAgain()
+                                            isDemoPlaying = true
                                         }
                                     }
                                 )
@@ -400,6 +420,35 @@ fun TracingGameScreen(
                             },
                             style = Stroke(width = 34f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                         )
+                    }
+
+                    // 5. Draw Animated Demo Pen Path
+                    if (isDemoPlaying) {
+                        val allDemoPts = guideStrokes.flatten()
+                        if (allDemoPts.isNotEmpty()) {
+                            val targetIndex = (demoProgress * (allDemoPts.size - 1)).toInt().coerceIn(0, allDemoPts.size - 1)
+                            val demoPath = Path()
+                            demoPath.moveTo(allDemoPts[0].first * w, allDemoPts[0].second * h)
+                            for (i in 1..targetIndex) {
+                                demoPath.lineTo(allDemoPts[i].first * w, allDemoPts[i].second * h)
+                            }
+                            drawPath(
+                                path = demoPath,
+                                color = Color(0xFF0284C7),
+                                style = Stroke(width = 24f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                            )
+                            val tip = allDemoPts[targetIndex]
+                            drawCircle(
+                                color = Color(0xFFF59E0B),
+                                radius = 22f,
+                                center = Offset(tip.first * w, tip.second * h)
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = 10f,
+                                center = Offset(tip.first * w, tip.second * h)
+                            )
+                        }
                     }
                 }
             }

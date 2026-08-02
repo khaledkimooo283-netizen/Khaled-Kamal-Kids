@@ -39,6 +39,7 @@ fun MissingLetterScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    // Game 6: Letter Puzzle - Complete missing part of letter/word
     val coroutineScope = rememberCoroutineScope()
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 

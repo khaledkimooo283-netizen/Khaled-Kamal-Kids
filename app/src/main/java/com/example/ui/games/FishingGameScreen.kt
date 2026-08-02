@@ -41,6 +41,7 @@ fun FishingGameScreen(
     onBackClick: () -> Unit,
     initialMode: String = "letters"
 ) {
+    // Catch Letter & Number Targets Fishing Activity
     var mode by remember { mutableStateOf(initialMode) }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -218,10 +219,12 @@ fun FishingGameScreen(
                                         caughtCount++
                                         audioEngine.speakPraise()
                                         audioEngine.speak("You caught $currentTarget!")
+                                        repository.rewardCorrectAnswer()
 
                                         if (caughtCount >= 3) {
                                             showConfetti = true
                                             repository.addStars(4)
+                                            repository.rewardFinishGame()
                                             userStars = repository.getStars()
                                             showRewardDialog = true
                                         } else {

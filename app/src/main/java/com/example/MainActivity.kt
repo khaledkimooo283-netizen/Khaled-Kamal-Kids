@@ -22,6 +22,19 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var audioEngine: SpeechAndSoundEngine
@@ -80,17 +93,18 @@ fun KkKidsApp(
 ) {
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = "home"
-    ) {
-        composable("home") {
-            HomeScreen(
-                repository = repository,
-                audioEngine = audioEngine,
-                onNavigateToGame = { route -> navController.navigate(route) }
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = "home"
+        ) {
+            composable("home") {
+                HomeScreen(
+                    repository = repository,
+                    audioEngine = audioEngine,
+                    onNavigateToGame = { route -> navController.navigate(route) }
+                )
+            }
 
         composable("songs_music") {
             SongsAndMusicScreen(
@@ -364,6 +378,66 @@ fun KkKidsApp(
                 audioEngine = audioEngine,
                 onBackClick = { navController.popBackStack() }
             )
+        }
+    }
+
+    CoinEarnedOverlay(repository = repository, audioEngine = audioEngine)
+}
+
+}
+
+@Composable
+fun CoinEarnedOverlay(
+    repository: KkDataRepository,
+    audioEngine: SpeechAndSoundEngine
+) {
+    val coinEarnedAmount = repository.latestCoinEarnedState.value
+    if (coinEarnedAmount != null && coinEarnedAmount > 0) {
+        LaunchedEffect(coinEarnedAmount) {
+            audioEngine.playStarSound()
+            delay(1800)
+            repository.clearLatestCoinEarned()
+        }
+
+        val infiniteTransition = rememberInfiniteTransition()
+        val floatOffsetY by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -35f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 90.dp),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            androidx.compose.material3.Surface(
+                color = Color(0xFFFEF08A),
+                shape = RoundedCornerShape(24.dp),
+                shadowElevation = 12.dp,
+                modifier = Modifier.graphicsLayer { translationY = floatOffsetY }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "🪙",
+                        fontSize = 28.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "+$coinEarnedAmount Coins!",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF854D0E)
+                    )
+                }
+            }
         }
     }
 }
