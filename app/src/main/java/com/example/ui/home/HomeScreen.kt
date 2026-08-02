@@ -82,6 +82,7 @@ fun HomeScreen(
             HomeCardItem("coloring", "Coloring Studio", "🖌️", "Creativity", 0xFF06B6D4, route = "coloring"),
             HomeCardItem("memory_game", "Memory Game", "🧠", "Creativity", 0xFFA855F7, route = "memory"),
             HomeCardItem("handwriting", "Handwriting Tracing", "✏️", "Writing", 0xFFEAB308, route = "tracing"),
+            HomeCardItem("workbook", "Letter Writing Workbook", "📝", "Writing", 0xFF059669, route = "handwriting_workbook"),
 
             HomeCardItem("puzzle_game", "Puzzle Game", "🧩", "Creativity", 0xFFA855F7, route = "odd_one_out"),
             HomeCardItem("treasure_hunt", "Treasure Hunt", "💎", "Adventure", 0xFFD97706, route = "treasure_hunt"),

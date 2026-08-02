@@ -51,14 +51,13 @@ fun TypingGameScreen(
 
     LaunchedEffect(currentItemIndex, keyMode) {
         typedInput = ""
-        audioEngine.speak("Spell ${currentWordItem.first}! $currentEmoji")
+        audioEngine.speak("Spell the word: $targetWord! $currentEmoji")
     }
 
     val keysList = remember(keyMode) {
         when (keyMode) {
-            "UPPERCASE" -> ('A'..'Z').map { it.toString() }
             "LOWERCASE" -> ('a'..'z').map { it.toString() }
-            else -> (0..9).map { it.toString() }
+            else -> ('A'..'Z').map { it.toString() }
         }
     }
 
@@ -190,7 +189,9 @@ fun TypingGameScreen(
                                             showRewardDialog = true
                                         }
                                     } else {
+                                        audioEngine.playWrongSound()
                                         audioEngine.speakTryAgain()
+                                        audioEngine.speak("Spell the word: $targetWord")
                                     }
                                 },
                             contentAlignment = Alignment.Center

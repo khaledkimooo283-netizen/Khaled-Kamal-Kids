@@ -1,5 +1,10 @@
 package com.example.ui.games
 
+import android.content.Context
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.os.Build
+import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -11,13 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,6 +39,7 @@ import com.example.data.SongLyricLine
 import com.example.ui.components.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 
 data class DancePartner(
     val id: String,
@@ -47,12 +48,89 @@ data class DancePartner(
     val isUnlocked: Boolean = true
 )
 
+private class KaraokeRecordHelper(private val context: Context) {
+    private var mediaRecorder: MediaRecorder? = null
+    private var mediaPlayer: MediaPlayer? = null
+    var recordedFile: File? = null
+        private set
+
+    fun startRecording(): Boolean {
+        return try {
+            stopRecording()
+            stopPlayback()
+            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.3gp")
+            recordedFile = file
+            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("KaraokeRecordHelper", "Failed to start recording", e)
+            false
+        }
+    }
+
+    fun stopRecording(): Boolean {
+        return try {
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+            mediaRecorder = null
+            recordedFile != null && recordedFile!!.exists() && recordedFile!!.length() > 0
+        } catch (e: Exception) {
+            Log.e("KaraokeRecordHelper", "Failed to stop recording", e)
+            mediaRecorder = null
+            false
+        }
+    }
+
+    fun playRecordedVoice(onComplete: () -> Unit = {}) {
+        val file = recordedFile ?: return
+        if (!file.exists()) return
+        try {
+            stopPlayback()
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(file.absolutePath)
+                prepare()
+                setOnCompletionListener { onComplete() }
+                start()
+            }
+        } catch (e: Exception) {
+            Log.e("KaraokeRecordHelper", "Failed playback", e)
+            onComplete()
+        }
+    }
+
+    fun stopPlayback() {
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+        } catch (e: Exception) {
+            Log.e("KaraokeRecordHelper", "Failed to stop playback", e)
+        } finally {
+            mediaPlayer = null
+        }
+    }
+}
+
 @Composable
 fun SongsAndMusicScreen(
     repository: KkDataRepository,
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val karaokeHelper = remember { KaraokeRecordHelper(context) }
+
     val coroutineScope = rememberCoroutineScope()
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
@@ -60,6 +138,8 @@ fun SongsAndMusicScreen(
         audioEngine.pauseBgm()
         onDispose {
             audioEngine.resumeBgm()
+            karaokeHelper.stopRecording()
+            karaokeHelper.stopPlayback()
         }
     }
 
@@ -68,6 +148,10 @@ fun SongsAndMusicScreen(
     var isSongPlaying by remember { mutableStateOf(false) }
     var currentLineIndex by remember { mutableIntStateOf(0) }
     var currentTokenIndex by remember { mutableIntStateOf(-1) }
+
+    var isRecordingKaraoke by remember { mutableStateOf(false) }
+    var isPlayingRecordedVoice by remember { mutableStateOf(false) }
+    var hasKaraokeRecording by remember { mutableStateOf(false) }
 
     var isMovementPaused by remember { mutableStateOf(false) }
     var activeDancePartner by remember { mutableStateOf("lion") }
@@ -435,6 +519,94 @@ fun SongsAndMusicScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Dedicated Karaoke Recording & Replay Control Panel
+            if (isKaraokeMode) {
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = Color.White,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(horizontal = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Mic Record / Stop Button
+                        Button(
+                            onClick = {
+                                if (!isRecordingKaraoke) {
+                                    val ok = karaokeHelper.startRecording()
+                                    if (ok) {
+                                        isRecordingKaraoke = true
+                                        hasKaraokeRecording = false
+                                        isSongPlaying = true // Start instrumental accompaniment while recording
+                                    } else {
+                                        audioEngine.speak("Microphone ready! Sing along!")
+                                    }
+                                } else {
+                                    isRecordingKaraoke = false
+                                    val ok = karaokeHelper.stopRecording()
+                                    hasKaraokeRecording = ok
+                                    if (ok) {
+                                        audioEngine.speak("Voice recorded! Tap Play to listen to your singing!")
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isRecordingKaraoke) Color(0xFFDC2626) else Color(0xFF8B5CF6)
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isRecordingKaraoke) Icons.Filled.Stop else Icons.Filled.Mic,
+                                contentDescription = "Karaoke Record",
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isRecordingKaraoke) "STOP 🛑" else "RECORD 🎙️",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        // Playback Recorded Voice Button
+                        if (hasKaraokeRecording) {
+                            Button(
+                                onClick = {
+                                    isPlayingRecordedVoice = true
+                                    karaokeHelper.playRecordedVoice {
+                                        isPlayingRecordedVoice = false
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlayingRecordedVoice) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
+                                    contentDescription = "Play Voice",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isPlayingRecordedVoice) "Playing..." else "Play My Voice 🎧",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+            }
 
             // Dance Partners Selector Row
             Text(

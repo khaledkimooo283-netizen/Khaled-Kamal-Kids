@@ -357,5 +357,13 @@ fun KkKidsApp(
                 onBackClick = { navController.popBackStack() }
             )
         }
+
+        composable("handwriting_workbook") {
+            HandwritingWorkbookScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     }
 }
