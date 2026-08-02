@@ -498,6 +498,24 @@ fun ProfileSettingsScreen(
             Text(Localization.tr("change_pin_btn", appLanguage), fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFE2E8F0))
+                .padding(10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Application Version 1.0.15 (Build 15) ✅",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1E293B)
+            )
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
         // Parent Protected Reset Button

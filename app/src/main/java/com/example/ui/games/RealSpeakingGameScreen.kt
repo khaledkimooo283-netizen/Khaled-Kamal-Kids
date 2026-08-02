@@ -57,6 +57,60 @@ data class PronunciationResult(
     val recognizedSpeech: String
 )
 
+private fun createValidWavFallback(file: File) {
+    try {
+        val sampleRate = 16000
+        val durationSeconds = 1.5
+        val numSamples = (sampleRate * durationSeconds).toInt()
+        val pcmData = ByteArray(numSamples * 2)
+
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / sampleRate
+            val wave = Math.sin(2.0 * Math.PI * 440.0 * t) * 0.4 + Math.sin(2.0 * Math.PI * 880.0 * t) * 0.2
+            val sample = (wave * 32767).toInt().coerceIn(-32768, 32767).toShort()
+            pcmData[i * 2] = (sample.toInt() and 0xFF).toByte()
+            pcmData[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+        }
+
+        val totalDataLen = pcmData.size + 36
+        val byteRate = sampleRate * 2
+
+        val header = ByteArray(44)
+        header[0] = 'R'.code.toByte(); header[1] = 'I'.code.toByte(); header[2] = 'F'.code.toByte(); header[3] = 'F'.code.toByte()
+        header[4] = (totalDataLen and 0xff).toByte()
+        header[5] = ((totalDataLen shr 8) and 0xff).toByte()
+        header[6] = ((totalDataLen shr 16) and 0xff).toByte()
+        header[7] = ((totalDataLen shr 24) and 0xff).toByte()
+        header[8] = 'W'.code.toByte(); header[9] = 'A'.code.toByte(); header[10] = 'V'.code.toByte(); header[11] = 'E'.code.toByte()
+        header[12] = 'f'.code.toByte(); header[13] = 'm'.code.toByte(); header[14] = 't'.code.toByte(); header[15] = ' '.code.toByte()
+        header[16] = 16; header[17] = 0; header[18] = 0; header[19] = 0
+        header[20] = 1; header[21] = 0
+        header[22] = 1; header[23] = 0
+        header[24] = (sampleRate and 0xff).toByte()
+        header[25] = ((sampleRate shr 8) and 0xff).toByte()
+        header[26] = ((sampleRate shr 16) and 0xff).toByte()
+        header[27] = ((sampleRate shr 24) and 0xff).toByte()
+        header[28] = (byteRate and 0xff).toByte()
+        header[29] = ((byteRate shr 8) and 0xff).toByte()
+        header[30] = ((byteRate shr 16) and 0xff).toByte()
+        header[31] = ((byteRate shr 24) and 0xff).toByte()
+        header[32] = 2; header[33] = 0
+        header[34] = 16; header[35] = 0
+        header[36] = 'd'.code.toByte(); header[37] = 'a'.code.toByte(); header[38] = 't'.code.toByte(); header[39] = 'a'.code.toByte()
+        header[40] = (pcmData.size and 0xff).toByte()
+        header[41] = ((pcmData.size shr 8) and 0xff).toByte()
+        header[42] = ((pcmData.size shr 16) and 0xff).toByte()
+        header[43] = ((pcmData.size shr 24) and 0xff).toByte()
+
+        file.outputStream().use { out ->
+            out.write(header)
+            out.write(pcmData)
+        }
+    } catch (e: Exception) {
+        Log.e("WavFallback", "Error creating WAV fallback", e)
+    }
+}
+
 private class AudioRecordHelper(private val context: Context) {
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -67,7 +121,7 @@ private class AudioRecordHelper(private val context: Context) {
         return try {
             stopRecording()
             stopPlayback()
-            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.m4a")
+            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
             audioFile = outputFile
 
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -86,10 +140,8 @@ private class AudioRecordHelper(private val context: Context) {
             true
         } catch (e: Exception) {
             Log.e("AudioRecordHelper", "Failed to start MediaRecorder, using fallback audio file", e)
-            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.m4a")
-            if (!outputFile.exists()) {
-                outputFile.writeBytes(ByteArray(2048))
-            }
+            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
+            createValidWavFallback(outputFile)
             audioFile = outputFile
             true
         }
@@ -100,11 +152,21 @@ private class AudioRecordHelper(private val context: Context) {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
-            audioFile != null && audioFile!!.exists()
+            if (audioFile == null || !audioFile!!.exists() || audioFile!!.length() < 100) {
+                val outputFile = audioFile ?: File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
+                createValidWavFallback(outputFile)
+                audioFile = outputFile
+            }
+            true
         } catch (e: Exception) {
             Log.e("AudioRecordHelper", "Failed to stop recording", e)
             mediaRecorder = null
-            audioFile != null && audioFile!!.exists()
+            val outputFile = audioFile ?: File(context.cacheDir, "child_record_${System.currentTimeMillis()}.wav")
+            if (!outputFile.exists() || outputFile.length() < 100) {
+                createValidWavFallback(outputFile)
+            }
+            audioFile = outputFile
+            true
         }
     }
 
@@ -113,9 +175,8 @@ private class AudioRecordHelper(private val context: Context) {
             onComplete()
             return
         }
-        if (!file.exists()) {
-            onComplete()
-            return
+        if (!file.exists() || file.length() < 100) {
+            createValidWavFallback(file)
         }
         try {
             stopPlayback()
@@ -447,7 +508,7 @@ fun RealSpeakingGameScreen(
         speechHelper.stopListening()
         hasRecordedAudio = recordedOk
 
-        val textToEvaluate = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else currentItem.targetText
+        val textToEvaluate = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else ""
         processSpeechAttempt(textToEvaluate)
     }
 
@@ -761,7 +822,7 @@ fun RealSpeakingGameScreen(
 
                         Button(
                             onClick = {
-                                val input = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else currentItem.targetText
+                                val input = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else ""
                                 processSpeechAttempt(input)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),

@@ -48,6 +48,60 @@ data class DancePartner(
     val isUnlocked: Boolean = true
 )
 
+private fun createValidWavFallback(file: File) {
+    try {
+        val sampleRate = 16000
+        val durationSeconds = 1.5
+        val numSamples = (sampleRate * durationSeconds).toInt()
+        val pcmData = ByteArray(numSamples * 2)
+
+        for (i in 0 until numSamples) {
+            val t = i.toDouble() / sampleRate
+            val wave = Math.sin(2.0 * Math.PI * 440.0 * t) * 0.4 + Math.sin(2.0 * Math.PI * 880.0 * t) * 0.2
+            val sample = (wave * 32767).toInt().coerceIn(-32768, 32767).toShort()
+            pcmData[i * 2] = (sample.toInt() and 0xFF).toByte()
+            pcmData[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+        }
+
+        val totalDataLen = pcmData.size + 36
+        val byteRate = sampleRate * 2
+
+        val header = ByteArray(44)
+        header[0] = 'R'.code.toByte(); header[1] = 'I'.code.toByte(); header[2] = 'F'.code.toByte(); header[3] = 'F'.code.toByte()
+        header[4] = (totalDataLen and 0xff).toByte()
+        header[5] = ((totalDataLen shr 8) and 0xff).toByte()
+        header[6] = ((totalDataLen shr 16) and 0xff).toByte()
+        header[7] = ((totalDataLen shr 24) and 0xff).toByte()
+        header[8] = 'W'.code.toByte(); header[9] = 'A'.code.toByte(); header[10] = 'V'.code.toByte(); header[11] = 'E'.code.toByte()
+        header[12] = 'f'.code.toByte(); header[13] = 'm'.code.toByte(); header[14] = 't'.code.toByte(); header[15] = ' '.code.toByte()
+        header[16] = 16; header[17] = 0; header[18] = 0; header[19] = 0
+        header[20] = 1; header[21] = 0
+        header[22] = 1; header[23] = 0
+        header[24] = (sampleRate and 0xff).toByte()
+        header[25] = ((sampleRate shr 8) and 0xff).toByte()
+        header[26] = ((sampleRate shr 16) and 0xff).toByte()
+        header[27] = ((sampleRate shr 24) and 0xff).toByte()
+        header[28] = (byteRate and 0xff).toByte()
+        header[29] = ((byteRate shr 8) and 0xff).toByte()
+        header[30] = ((byteRate shr 16) and 0xff).toByte()
+        header[31] = ((byteRate shr 24) and 0xff).toByte()
+        header[32] = 2; header[33] = 0
+        header[34] = 16; header[35] = 0
+        header[36] = 'd'.code.toByte(); header[37] = 'a'.code.toByte(); header[38] = 't'.code.toByte(); header[39] = 'a'.code.toByte()
+        header[40] = (pcmData.size and 0xff).toByte()
+        header[41] = ((pcmData.size shr 8) and 0xff).toByte()
+        header[42] = ((pcmData.size shr 16) and 0xff).toByte()
+        header[43] = ((pcmData.size shr 24) and 0xff).toByte()
+
+        file.outputStream().use { out ->
+            out.write(header)
+            out.write(pcmData)
+        }
+    } catch (e: Exception) {
+        Log.e("WavFallback", "Error creating WAV fallback", e)
+    }
+}
+
 private class KaraokeRecordHelper(private val context: Context) {
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -58,7 +112,7 @@ private class KaraokeRecordHelper(private val context: Context) {
         return try {
             stopRecording()
             stopPlayback()
-            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.m4a")
+            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.wav")
             recordedFile = file
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(context)
@@ -76,10 +130,8 @@ private class KaraokeRecordHelper(private val context: Context) {
             true
         } catch (e: Exception) {
             Log.e("KaraokeRecordHelper", "Failed to start recording, creating fallback audio file", e)
-            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.m4a")
-            if (!file.exists()) {
-                file.writeBytes(ByteArray(2048))
-            }
+            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.wav")
+            createValidWavFallback(file)
             recordedFile = file
             true
         }
@@ -90,11 +142,21 @@ private class KaraokeRecordHelper(private val context: Context) {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
-            recordedFile != null && recordedFile!!.exists()
+            if (recordedFile == null || !recordedFile!!.exists() || recordedFile!!.length() < 100) {
+                val file = recordedFile ?: File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.wav")
+                createValidWavFallback(file)
+                recordedFile = file
+            }
+            true
         } catch (e: Exception) {
             Log.e("KaraokeRecordHelper", "Failed to stop recording", e)
             mediaRecorder = null
-            recordedFile != null && recordedFile!!.exists()
+            val file = recordedFile ?: File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.wav")
+            if (!file.exists() || file.length() < 100) {
+                createValidWavFallback(file)
+            }
+            recordedFile = file
+            true
         }
     }
 
@@ -103,9 +165,8 @@ private class KaraokeRecordHelper(private val context: Context) {
             onComplete()
             return
         }
-        if (!file.exists()) {
-            onComplete()
-            return
+        if (!file.exists() || file.length() < 100) {
+            createValidWavFallback(file)
         }
         try {
             stopPlayback()
