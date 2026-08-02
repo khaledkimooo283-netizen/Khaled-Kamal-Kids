@@ -40,6 +40,7 @@ import com.example.data.KkDataRepository
 import com.example.data.TracingGuideItem
 import com.example.ui.components.*
 import kotlinx.coroutines.delay
+import kotlin.math.hypot
 
 @Composable
 fun HandwritingWorkbookScreen(
@@ -47,87 +48,49 @@ fun HandwritingWorkbookScreen(
     audioEngine: SpeechAndSoundEngine,
     onBackClick: () -> Unit
 ) {
-    // Categories: "uppercase", "lowercase", "numbers", "words", "first_letter", "missing_letter"
+    // 8 Sub-Game Modes:
+    // 1. "copybook" - English Copybook Writing
+    // 2. "rainbow" - Rainbow Tracing
+    // 3. "dots" - Connect The Dots
+    // 4. "color_letter" - Color The Letter
+    // 5. "copy_memory" - Copy After Me
+    // 6. "numbers" - Number Handwriting (0-20)
+    // 7. "shape_prep" - Shape Preparation
+    // 8. "pencil_control" - Pencil Control (Follow the Road)
+    var activeGameMode by remember { mutableStateOf("copybook") }
+
+    // Content Category: "uppercase", "lowercase", "numbers", "words", "shape_prep", "pencil_control"
     var categoryMode by remember { mutableStateOf("uppercase") }
     var currentIndex by remember { mutableIntStateOf(0) }
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
 
-    // First Letter of Picture Activities
-    val firstLetterList = remember {
+    // Rainbow tracing pass index (0 = Red, 1 = Blue, 2 = Green, 3 = Yellow, 4 = Purple)
+    var rainbowPass by remember { mutableIntStateOf(0) }
+    val rainbowColors = remember {
         listOf(
-            TracingGuideItem("fl_apple", "First Letter of Apple 🍎", "A", "first_letter", "Apple", "🍎", HandwritingData.uppercaseLetters[0].strokeGuidePoints),
-            TracingGuideItem("fl_ball", "First Letter of Ball ⚽", "B", "first_letter", "Ball", "⚽", HandwritingData.uppercaseLetters[1].strokeGuidePoints),
-            TracingGuideItem("fl_cat", "First Letter of Cat 🐱", "C", "first_letter", "Cat", "🐱", HandwritingData.uppercaseLetters[2].strokeGuidePoints),
-            TracingGuideItem("fl_dog", "First Letter of Dog 🐶", "D", "first_letter", "Dog", "🐶", HandwritingData.uppercaseLetters[3].strokeGuidePoints),
-            TracingGuideItem("fl_egg", "First Letter of Egg 🥚", "E", "first_letter", "Egg", "🥚", HandwritingData.uppercaseLetters[4].strokeGuidePoints)
+            Color(0xFFEF4444), // Red
+            Color(0xFF2563EB), // Blue
+            Color(0xFF16A34A), // Green
+            Color(0xFFEAB308), // Yellow
+            Color(0xFF9333EA)  // Purple
         )
     }
 
-    // Missing Letter Activities
-    val missingLetterList = remember {
-        listOf(
-            TracingGuideItem("ml_apple", "Write missing letter: _ p p l e 🍎", "A", "missing_letter", "Apple", "🍎", HandwritingData.uppercaseLetters[0].strokeGuidePoints),
-            TracingGuideItem("ml_ball", "Write missing letter: _ a l l ⚽", "B", "missing_letter", "Ball", "⚽", HandwritingData.uppercaseLetters[1].strokeGuidePoints),
-            TracingGuideItem("ml_cat", "Write missing letter: _ a t 🐱", "C", "missing_letter", "Cat", "🐱", HandwritingData.uppercaseLetters[2].strokeGuidePoints),
-            TracingGuideItem("ml_dog", "Write missing letter: _ o g 🐶", "D", "missing_letter", "Dog", "🐶", HandwritingData.uppercaseLetters[3].strokeGuidePoints)
-        )
-    }
+    // Connect the Dots active target index
+    var connectedDotCount by remember { mutableIntStateOf(0) }
 
-    // Custom simple words list for writing practice
-    val wordsList = remember {
-        listOf(
-            TracingGuideItem("w_apple", "Apple 🍎", "Apple", "words", "Apple", "🍎", listOf(
-                HandwritingData.generateLine(0.15f, 0.88f, 0.32f, 0.12f, 15),
-                HandwritingData.generateLine(0.32f, 0.12f, 0.48f, 0.88f, 15),
-                HandwritingData.generateLine(0.22f, 0.55f, 0.42f, 0.55f, 10),
-                HandwritingData.generateCircle(0.60f, 0.69f, 0.08f, 0.12f, -90.0, 360.0, 15),
-                HandwritingData.generateLine(0.68f, 0.50f, 0.68f, 0.88f, 10),
-                HandwritingData.generateLine(0.78f, 0.50f, 0.78f, 0.88f, 10),
-                HandwritingData.generateCircle(0.86f, 0.69f, 0.08f, 0.12f, -90.0, 360.0, 15)
-            )),
-            TracingGuideItem("w_ball", "Ball ⚽", "Ball", "words", "Ball", "⚽", listOf(
-                HandwritingData.generateLine(0.15f, 0.12f, 0.15f, 0.88f, 15),
-                HandwritingData.generateCubicBezier(0.15f, 0.12f, 0.35f, 0.12f, 0.35f, 0.50f, 0.15f, 0.50f, 12),
-                HandwritingData.generateCubicBezier(0.15f, 0.50f, 0.38f, 0.50f, 0.38f, 0.88f, 0.15f, 0.88f, 12),
-                HandwritingData.generateCircle(0.50f, 0.69f, 0.08f, 0.12f, -90.0, 360.0, 15),
-                HandwritingData.generateLine(0.58f, 0.50f, 0.58f, 0.88f, 10),
-                HandwritingData.generateLine(0.70f, 0.12f, 0.70f, 0.88f, 12),
-                HandwritingData.generateLine(0.85f, 0.12f, 0.85f, 0.88f, 12)
-            )),
-            TracingGuideItem("w_cat", "Cat 🐱", "Cat", "words", "Cat", "🐱", listOf(
-                HandwritingData.generateCubicBezier(0.35f, 0.25f, 0.30f, 0.12f, 0.18f, 0.12f, 0.18f, 0.50f, 12) +
-                    HandwritingData.generateCubicBezier(0.18f, 0.50f, 0.18f, 0.88f, 0.30f, 0.88f, 0.35f, 0.75f, 12),
-                HandwritingData.generateCircle(0.52f, 0.69f, 0.08f, 0.12f, -90.0, 360.0, 15),
-                HandwritingData.generateLine(0.60f, 0.50f, 0.60f, 0.88f, 10),
-                HandwritingData.generateLine(0.75f, 0.22f, 0.75f, 0.82f, 12),
-                HandwritingData.generateLine(0.65f, 0.50f, 0.85f, 0.50f, 10)
-            )),
-            TracingGuideItem("w_dog", "Dog 🐶", "Dog", "words", "Dog", "🐶", listOf(
-                HandwritingData.generateLine(0.18f, 0.12f, 0.18f, 0.88f, 15),
-                HandwritingData.generateCubicBezier(0.18f, 0.12f, 0.45f, 0.12f, 0.45f, 0.88f, 0.18f, 0.88f, 18),
-                HandwritingData.generateCircle(0.60f, 0.69f, 0.08f, 0.12f, -90.0, 360.0, 15),
-                HandwritingData.generateCircle(0.82f, 0.65f, 0.08f, 0.12f, -90.0, 360.0, 15),
-                HandwritingData.generateLine(0.90f, 0.50f, 0.90f, 0.88f, 12)
-            )),
-            TracingGuideItem("w_sun", "Sun ☀️", "Sun", "words", "Sun", "☀️", listOf(
-                HandwritingData.generateCubicBezier(0.35f, 0.22f, 0.30f, 0.12f, 0.18f, 0.12f, 0.18f, 0.32f, 10) +
-                    HandwritingData.generateCubicBezier(0.18f, 0.32f, 0.18f, 0.52f, 0.35f, 0.52f, 0.35f, 0.72f, 10) +
-                    HandwritingData.generateCubicBezier(0.35f, 0.72f, 0.35f, 0.88f, 0.18f, 0.88f, 0.15f, 0.80f, 8),
-                HandwritingData.generateCubicBezier(0.48f, 0.50f, 0.48f, 0.88f, 0.65f, 0.88f, 0.65f, 0.50f, 15),
-                HandwritingData.generateLine(0.65f, 0.50f, 0.65f, 0.88f, 10),
-                HandwritingData.generateLine(0.78f, 0.50f, 0.78f, 0.88f, 10),
-                HandwritingData.generateCubicBezier(0.78f, 0.60f, 0.82f, 0.50f, 0.95f, 0.50f, 0.95f, 0.88f, 12)
-            ))
-        )
-    }
+    // Color the letter painted state
+    var isLetterColored by remember { mutableStateOf(false) }
 
-    val currentList: List<TracingGuideItem> = when (categoryMode) {
-        "uppercase" -> HandwritingData.uppercaseLetters
-        "lowercase" -> HandwritingData.lowercaseLetters
+    val currentList: List<TracingGuideItem> = when (activeGameMode) {
         "numbers" -> HandwritingData.numbers
-        "first_letter" -> firstLetterList
-        "missing_letter" -> missingLetterList
-        else -> wordsList
+        "shape_prep" -> HandwritingData.shapePrepItems
+        "pencil_control" -> HandwritingData.pencilControlRoads
+        else -> when (categoryMode) {
+            "lowercase" -> HandwritingData.lowercaseLetters
+            "numbers" -> HandwritingData.numbers
+            else -> HandwritingData.uppercaseLetters
+        }
     }
 
     val currentItem = currentList.getOrNull(currentIndex) ?: currentList.first()
@@ -135,7 +98,7 @@ fun HandwritingWorkbookScreen(
     var userDrawnPoints by remember { mutableStateOf(listOf<Pair<Float, Float>>()) }
     var strokeSuccess by remember { mutableStateOf(false) }
     var isFailedAttempt by remember { mutableStateOf(false) }
-    var feedbackMessage by remember { mutableStateOf("Watch Coach write first or trace over the dotted lines! ✍️") }
+    var feedbackMessage by remember { mutableStateOf("Watch Coach write first or trace neatly! ✍️") }
 
     var isDemoPlaying by remember { mutableStateOf(false) }
     var demoProgress by remember { mutableFloatStateOf(0f) }
@@ -162,32 +125,60 @@ fun HandwritingWorkbookScreen(
         if (isDemoPlaying) {
             demoProgress = 0f
             while (isDemoPlaying && demoProgress < 1.0f) {
-                delay(30)
+                delay(25)
                 demoProgress += 0.02f
             }
             demoProgress = 1.0f
-            delay(500)
+            delay(400)
             isDemoPlaying = false
         }
     }
 
-    // Speak title & reset canvas when item changes
-    LaunchedEffect(currentIndex, categoryMode) {
+    // Reset state on item or mode change
+    LaunchedEffect(currentIndex, categoryMode, activeGameMode) {
         userDrawnPoints = emptyList()
         strokeSuccess = false
         isFailedAttempt = false
         isDemoPlaying = false
-        feedbackMessage = "Watch Coach write first or trace over the dotted lines! ✍️"
+        rainbowPass = 0
+        connectedDotCount = 0
+        isLetterColored = false
 
-        audioEngine.speak("Let's write ${currentItem.displayTitle}!")
+        feedbackMessage = when (activeGameMode) {
+            "copybook" -> "Watch Coach demo or write on notebook lines! ✍️"
+            "rainbow" -> "Trace 5 times to complete the Rainbow! 🌈 (Pass 1/5)"
+            "dots" -> "Connect dots 1, 2, 3... in order! 🔢"
+            "color_letter" -> "Color the letter inside, then trace it! 🎨"
+            "copy_memory" -> "Watch Coach write first, then copy from memory! 🧠"
+            "numbers" -> "Learn & write number ${currentItem.character}! 🔟"
+            "shape_prep" -> "Trace shapes to prepare your hand control! 📐"
+            "pencil_control" -> "Drive along the road from Start 🚗 to Finish 🏁!"
+            else -> "Trace over the dotted lines! ✍️"
+        }
+
+        audioEngine.speak("Let's practice ${currentItem.displayTitle}!")
     }
 
     val guideStrokes = currentItem.strokeGuidePoints
 
+    // Generate Connect-The-Dots checkpoints
+    val dotCheckpoints = remember(currentItem) {
+        val flattened = currentItem.strokeGuidePoints.flatten()
+        if (flattened.size > 8) {
+            val step = (flattened.size - 1) / 7
+            (0..7).map { i ->
+                val idx = (i * step).coerceIn(0, flattened.size - 1)
+                flattened[idx]
+            }
+        } else {
+            flattened
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFEF3C7)) // Warm Paper Canvas Tint
+            .background(Color(0xFFFEF3C7))
     ) {
         Column(
             modifier = Modifier
@@ -196,41 +187,42 @@ fun HandwritingWorkbookScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "English Handwriting Workbook ✍️",
+                title = "Handwriting Learning System ✍️",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
                 onMuteToggle = { audioEngine.isMuted = !audioEngine.isMuted }
             )
 
-            // Category Selector Tabs
+            // 8 Sub-Game Modes Selector Row
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                itemsIndexed(
-                    listOf(
-                        "uppercase" to "ABC Capital",
-                        "lowercase" to "abc Small",
-                        "numbers" to "123 Numbers",
-                        "first_letter" to "First Letter 🍎",
-                        "missing_letter" to "Missing Letter 🧩",
-                        "words" to "Words 📝"
-                    )
-                ) { _, (catKey, label) ->
-                    val isSelected = categoryMode == catKey
+                val games = listOf(
+                    "copybook" to "📝 Copybook Writing",
+                    "rainbow" to "🌈 Rainbow Tracing",
+                    "dots" to "🔢 Connect Dots",
+                    "color_letter" to "🎨 Color & Write",
+                    "copy_memory" to "🧠 Copy After Me",
+                    "numbers" to "🔟 Numbers 0-20",
+                    "shape_prep" to "📐 Shape Prep",
+                    "pencil_control" to "🚗 Pencil Road"
+                )
+                itemsIndexed(games) { _, (gKey, label) ->
+                    val isSelected = activeGameMode == gKey
                     Button(
                         onClick = {
-                            categoryMode = catKey
+                            activeGameMode = gKey
                             currentIndex = 0
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isSelected) Color(0xFFD97706) else Color(0xFFFDE68A)
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(vertical = 6.dp, horizontal = 10.dp)
+                        contentPadding = PaddingValues(vertical = 5.dp, horizontal = 10.dp)
                     ) {
                         Text(
                             text = label,
@@ -242,13 +234,49 @@ fun HandwritingWorkbookScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            // Category Selector (for standard letter games)
+            if (activeGameMode == "copybook" || activeGameMode == "rainbow" || activeGameMode == "dots" || activeGameMode == "color_letter" || activeGameMode == "copy_memory") {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val cats = listOf(
+                        "uppercase" to "ABC Capital",
+                        "lowercase" to "abc Small",
+                        "numbers" to "123 Numbers"
+                    )
+                    itemsIndexed(cats) { _, (cKey, label) ->
+                        val isSelected = categoryMode == cKey
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                categoryMode = cKey
+                                currentIndex = 0
+                            },
+                            label = {
+                                Text(
+                                    label,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    color = if (isSelected) Color.White else Color(0xFF78350F)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFB45309),
+                                containerColor = Color.White
+                            )
+                        )
+                    }
+                }
+            }
 
             // Quick Item Carousel
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -256,7 +284,7 @@ fun HandwritingWorkbookScreen(
                     val isSelected = idx == currentIndex
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(34.dp)
                             .clip(CircleShape)
                             .background(if (isSelected) Color(0xFFD97706) else Color.White)
                             .clickable { currentIndex = idx }
@@ -266,16 +294,16 @@ fun HandwritingWorkbookScreen(
                         Text(
                             text = item.character.take(2),
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             color = if (isSelected) Color.White else Color(0xFF78350F)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // Item Title & Watch Coach Button
+            // Item Title & Navigation Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -289,7 +317,7 @@ fun HandwritingWorkbookScreen(
                         currentIndex = (currentIndex - 1 + max) % max
                     },
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(36.dp)
                         .background(Color.White, CircleShape)
                 ) {
                     Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous", tint = Color(0xFFD97706))
@@ -298,7 +326,7 @@ fun HandwritingWorkbookScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "${currentItem.displayTitle} ${currentItem.emoji}",
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF78350F)
                     )
@@ -310,21 +338,21 @@ fun HandwritingWorkbookScreen(
                         currentIndex = (currentIndex + 1) % max
                     },
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(36.dp)
                         .background(Color.White, CircleShape)
                 ) {
                     Icon(Icons.Filled.ChevronRight, contentDescription = "Next", tint = Color(0xFFD97706))
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // 4-Line Copybook Workbook Canvas
+            // Main Interactive Notebook & Game Canvas
             Box(
                 modifier = Modifier
                     .size(280.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFFFFBEB)) // Clean Notebook Paper
+                    .background(Color(0xFFFFFBEB)) // Clean English Notebook Paper
                     .border(
                         3.5.dp,
                         when {
@@ -339,18 +367,90 @@ fun HandwritingWorkbookScreen(
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(currentIndex, categoryMode, strokeSuccess, isDemoPlaying) {
+                        .pointerInput(currentIndex, activeGameMode, strokeSuccess, isDemoPlaying, rainbowPass) {
                             if (!strokeSuccess && !isDemoPlaying) {
                                 detectDragGestures(
                                     onDragStart = { offset ->
                                         userDrawnPoints = listOf(Pair(offset.x, offset.y))
                                         isFailedAttempt = false
+
+                                        // Connect the dots interactive touch check
+                                        if (activeGameMode == "dots") {
+                                            val canvasSize = size.width.toFloat()
+                                            if (connectedDotCount < dotCheckpoints.size) {
+                                                val targetPt = dotCheckpoints[connectedDotCount]
+                                                val tx = targetPt.first * canvasSize
+                                                val ty = targetPt.second * canvasSize
+                                                if (hypot(offset.x - tx, offset.y - ty) <= canvasSize * 0.18f) {
+                                                    connectedDotCount++
+                                                    audioEngine.speak("${connectedDotCount}!")
+                                                    if (connectedDotCount >= dotCheckpoints.size) {
+                                                        strokeSuccess = true
+                                                        showConfetti = true
+                                                        repository.addStars(4)
+                                                        userStars = repository.getStars()
+                                                        audioEngine.speak("Connected all dots! Great job!")
+                                                        showRewardDialog = true
+                                                    }
+                                                }
+                                            }
+                                        }
                                     },
                                     onDrag = { change, _ ->
                                         change.consume()
-                                        userDrawnPoints = userDrawnPoints + Pair(change.position.x, change.position.y)
+                                        val newPt = Pair(change.position.x, change.position.y)
+                                        userDrawnPoints = userDrawnPoints + newPt
+
+                                        // Connect the dots drag progress check
+                                        if (activeGameMode == "dots" && connectedDotCount < dotCheckpoints.size) {
+                                            val canvasSize = size.width.toFloat()
+                                            val targetPt = dotCheckpoints[connectedDotCount]
+                                            val tx = targetPt.first * canvasSize
+                                            val ty = targetPt.second * canvasSize
+                                            if (hypot(change.position.x - tx, change.position.y - ty) <= canvasSize * 0.18f) {
+                                                connectedDotCount++
+                                                audioEngine.speak("${connectedDotCount}!")
+                                                if (connectedDotCount >= dotCheckpoints.size) {
+                                                    strokeSuccess = true
+                                                    showConfetti = true
+                                                    repository.addStars(4)
+                                                    userStars = repository.getStars()
+                                                    audioEngine.speak("Connected all dots! Great job!")
+                                                    showRewardDialog = true
+                                                }
+                                            }
+                                        }
+
+                                        // Pencil Control Road boundary check
+                                        if (activeGameMode == "pencil_control") {
+                                            val canvasSize = size.width.toFloat()
+                                            val allRoadPts = guideStrokes.flatten()
+                                            val onRoad = allRoadPts.any { rPt ->
+                                                hypot(change.position.x - rPt.first * canvasSize, change.position.y - rPt.second * canvasSize) <= canvasSize * 0.22f
+                                            }
+                                            if (!onRoad) {
+                                                isFailedAttempt = true
+                                                isShaking = true
+                                                userDrawnPoints = emptyList()
+                                                feedbackMessage = "❌ Oops! Stay on the road! Try again!"
+                                                audioEngine.speakTryAgain()
+                                            } else {
+                                                // Check finish line arrival
+                                                val finishPt = allRoadPts.lastOrNull()
+                                                if (finishPt != null && hypot(change.position.x - finishPt.first * canvasSize, change.position.y - finishPt.second * canvasSize) <= canvasSize * 0.15f) {
+                                                    strokeSuccess = true
+                                                    showConfetti = true
+                                                    repository.addStars(3)
+                                                    userStars = repository.getStars()
+                                                    audioEngine.speak("Vroom! You reached the finish line! 🚗🏁")
+                                                    showRewardDialog = true
+                                                }
+                                            }
+                                        }
                                     },
                                     onDragEnd = {
+                                        if (activeGameMode == "dots" || activeGameMode == "pencil_control") return@detectDragGestures
+
                                         val canvasSize = size.width.toFloat()
                                         val validation = HandwritingData.validateHandwritingTracing(
                                             drawnPoints = userDrawnPoints,
@@ -359,20 +459,38 @@ fun HandwritingWorkbookScreen(
                                         )
 
                                         if (validation.isValid) {
-                                            strokeSuccess = true
-                                            isFailedAttempt = false
-                                            feedbackMessage = "⭐ Excellent handwriting! Perfect stroke! +3 Stars"
-                                            showConfetti = true
-                                            repository.addStars(3)
-                                            userStars = repository.getStars()
-                                            audioEngine.speak("Superb! You wrote ${currentItem.character}!")
-                                            showRewardDialog = true
+                                            if (activeGameMode == "rainbow") {
+                                                if (rainbowPass < 4) {
+                                                    rainbowPass++
+                                                    userDrawnPoints = emptyList()
+                                                    audioEngine.speak("Rainbow Pass ${rainbowPass + 1}!")
+                                                    feedbackMessage = "Pass ${rainbowPass + 1}/5 - Next Color! 🌈"
+                                                } else {
+                                                    strokeSuccess = true
+                                                    isFailedAttempt = false
+                                                    feedbackMessage = "🌈 Rainbow Master! 5 Passes Completed! +5 Stars"
+                                                    showConfetti = true
+                                                    repository.addStars(5)
+                                                    userStars = repository.getStars()
+                                                    audioEngine.speak("Rainbow Master! Excellent!")
+                                                    showRewardDialog = true
+                                                }
+                                            } else {
+                                                strokeSuccess = true
+                                                isFailedAttempt = false
+                                                feedbackMessage = "⭐ Excellent handwriting! Perfect stroke! +3 Stars"
+                                                showConfetti = true
+                                                repository.addStars(3)
+                                                userStars = repository.getStars()
+                                                audioEngine.speak("Superb! You wrote ${currentItem.character}!")
+                                                showRewardDialog = true
+                                            }
                                         } else {
                                             isFailedAttempt = true
                                             isShaking = true
                                             feedbackMessage = "❌ ${validation.message}"
                                             audioEngine.speakTryAgain()
-                                            // Trigger demo playback so child sees how to write correctly
+                                            // Replay stroke animation to show child correct stroke path
                                             isDemoPlaying = true
                                         }
                                     }
@@ -383,7 +501,7 @@ fun HandwritingWorkbookScreen(
                     val w = size.width
                     val h = size.height
 
-                    // 1. English Copybook 4-Line Ruling
+                    // 1. English Copybook 4-Line Notebook Ruling
                     // Top headline (Red, y = 0.12 * h)
                     drawLine(
                         color = Color(0xFFEF4444),
@@ -415,45 +533,84 @@ fun HandwritingWorkbookScreen(
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
                     )
 
-                    // 2. Guide Strokes & Dotted Paths
-                    guideStrokes.forEach { strokeList ->
-                        if (strokeList.size > 1) {
-                            val trackPath = Path()
-                            trackPath.moveTo(strokeList[0].first * w, strokeList[0].second * h)
-                            for (i in 1 until strokeList.size) {
-                                trackPath.lineTo(strokeList[i].first * w, strokeList[i].second * h)
-                            }
+                    // 2. Guide Strokes & Dotted Paths (Hidden in "copy_memory" after demo)
+                    val showGuideLines = activeGameMode != "copy_memory" || isDemoPlaying || strokeSuccess
 
-                            if (strokeSuccess) {
-                                // Completed Gold/Green Path
-                                drawPath(
-                                    path = trackPath,
-                                    color = Color(0xFF16A34A),
-                                    style = Stroke(width = 36f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                                )
-                            } else {
-                                // Light Background Track
-                                drawPath(
-                                    path = trackPath,
-                                    color = Color(0xFFFEF3C7),
-                                    style = Stroke(width = 40f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                                )
-                                // Dotted Center Line
-                                drawPath(
-                                    path = trackPath,
-                                    color = Color(0xFFD97706),
-                                    style = Stroke(
-                                        width = 8f,
-                                        cap = StrokeCap.Round,
-                                        join = StrokeJoin.Round,
-                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f), 0f)
+                    if (showGuideLines) {
+                        guideStrokes.forEach { strokeList ->
+                            if (strokeList.size > 1) {
+                                val trackPath = Path()
+                                trackPath.moveTo(strokeList[0].first * w, strokeList[0].second * h)
+                                for (i in 1 until strokeList.size) {
+                                    trackPath.lineTo(strokeList[i].first * w, strokeList[i].second * h)
+                                }
+
+                                if (strokeSuccess) {
+                                    drawPath(
+                                        path = trackPath,
+                                        color = Color(0xFF16A34A),
+                                        style = Stroke(width = 36f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                                     )
-                                )
+                                } else if (activeGameMode == "pencil_control") {
+                                    // Road Canvas styling
+                                    drawPath(
+                                        path = trackPath,
+                                        color = Color(0xFFE2E8F0),
+                                        style = Stroke(width = 110f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                    )
+                                    drawPath(
+                                        path = trackPath,
+                                        color = Color(0xFF94A3B8),
+                                        style = Stroke(
+                                            width = 6f,
+                                            cap = StrokeCap.Round,
+                                            join = StrokeJoin.Round,
+                                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(16f, 14f), 0f)
+                                        )
+                                    )
+                                } else {
+                                    // Light Background Track
+                                    drawPath(
+                                        path = trackPath,
+                                        color = Color(0xFFFEF3C7),
+                                        style = Stroke(width = 40f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                    )
+                                    // Dotted Center Line
+                                    drawPath(
+                                        path = trackPath,
+                                        color = Color(0xFFD97706),
+                                        style = Stroke(
+                                            width = 8f,
+                                            cap = StrokeCap.Round,
+                                            join = StrokeJoin.Round,
+                                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 10f), 0f)
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // 3. Demo Pencil Animation
+                    // 3. Connect-The-Dots UI rendering
+                    if (activeGameMode == "dots") {
+                        dotCheckpoints.forEachIndexed { idx, pt ->
+                            val cx = pt.first * w
+                            val cy = pt.second * h
+                            val isReached = idx < connectedDotCount
+                            drawCircle(
+                                color = if (isReached) Color(0xFF16A34A) else Color(0xFFD97706),
+                                radius = 22f,
+                                center = Offset(cx, cy)
+                            )
+                            drawCircle(
+                                color = Color.White,
+                                radius = 18f,
+                                center = Offset(cx, cy)
+                            )
+                        }
+                    }
+
+                    // 4. Animated Coach Stroke Demo
                     if (isDemoPlaying) {
                         val allPoints = guideStrokes.flatten()
                         if (allPoints.isNotEmpty()) {
@@ -462,7 +619,6 @@ fun HandwritingWorkbookScreen(
                             val demoX = allPoints[currentPIdx].first * w
                             val demoY = allPoints[currentPIdx].second * h
 
-                            // Draw active demo trail
                             val demoTrailPath = Path()
                             demoTrailPath.moveTo(allPoints[0].first * w, allPoints[0].second * h)
                             for (i in 1..currentPIdx) {
@@ -474,26 +630,32 @@ fun HandwritingWorkbookScreen(
                                 style = Stroke(width = 24f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                             )
 
-                            // Draw Pencil Icon Cursor
+                            // Animated Pencil Cursor
                             drawCircle(color = Color(0xFFDC2626), radius = 18f, center = Offset(demoX, demoY))
                             drawCircle(color = Color.White, radius = 7f, center = Offset(demoX, demoY))
                         }
                     }
 
-                    // 4. Draw User Finger Handwriting Path
+                    // 5. User Drawn Path Rendering
                     if (userDrawnPoints.size > 1 && !isDemoPlaying) {
                         val userPath = Path()
                         userPath.moveTo(userDrawnPoints[0].first, userDrawnPoints[0].second)
                         for (i in 1 until userDrawnPoints.size) {
                             userPath.lineTo(userDrawnPoints[i].first, userDrawnPoints[i].second)
                         }
-                        drawPath(
-                            path = userPath,
-                            color = when {
+
+                        val activeColor = when (activeGameMode) {
+                            "rainbow" -> rainbowColors[rainbowPass % rainbowColors.size]
+                            else -> when {
                                 strokeSuccess -> Color(0xFF16A34A)
                                 isFailedAttempt -> Color(0xFFDC2626)
                                 else -> Color(0xFF2563EB)
-                            },
+                            }
+                        }
+
+                        drawPath(
+                            path = userPath,
+                            color = activeColor,
                             style = Stroke(width = 28f, cap = StrokeCap.Round, join = StrokeJoin.Round)
                         )
                     }
@@ -502,7 +664,7 @@ fun HandwritingWorkbookScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Action Buttons: Watch Coach Demo & Try Again
+            // Action Control Buttons: Watch Demo & Clear Canvas
             Row(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -520,7 +682,7 @@ fun HandwritingWorkbookScreen(
                 ) {
                     Icon(Icons.Filled.PlayArrow, contentDescription = "Demo", tint = Color.White)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Watch Coach Write 🎬", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("Watch Demo 🎬", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
 
                 Button(
@@ -529,7 +691,9 @@ fun HandwritingWorkbookScreen(
                         strokeSuccess = false
                         isFailedAttempt = false
                         isDemoPlaying = false
-                        feedbackMessage = "Trace over the dotted lines! ✍️"
+                        connectedDotCount = 0
+                        rainbowPass = 0
+                        feedbackMessage = "Trace over the lines! ✍️"
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
                     shape = RoundedCornerShape(14.dp)
@@ -540,7 +704,7 @@ fun HandwritingWorkbookScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = feedbackMessage,
@@ -555,7 +719,7 @@ fun HandwritingWorkbookScreen(
 
             KkLionMascot(
                 state = if (strokeSuccess) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = if (strokeSuccess) "Super writing!" else "Hold your finger and trace carefully!",
+                speechBubbleText = if (strokeSuccess) "Super writing!" else "Practice makes perfect!",
                 onClick = {
                     audioEngine.speak("Let me see your neat writing!")
                 }
@@ -567,7 +731,7 @@ fun HandwritingWorkbookScreen(
         StarRewardDialog(
             isVisible = showRewardDialog,
             title = "Star Writer! ✍️",
-            message = "You wrote ${currentItem.displayTitle} neatly on the workbook lines!",
+            message = "You mastered ${currentItem.displayTitle} on the workbook lines!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false

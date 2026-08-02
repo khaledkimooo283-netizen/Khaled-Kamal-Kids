@@ -405,11 +405,11 @@ object HandwritingData {
     )
 
     // -------------------------------------------------------------
-    // NUMBERS (0-20) - Official Kindergarten Writing Style
+    // NUMBERS (0-20)
     // -------------------------------------------------------------
     val numbers: List<TracingGuideItem> = listOf(
         // 0
-        TracingGuideItem("num_0", "Number 0", "0", "number", "Zero", "⭕", listOf(
+        TracingGuideItem("num_0", "Number 0", "0", "number", "Zero", "📦", listOf(
             generateCircle(0.50f, 0.50f, 0.28f, 0.38f, -90.0, 360.0, 28) // Oval zero
         )),
         // 1
@@ -419,53 +419,53 @@ object HandwritingData {
             generateLine(0.30f, 0.88f, 0.70f, 0.88f, 10)  // Base bar
         )),
         // 2
-        TracingGuideItem("num_2", "Number 2", "2", "number", "Two", "🍌", listOf(
+        TracingGuideItem("num_2", "Number 2", "2", "number", "Two", "⭐", listOf(
             generateCubicBezier(0.28f, 0.28f, 0.35f, 0.12f, 0.75f, 0.12f, 0.75f, 0.38f, 14) +
                 generateLine(0.75f, 0.38f, 0.25f, 0.88f, 15) +
                 generateLine(0.25f, 0.88f, 0.78f, 0.88f, 12)
         )),
         // 3
-        TracingGuideItem("num_3", "Number 3", "3", "number", "Three", "🍓", listOf(
+        TracingGuideItem("num_3", "Number 3", "3", "number", "Three", "🌳", listOf(
             generateCubicBezier(0.30f, 0.20f, 0.40f, 0.12f, 0.78f, 0.15f, 0.75f, 0.45f, 12) +
                 generateCubicBezier(0.75f, 0.45f, 0.60f, 0.50f, 0.40f, 0.50f, 0.35f, 0.50f, 8),
             generateCubicBezier(0.35f, 0.50f, 0.60f, 0.50f, 0.82f, 0.55f, 0.78f, 0.80f, 12) +
                 generateCubicBezier(0.78f, 0.80f, 0.72f, 0.88f, 0.40f, 0.88f, 0.30f, 0.82f, 8)
         )),
         // 4
-        TracingGuideItem("num_4", "Number 4", "4", "number", "Four", "🍊", listOf(
+        TracingGuideItem("num_4", "Number 4", "4", "number", "Four", "⚽", listOf(
             generateLine(0.70f, 0.12f, 0.22f, 0.58f, 15), // Left slant down
             generateLine(0.22f, 0.58f, 0.82f, 0.58f, 12), // Horizontal crossbar
             generateLine(0.70f, 0.35f, 0.70f, 0.88f, 12)  // Vertical stem
         )),
         // 5
-        TracingGuideItem("num_5", "Number 5", "5", "number", "Five", "🧁", listOf(
+        TracingGuideItem("num_5", "Number 5", "5", "number", "Five", "🐟", listOf(
             generateLine(0.75f, 0.12f, 0.35f, 0.12f, 10), // Top horizontal
             generateLine(0.35f, 0.12f, 0.35f, 0.48f, 10), // Neck down
             generateCubicBezier(0.35f, 0.48f, 0.78f, 0.45f, 0.82f, 0.80f, 0.65f, 0.88f, 12) +
                 generateCubicBezier(0.65f, 0.88f, 0.45f, 0.88f, 0.30f, 0.82f, 0.28f, 0.78f, 6) // Belly
         )),
         // 6
-        TracingGuideItem("num_6", "Number 6", "6", "number", "Six", "⭐", listOf(
+        TracingGuideItem("num_6", "Number 6", "6", "number", "Six", "🚗", listOf(
             generateCubicBezier(0.70f, 0.18f, 0.50f, 0.12f, 0.28f, 0.40f, 0.28f, 0.65f, 16) +
                 generateCircle(0.50f, 0.65f, 0.22f, 0.23f, -180.0, 360.0, 22)
         )),
         // 7
-        TracingGuideItem("num_7", "Number 7", "7", "number", "Seven", "🎈", listOf(
+        TracingGuideItem("num_7", "Number 7", "7", "number", "Seven", "🦋", listOf(
             generateLine(0.22f, 0.12f, 0.80f, 0.12f, 12), // Top horizontal
             generateLine(0.80f, 0.12f, 0.35f, 0.88f, 16)  // Slant down
         )),
         // 8
-        TracingGuideItem("num_8", "Number 8", "8", "number", "Eight", "🌸", listOf(
+        TracingGuideItem("num_8", "Number 8", "8", "number", "Eight", "🍭", listOf(
             generateCircle(0.50f, 0.32f, 0.20f, 0.20f, -90.0, 360.0, 20), // Top loop
             generateCircle(0.50f, 0.68f, 0.24f, 0.20f, -90.0, 360.0, 22)  // Bottom loop
         )),
         // 9
-        TracingGuideItem("num_9", "Number 9", "9", "number", "Nine", "🍪", listOf(
+        TracingGuideItem("num_9", "Number 9", "9", "number", "Nine", "🐻", listOf(
             generateCircle(0.50f, 0.32f, 0.22f, 0.20f, -90.0, 360.0, 22), // Top loop
             generateLine(0.72f, 0.12f, 0.72f, 0.88f, 16)  // Vertical right stem
         )),
         // 10
-        TracingGuideItem("num_10", "Number 10", "10", "number", "Ten", "🦆", listOf(
+        TracingGuideItem("num_10", "Number 10", "10", "number", "Ten", "🎈", listOf(
             // Digit 1
             generateLine(0.20f, 0.24f, 0.32f, 0.12f, 8),
             generateLine(0.32f, 0.12f, 0.32f, 0.88f, 15),
@@ -474,7 +474,7 @@ object HandwritingData {
             generateCircle(0.70f, 0.50f, 0.18f, 0.38f, -90.0, 360.0, 24)
         )),
         // 11
-        TracingGuideItem("num_11", "Number 11", "11", "number", "Eleven", "🌟", listOf(
+        TracingGuideItem("num_11", "Number 11", "11", "number", "Eleven", "🌸", listOf(
             // Digit 1
             generateLine(0.18f, 0.24f, 0.30f, 0.12f, 8),
             generateLine(0.30f, 0.12f, 0.30f, 0.88f, 15),
@@ -485,7 +485,7 @@ object HandwritingData {
             generateLine(0.56f, 0.88f, 0.84f, 0.88f, 10)
         )),
         // 12
-        TracingGuideItem("num_12", "Number 12", "12", "number", "Twelve", "🚀", listOf(
+        TracingGuideItem("num_12", "Number 12", "12", "number", "Twelve", "🧁", listOf(
             // Digit 1
             generateLine(0.16f, 0.24f, 0.28f, 0.12f, 8),
             generateLine(0.28f, 0.12f, 0.28f, 0.88f, 15),
@@ -496,7 +496,7 @@ object HandwritingData {
                 generateLine(0.48f, 0.88f, 0.88f, 0.88f, 10)
         )),
         // 13
-        TracingGuideItem("num_13", "Number 13", "13", "number", "Thirteen", "🦋", listOf(
+        TracingGuideItem("num_13", "Number 13", "13", "number", "Thirteen", "🦆", listOf(
             // Digit 1
             generateLine(0.16f, 0.24f, 0.28f, 0.12f, 8),
             generateLine(0.28f, 0.12f, 0.28f, 0.88f, 15),
@@ -508,7 +508,7 @@ object HandwritingData {
                 generateCubicBezier(0.88f, 0.80f, 0.82f, 0.88f, 0.60f, 0.88f, 0.50f, 0.82f, 8)
         )),
         // 14
-        TracingGuideItem("num_14", "Number 14", "14", "number", "Fourteen", "🍧", listOf(
+        TracingGuideItem("num_14", "Number 14", "14", "number", "Fourteen", "🍓", listOf(
             // Digit 1
             generateLine(0.16f, 0.24f, 0.28f, 0.12f, 8),
             generateLine(0.28f, 0.12f, 0.28f, 0.88f, 15),
@@ -519,7 +519,7 @@ object HandwritingData {
             generateLine(0.80f, 0.35f, 0.80f, 0.88f, 12)
         )),
         // 15
-        TracingGuideItem("num_15", "Number 15", "15", "number", "Fifteen", "🐝", listOf(
+        TracingGuideItem("num_15", "Number 15", "15", "number", "Fifteen", "🚀", listOf(
             // Digit 1
             generateLine(0.16f, 0.24f, 0.28f, 0.12f, 8),
             generateLine(0.28f, 0.12f, 0.28f, 0.88f, 15),
@@ -527,11 +527,11 @@ object HandwritingData {
             // Digit 5
             generateLine(0.85f, 0.12f, 0.52f, 0.12f, 10),
             generateLine(0.52f, 0.12f, 0.52f, 0.48f, 10),
-            generateCubicBezier(0.52f, 0.48f, 0.88f, 0.45f, 0.90f, 0.80f, 0.72f, 0.88f, 12) +
+            generateCubicBezier(0.52f, 0.48f, 0.78f, 0.45f, 0.82f, 0.80f, 0.72f, 0.88f, 12) +
                 generateCubicBezier(0.72f, 0.88f, 0.58f, 0.88f, 0.48f, 0.82f, 0.46f, 0.78f, 6)
         )),
         // 16
-        TracingGuideItem("num_16", "Number 16", "16", "number", "Sixteen", "🐼", listOf(
+        TracingGuideItem("num_16", "Number 16", "16", "number", "Sixteen", "🍪", listOf(
             // Digit 1
             generateLine(0.16f, 0.24f, 0.28f, 0.12f, 8),
             generateLine(0.28f, 0.12f, 0.28f, 0.88f, 15),
@@ -541,7 +541,7 @@ object HandwritingData {
                 generateCircle(0.68f, 0.65f, 0.20f, 0.23f, -180.0, 360.0, 20)
         )),
         // 17
-        TracingGuideItem("num_17", "Number 17", "17", "number", "Seventeen", "🎨", listOf(
+        TracingGuideItem("num_17", "Number 17", "17", "number", "Seventeen", "🐝", listOf(
             // Digit 1
             generateLine(0.16f, 0.24f, 0.28f, 0.12f, 8),
             generateLine(0.28f, 0.12f, 0.28f, 0.88f, 15),
@@ -578,6 +578,77 @@ object HandwritingData {
                 generateLine(0.14f, 0.88f, 0.48f, 0.88f, 10),
             // Digit 0
             generateCircle(0.72f, 0.50f, 0.18f, 0.38f, -90.0, 360.0, 24)
+        ))
+    )
+
+    // -------------------------------------------------------------
+    // SHAPE PREPARATION & PRE-WRITING LINES
+    // -------------------------------------------------------------
+    val shapePrepItems: List<TracingGuideItem> = listOf(
+        TracingGuideItem("shape_line_v", "Vertical Line", "|", "shape", "Straight Line", "📏", listOf(
+            generateLine(0.50f, 0.15f, 0.50f, 0.85f, 20)
+        )),
+        TracingGuideItem("shape_line_h", "Horizontal Line", "—", "shape", "Flat Line", "➖", listOf(
+            generateLine(0.15f, 0.50f, 0.85f, 0.50f, 20)
+        )),
+        TracingGuideItem("shape_line_d", "Diagonal Line", "/", "shape", "Slant Line", "📐", listOf(
+            generateLine(0.15f, 0.15f, 0.85f, 0.85f, 20)
+        )),
+        TracingGuideItem("shape_curve", "Curved Wave", "~", "shape", "Wave Line", "🌊", listOf(
+            generateCubicBezier(0.15f, 0.50f, 0.35f, 0.15f, 0.65f, 0.85f, 0.85f, 0.50f, 25)
+        )),
+        TracingGuideItem("shape_circle", "Circle", "⭕", "shape", "Circle", "⭕", listOf(
+            generateCircle(0.50f, 0.50f, 0.35f, 0.35f, -90.0, 360.0, 30)
+        )),
+        TracingGuideItem("shape_square", "Square", "🟥", "shape", "Square", "🟥", listOf(
+            generateLine(0.20f, 0.20f, 0.80f, 0.20f, 12) +
+                generateLine(0.80f, 0.20f, 0.80f, 0.80f, 12) +
+                generateLine(0.80f, 0.80f, 0.20f, 0.80f, 12) +
+                generateLine(0.20f, 0.80f, 0.20f, 0.20f, 12)
+        )),
+        TracingGuideItem("shape_triangle", "Triangle", "🔺", "shape", "Triangle", "🔺", listOf(
+            generateLine(0.50f, 0.15f, 0.85f, 0.85f, 15) +
+                generateLine(0.85f, 0.85f, 0.15f, 0.85f, 15) +
+                generateLine(0.15f, 0.85f, 0.50f, 0.15f, 15)
+        )),
+        TracingGuideItem("shape_heart", "Heart", "❤️", "shape", "Heart", "❤️", listOf(
+            generateCubicBezier(0.50f, 0.30f, 0.30f, 0.10f, 0.15f, 0.35f, 0.50f, 0.85f, 20) +
+                generateCubicBezier(0.50f, 0.85f, 0.85f, 0.35f, 0.70f, 0.10f, 0.50f, 0.30f, 20)
+        )),
+        TracingGuideItem("shape_star", "Star", "⭐", "shape", "Star", "⭐", listOf(
+            generateLine(0.50f, 0.10f, 0.62f, 0.38f, 10) +
+                generateLine(0.62f, 0.38f, 0.90f, 0.38f, 10) +
+                generateLine(0.90f, 0.38f, 0.68f, 0.58f, 10) +
+                generateLine(0.68f, 0.58f, 0.78f, 0.88f, 10) +
+                generateLine(0.78f, 0.88f, 0.50f, 0.70f, 10) +
+                generateLine(0.50f, 0.70f, 0.22f, 0.88f, 10) +
+                generateLine(0.22f, 0.88f, 0.32f, 0.58f, 10) +
+                generateLine(0.32f, 0.58f, 0.10f, 0.38f, 10) +
+                generateLine(0.10f, 0.38f, 0.38f, 0.38f, 10) +
+                generateLine(0.38f, 0.38f, 0.50f, 0.10f, 10)
+        ))
+    )
+
+    // -------------------------------------------------------------
+    // PENCIL CONTROL & ROAD FOLLOWING
+    // -------------------------------------------------------------
+    val pencilControlRoads: List<TracingGuideItem> = listOf(
+        TracingGuideItem("road_straight", "Straight Highway", "🏎️", "road", "Drive Straight", "🏁", listOf(
+            generateLine(0.15f, 0.50f, 0.85f, 0.50f, 25)
+        )),
+        TracingGuideItem("road_zigzag", "Zig-Zag Track", "🚗", "road", "Zig Zag Track", "🏁", listOf(
+            generateLine(0.15f, 0.20f, 0.85f, 0.40f, 15) +
+                generateLine(0.85f, 0.40f, 0.15f, 0.60f, 15) +
+                generateLine(0.15f, 0.60f, 0.85f, 0.80f, 15)
+        )),
+        TracingGuideItem("road_scurve", "S-Curve Road", "🚙", "road", "S Curve Road", "🏁", listOf(
+            generateCubicBezier(0.15f, 0.20f, 0.85f, 0.20f, 0.15f, 0.80f, 0.85f, 0.80f, 30)
+        )),
+        TracingGuideItem("road_mountain", "Mountain Pass", "🚚", "road", "Mountain Track", "🏁", listOf(
+            generateLine(0.10f, 0.80f, 0.30f, 0.20f, 15) +
+                generateLine(0.30f, 0.20f, 0.50f, 0.80f, 15) +
+                generateLine(0.50f, 0.80f, 0.70f, 0.20f, 15) +
+                generateLine(0.70f, 0.20f, 0.90f, 0.80f, 15)
         ))
     )
 

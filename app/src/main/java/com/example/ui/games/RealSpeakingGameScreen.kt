@@ -1,9 +1,14 @@
 package com.example.ui.games
 
 import android.content.Context
+import android.content.Intent
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -129,6 +134,58 @@ private class AudioRecordHelper(private val context: Context) {
     }
 }
 
+private class SpeechRecognizeHelper(private val context: Context) {
+    private var speechRecognizer: SpeechRecognizer? = null
+
+    fun startListening(onResult: (String) -> Unit, onError: () -> Unit) {
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            onError()
+            return
+        }
+        try {
+            stopListening()
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
+                setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: Bundle?) {}
+                    override fun onBeginningOfSpeech() {}
+                    override fun onRmsChanged(rmsdB: Float) {}
+                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onEndOfSpeech() {}
+                    override fun onError(error: Int) {
+                        onError()
+                    }
+                    override fun onResults(results: Bundle?) {
+                        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        val topMatch = matches?.firstOrNull() ?: ""
+                        onResult(topMatch)
+                    }
+                    override fun onPartialResults(partialResults: Bundle?) {}
+                    override fun onEvent(eventType: Int, params: Bundle?) {}
+                })
+            }
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+            }
+            speechRecognizer?.startListening(intent)
+        } catch (e: Exception) {
+            Log.e("SpeechRecognizeHelper", "Failed to start speech recognition", e)
+            onError()
+        }
+    }
+
+    fun stopListening() {
+        try {
+            speechRecognizer?.stopListening()
+            speechRecognizer?.destroy()
+        } catch (e: Exception) {
+            Log.e("SpeechRecognizeHelper", "Failed to stop speech recognizer", e)
+        } finally {
+            speechRecognizer = null
+        }
+    }
+}
+
 private fun levenshteinDistance(lhs: CharSequence, rhs: CharSequence): Int {
     val lhsLength = lhs.length
     val rhsLength = rhs.length
@@ -238,6 +295,7 @@ fun RealSpeakingGameScreen(
 ) {
     val context = LocalContext.current
     val recordHelper = remember { AudioRecordHelper(context) }
+    val speechHelper = remember { SpeechRecognizeHelper(context) }
 
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
     var selectedCategory by remember { mutableStateOf("Letters") }
@@ -276,6 +334,7 @@ fun RealSpeakingGameScreen(
     var isPlayingVoice by remember { mutableStateOf(false) }
     var hasRecordedAudio by remember { mutableStateOf(false) }
     var recordingTimerSec by remember { mutableIntStateOf(0) }
+    var recognizedSpeechText by remember { mutableStateOf("") }
 
     var lastEvaluation by remember { mutableStateOf<PronunciationResult?>(null) }
     var showRewardDialog by remember { mutableStateOf(false) }
@@ -292,23 +351,6 @@ fun RealSpeakingGameScreen(
         ),
         label = "pulseScale"
     )
-
-    // Timer coroutine during recording
-    LaunchedEffect(isRecording) {
-        if (isRecording) {
-            recordingTimerSec = 0
-            while (isRecording && recordingTimerSec < 10) {
-                kotlinx.coroutines.delay(1000)
-                recordingTimerSec++
-            }
-            if (isRecording) {
-                // Auto-stop recording after 10 seconds
-                isRecording = false
-                val success = recordHelper.stopRecording()
-                hasRecordedAudio = success
-            }
-        }
-    }
 
     fun playTargetAudio() {
         audioEngine.speak("Listen to coach: ${currentItem.targetText}!")
@@ -335,10 +377,36 @@ fun RealSpeakingGameScreen(
         }
     }
 
+    fun stopRecordingAndEvaluate() {
+        isRecording = false
+        val recordedOk = recordHelper.stopRecording()
+        speechHelper.stopListening()
+        hasRecordedAudio = recordedOk
+
+        val textToEvaluate = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else currentItem.targetText
+        processSpeechAttempt(textToEvaluate)
+    }
+
+    // Timer coroutine during recording
+    LaunchedEffect(isRecording) {
+        if (isRecording) {
+            recordingTimerSec = 0
+            while (isRecording && recordingTimerSec < 10) {
+                kotlinx.coroutines.delay(1000)
+                recordingTimerSec++
+            }
+            if (isRecording) {
+                // Auto-stop recording after 10 seconds
+                stopRecordingAndEvaluate()
+            }
+        }
+    }
+
     LaunchedEffect(currentItem) {
         lastEvaluation = null
         hasRecordedAudio = false
         isRecording = false
+        recognizedSpeechText = ""
         playTargetAudio()
     }
 
@@ -346,6 +414,7 @@ fun RealSpeakingGameScreen(
         onDispose {
             recordHelper.stopRecording()
             recordHelper.stopPlayback()
+            speechHelper.stopListening()
         }
     }
 
@@ -542,19 +611,26 @@ fun RealSpeakingGameScreen(
                             .size(76.dp)
                             .clickable {
                                 if (!isRecording) {
-                                    val success = recordHelper.startRecording()
+                                    val startOk = recordHelper.startRecording()
                                     isRecording = true
                                     hasRecordedAudio = false
-                                    if (!success) {
-                                        // Fallback if hardware mic unavailable
+                                    recognizedSpeechText = ""
+
+                                    speechHelper.startListening(
+                                        onResult = { result ->
+                                            recognizedSpeechText = result
+                                        },
+                                        onError = {
+                                            // Fallback
+                                        }
+                                    )
+
+                                    if (!startOk) {
                                         isRecording = false
                                         audioEngine.speak("Speak out loud now!")
                                     }
                                 } else {
-                                    isRecording = false
-                                    val recordedOk = recordHelper.stopRecording()
-                                    hasRecordedAudio = recordedOk
-                                    processSpeechAttempt(currentItem.targetText)
+                                    stopRecordingAndEvaluate()
                                 }
                             }
                     ) {
@@ -610,7 +686,8 @@ fun RealSpeakingGameScreen(
 
                         Button(
                             onClick = {
-                                processSpeechAttempt(currentItem.targetText)
+                                val input = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else currentItem.targetText
+                                processSpeechAttempt(input)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
                             shape = RoundedCornerShape(12.dp)

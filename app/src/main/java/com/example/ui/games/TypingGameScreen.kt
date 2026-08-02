@@ -23,6 +23,46 @@ import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.components.*
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.VolumeUp
+
+data class NumberQuantityInfo(
+    val number: Int,
+    val word: String,
+    val emoji: String,
+    val objectName: String
+)
+
+object NumberQuantityData {
+    val items = listOf(
+        NumberQuantityInfo(0, "ZERO", "📦", "Empty Boxes"),
+        NumberQuantityInfo(1, "ONE", "🍎", "Apple"),
+        NumberQuantityInfo(2, "TWO", "⭐", "Stars"),
+        NumberQuantityInfo(3, "THREE", "🌳", "Trees"),
+        NumberQuantityInfo(4, "FOUR", "⚽", "Balls"),
+        NumberQuantityInfo(5, "FIVE", "🐟", "Fish"),
+        NumberQuantityInfo(6, "SIX", "🚗", "Cars"),
+        NumberQuantityInfo(7, "SEVEN", "🦋", "Butterflies"),
+        NumberQuantityInfo(8, "EIGHT", "🍭", "Candies"),
+        NumberQuantityInfo(9, "NINE", "🐻", "Teddy Bears"),
+        NumberQuantityInfo(10, "TEN", "🎈", "Balloons"),
+        NumberQuantityInfo(11, "ELEVEN", "🌸", "Flowers"),
+        NumberQuantityInfo(12, "TWELVE", "🧁", "Cupcakes"),
+        NumberQuantityInfo(13, "THIRTEEN", "🦆", "Ducks"),
+        NumberQuantityInfo(14, "FOURTEEN", "🍓", "Strawberries"),
+        NumberQuantityInfo(15, "FIFTEEN", "🚀", "Rockets"),
+        NumberQuantityInfo(16, "SIXTEEN", "🍪", "Cookies"),
+        NumberQuantityInfo(17, "SEVENTEEN", "🐝", "Bees"),
+        NumberQuantityInfo(18, "EIGHTEEN", "🍕", "Pizzas"),
+        NumberQuantityInfo(19, "NINETEEN", "🍔", "Burgers"),
+        NumberQuantityInfo(20, "TWENTY", "👑", "Crowns")
+    )
+
+    fun getInfo(index: Int): NumberQuantityInfo {
+        return items[index % items.size]
+    }
+}
+
 @Composable
 fun TypingGameScreen(
     repository: KkDataRepository,
@@ -39,8 +79,8 @@ fun TypingGameScreen(
 
     val currentWordItem = remember(currentItemIndex, keyMode) {
         if (keyMode == "NUMBERS") {
-            val numItem = repository.numberList.getOrNull(currentItemIndex % repository.numberList.size) ?: repository.numberList.first()
-            Pair(numItem.word.uppercase(), numItem.emoji)
+            val numInfo = NumberQuantityData.getInfo(currentItemIndex)
+            Pair(numInfo.word, numInfo.emoji)
         } else {
             val letItem = repository.alphabetList.getOrNull(currentItemIndex % repository.alphabetList.size) ?: repository.alphabetList.first()
             Pair(letItem.word.uppercase(), letItem.emoji)
@@ -51,7 +91,16 @@ fun TypingGameScreen(
 
     LaunchedEffect(currentItemIndex, keyMode) {
         typedInput = ""
-        audioEngine.speak("Spell the word: $targetWord! $currentEmoji")
+        if (keyMode == "NUMBERS") {
+            val numInfo = NumberQuantityData.getInfo(currentItemIndex)
+            if (numInfo.number == 0) {
+                audioEngine.speak("Zero! Spell Z-E-R-O!")
+            } else {
+                audioEngine.speak("${numInfo.word}! ${numInfo.number} ${numInfo.objectName}! Spell ${numInfo.word}!")
+            }
+        } else {
+            audioEngine.speak("Spell the word: $targetWord! $currentEmoji")
+        }
     }
 
     val keysList = remember(keyMode) {
@@ -100,16 +149,126 @@ fun TypingGameScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Target Emoji & Prompt Word
-            Box(
-                modifier = Modifier
-                    .size(110.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .border(3.dp, Color(0xFFBA68C8), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = currentEmoji, fontSize = 54.sp)
+            // Target Emoji & Quantity Visualizer
+            if (keyMode == "NUMBERS") {
+                val numInfo = NumberQuantityData.getInfo(currentItemIndex)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .padding(horizontal = 8.dp)
+                        .clickable {
+                            if (numInfo.number == 0) {
+                                audioEngine.speak("Zero! Z-E-R-O! Zero items.")
+                            } else {
+                                audioEngine.speak("${numInfo.word}! ${numInfo.number} ${numInfo.objectName}!")
+                            }
+                        },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp, horizontal = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Header Row: Big Digit + Word + Sound
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF8E24AA)
+                            ) {
+                                Text(
+                                    text = "${numInfo.number}",
+                                    fontSize = 26.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = numInfo.word,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF4A148C)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Filled.VolumeUp,
+                                contentDescription = "Pronounce",
+                                tint = Color(0xFF8E24AA),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Visual Quantity Emojis
+                        if (numInfo.number == 0) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .background(Color(0xFFF3E5F5), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "📦 Empty Basket (0 Items)",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF7B1FA2)
+                                )
+                            }
+                        } else {
+                            val rowChunkSize = if (numInfo.number > 10) 6 else 5
+                            val chunks = (1..numInfo.number).chunked(rowChunkSize)
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                chunks.forEach { rowItems ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        rowItems.forEach { countIdx ->
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = Color(0xFFF3E5F5),
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clickable {
+                                                        audioEngine.speak("$countIdx")
+                                                    }
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Text(text = numInfo.emoji, fontSize = 20.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .border(3.dp, Color(0xFFBA68C8), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = currentEmoji, fontSize = 54.sp)
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
