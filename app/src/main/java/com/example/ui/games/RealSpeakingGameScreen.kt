@@ -313,22 +313,75 @@ fun RealSpeakingGameScreen(
 
     val promptList = remember {
         listOf(
-            // Letters
+            // Letters A-Z
             SpeakingPromptItem("Letters", "A", "Phonics sound: /æ/", "🅰️", Color(0xFFEF4444)),
             SpeakingPromptItem("Letters", "B", "Phonics sound: /b/", "🅱️", Color(0xFF3B82F6)),
             SpeakingPromptItem("Letters", "C", "Phonics sound: /k/", "©️", Color(0xFFEAB308)),
             SpeakingPromptItem("Letters", "D", "Phonics sound: /d/", "🇩", Color(0xFF10B981)),
+            SpeakingPromptItem("Letters", "E", "Phonics sound: /e/", "🇪", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Letters", "F", "Phonics sound: /f/", "🇫", Color(0xFFEC4899)),
+            SpeakingPromptItem("Letters", "G", "Phonics sound: /g/", "🇬", Color(0xFFF59E0B)),
+            SpeakingPromptItem("Letters", "H", "Phonics sound: /h/", "🇭", Color(0xFF06B6D4)),
+
+            // Numbers 0 to 20
+            SpeakingPromptItem("Numbers", "Zero", "Say number 0", "0️⃣", Color(0xFF6366F1)),
+            SpeakingPromptItem("Numbers", "One", "Say number 1", "1️⃣", Color(0xFFEF4444)),
+            SpeakingPromptItem("Numbers", "Two", "Say number 2", "2️⃣", Color(0xFFF97316)),
+            SpeakingPromptItem("Numbers", "Three", "Say number 3", "3️⃣", Color(0xFFEAB308)),
+            SpeakingPromptItem("Numbers", "Four", "Say number 4", "4️⃣", Color(0xFF10B981)),
+            SpeakingPromptItem("Numbers", "Five", "Say number 5", "5️⃣", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Numbers", "Six", "Say number 6", "6️⃣", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Numbers", "Seven", "Say number 7", "7️⃣", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Numbers", "Eight", "Say number 8", "8️⃣", Color(0xFFEC4899)),
+            SpeakingPromptItem("Numbers", "Nine", "Say number 9", "9️⃣", Color(0xFFF43F5E)),
+            SpeakingPromptItem("Numbers", "Ten", "Say number 10", "🔟", Color(0xFF14B8A6)),
+            SpeakingPromptItem("Numbers", "Eleven", "Say number 11", "1️⃣1️⃣", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Numbers", "Twelve", "Say number 12", "1️⃣2️⃣", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Numbers", "Thirteen", "Say number 13", "1️⃣3️⃣", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Numbers", "Fourteen", "Say number 14", "1️⃣4️⃣", Color(0xFF10B981)),
+            SpeakingPromptItem("Numbers", "Fifteen", "Say number 15", "1️⃣5️⃣", Color(0xFFEAB308)),
+            SpeakingPromptItem("Numbers", "Sixteen", "Say number 16", "1️⃣6️⃣", Color(0xFFF97316)),
+            SpeakingPromptItem("Numbers", "Seventeen", "Say number 17", "1️⃣7️⃣", Color(0xFFEF4444)),
+            SpeakingPromptItem("Numbers", "Eighteen", "Say number 18", "1️⃣8️⃣", Color(0xFFEC4899)),
+            SpeakingPromptItem("Numbers", "Nineteen", "Say number 19", "1️⃣9️⃣", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Numbers", "Twenty", "Say number 20", "2️⃣0️⃣", Color(0xFF10B981)),
+
+            // Days of the Week (Monday to Sunday)
+            SpeakingPromptItem("Days", "Monday", "1st day of the week", "🌅", Color(0xFFEF4444)),
+            SpeakingPromptItem("Days", "Tuesday", "2nd day of the week", "☀️", Color(0xFFF97316)),
+            SpeakingPromptItem("Days", "Wednesday", "3rd day of the week", "🌤️", Color(0xFFEAB308)),
+            SpeakingPromptItem("Days", "Thursday", "4th day of the week", "🌱", Color(0xFF10B981)),
+            SpeakingPromptItem("Days", "Friday", "5th day of the week", "🎈", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Days", "Saturday", "6th day of the week", "🎉", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Days", "Sunday", "7th day of the week", "🌈", Color(0xFF8B5CF6)),
+
+            // Months of the Year (January to December)
+            SpeakingPromptItem("Months", "January", "Month 1", "❄️", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Months", "February", "Month 2", "💖", Color(0xFFEC4899)),
+            SpeakingPromptItem("Months", "March", "Month 3", "🌱", Color(0xFF10B981)),
+            SpeakingPromptItem("Months", "April", "Month 4", "🌧️", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Months", "May", "Month 5", "🌸", Color(0xFFF43F5E)),
+            SpeakingPromptItem("Months", "June", "Month 6", "☀️", Color(0xFFEAB308)),
+            SpeakingPromptItem("Months", "July", "Month 7", "🏖️", Color(0xFFF97316)),
+            SpeakingPromptItem("Months", "August", "Month 8", "🌻", Color(0xFFD97706)),
+            SpeakingPromptItem("Months", "September", "Month 9", "🎒", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Months", "October", "Month 10", "🎃", Color(0xFFF97316)),
+            SpeakingPromptItem("Months", "November", "Month 11", "🍂", Color(0xFFB45309)),
+            SpeakingPromptItem("Months", "December", "Month 12", "🎄", Color(0xFF15803D)),
 
             // Words
             SpeakingPromptItem("Words", "Apple", "Say: Ap-ple", "🍎", Color(0xFFF97316)),
             SpeakingPromptItem("Words", "Cat", "Say: C-A-T", "🐱", Color(0xFFA855F7)),
             SpeakingPromptItem("Words", "Dog", "Say: D-O-G", "🐶", Color(0xFF06B6D4)),
             SpeakingPromptItem("Words", "Elephant", "Say: El-e-phant", "🐘", Color(0xFFEC4899)),
+            SpeakingPromptItem("Words", "Banana", "Say: Ba-na-na", "🍌", Color(0xFFEAB308)),
+            SpeakingPromptItem("Words", "Giraffe", "Say: Gi-raffe", "🦒", Color(0xFFD97706)),
 
             // Sentences
             SpeakingPromptItem("Sentences", "This is a cat", "Read clearly", "🐈", Color(0xFF6366F1)),
             SpeakingPromptItem("Sentences", "I like apples", "Expressive voice", "🍎", Color(0xFF14B8A6)),
-            SpeakingPromptItem("Sentences", "The sun is hot", "Full sentence", "☀️", Color(0xFFD97706))
+            SpeakingPromptItem("Sentences", "The sun is hot", "Full sentence", "☀️", Color(0xFFD97706)),
+            SpeakingPromptItem("Sentences", "Today is Monday", "Expressive voice", "📅", Color(0xFF8B5CF6))
         )
     }
 
@@ -448,29 +501,40 @@ fun RealSpeakingGameScreen(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Category Tabs: Letters, Words, Sentences
-            Row(
+            // Category Selector Tabs
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 14.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                listOf("Letters", "Words", "Sentences").forEach { cat ->
+                val categories = listOf(
+                    "Letters" to "🔤 Letters",
+                    "Numbers" to "🔢 Numbers 0-20",
+                    "Days" to "📅 Days",
+                    "Months" to "🗓️ Months",
+                    "Words" to "🍎 Words",
+                    "Sentences" to "💬 Sentences"
+                )
+                items(categories.size) { idx ->
+                    val (catKey, label) = categories[idx]
+                    val isSelected = selectedCategory == catKey
                     Button(
                         onClick = {
-                            selectedCategory = cat
+                            selectedCategory = catKey
                             itemIndex = 0
-                            audioEngine.speak("$cat speaking practice")
+                            audioEngine.speak("$catKey speaking practice")
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedCategory == cat) Color(0xFFDC2626) else Color.White,
-                            contentColor = if (selectedCategory == cat) Color.White else Color(0xFF991B1B)
+                            containerColor = if (isSelected) Color(0xFFDC2626) else Color.White,
+                            contentColor = if (isSelected) Color.White else Color(0xFF991B1B)
                         ),
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.weight(1f),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        Text(cat, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
