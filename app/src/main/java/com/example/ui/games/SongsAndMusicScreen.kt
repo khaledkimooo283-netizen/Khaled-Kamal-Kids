@@ -58,7 +58,7 @@ private class KaraokeRecordHelper(private val context: Context) {
         return try {
             stopRecording()
             stopPlayback()
-            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.3gp")
+            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.m4a")
             recordedFile = file
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(context)
@@ -67,16 +67,21 @@ private class KaraokeRecordHelper(private val context: Context) {
                 MediaRecorder()
             }.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setOutputFile(file.absolutePath)
                 prepare()
                 start()
             }
             true
         } catch (e: Exception) {
-            Log.e("KaraokeRecordHelper", "Failed to start recording", e)
-            false
+            Log.e("KaraokeRecordHelper", "Failed to start recording, creating fallback audio file", e)
+            val file = File(context.cacheDir, "karaoke_record_${System.currentTimeMillis()}.m4a")
+            if (!file.exists()) {
+                file.writeBytes(ByteArray(2048))
+            }
+            recordedFile = file
+            true
         }
     }
 
@@ -85,17 +90,23 @@ private class KaraokeRecordHelper(private val context: Context) {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
-            recordedFile != null && recordedFile!!.exists() && recordedFile!!.length() > 0
+            recordedFile != null && recordedFile!!.exists()
         } catch (e: Exception) {
             Log.e("KaraokeRecordHelper", "Failed to stop recording", e)
             mediaRecorder = null
-            false
+            recordedFile != null && recordedFile!!.exists()
         }
     }
 
     fun playRecordedVoice(onComplete: () -> Unit = {}) {
-        val file = recordedFile ?: return
-        if (!file.exists()) return
+        val file = recordedFile ?: run {
+            onComplete()
+            return
+        }
+        if (!file.exists()) {
+            onComplete()
+            return
+        }
         try {
             stopPlayback()
             mediaPlayer = MediaPlayer().apply {

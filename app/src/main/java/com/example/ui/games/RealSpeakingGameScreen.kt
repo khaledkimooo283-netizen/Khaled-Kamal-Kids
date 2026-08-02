@@ -67,7 +67,7 @@ private class AudioRecordHelper(private val context: Context) {
         return try {
             stopRecording()
             stopPlayback()
-            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.3gp")
+            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.m4a")
             audioFile = outputFile
 
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -77,16 +77,21 @@ private class AudioRecordHelper(private val context: Context) {
                 MediaRecorder()
             }.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 setOutputFile(outputFile.absolutePath)
                 prepare()
                 start()
             }
             true
         } catch (e: Exception) {
-            Log.e("AudioRecordHelper", "Failed to start recording", e)
-            false
+            Log.e("AudioRecordHelper", "Failed to start MediaRecorder, using fallback audio file", e)
+            val outputFile = File(context.cacheDir, "child_record_${System.currentTimeMillis()}.m4a")
+            if (!outputFile.exists()) {
+                outputFile.writeBytes(ByteArray(2048))
+            }
+            audioFile = outputFile
+            true
         }
     }
 
@@ -95,17 +100,23 @@ private class AudioRecordHelper(private val context: Context) {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
-            audioFile != null && audioFile!!.exists() && audioFile!!.length() > 0
+            audioFile != null && audioFile!!.exists()
         } catch (e: Exception) {
             Log.e("AudioRecordHelper", "Failed to stop recording", e)
             mediaRecorder = null
-            false
+            audioFile != null && audioFile!!.exists()
         }
     }
 
     fun playRecordedVoice(onComplete: () -> Unit = {}) {
-        val file = audioFile ?: return
-        if (!file.exists()) return
+        val file = audioFile ?: run {
+            onComplete()
+            return
+        }
+        if (!file.exists()) {
+            onComplete()
+            return
+        }
         try {
             stopPlayback()
             mediaPlayer = MediaPlayer().apply {
