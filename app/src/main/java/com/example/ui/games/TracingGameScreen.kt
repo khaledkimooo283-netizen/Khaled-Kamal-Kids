@@ -71,7 +71,7 @@ fun TracingGameScreen(
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
-    // Demo Coach Animation loop on mistake
+    // Demo Coach Animation loop
     LaunchedEffect(isDemoPlaying) {
         if (isDemoPlaying) {
             demoProgress = 0f
@@ -80,8 +80,11 @@ fun TracingGameScreen(
                 demoProgress += 0.02f
             }
             demoProgress = 1.0f
-            kotlinx.coroutines.delay(400)
+            kotlinx.coroutines.delay(350)
             isDemoPlaying = false
+            if (!strokeSuccess) {
+                feedbackMessage = "Now your turn! Trace ${currentItem.character} on the lines ✏️"
+            }
         }
     }
 
@@ -109,12 +112,13 @@ fun TracingGameScreen(
         )
     )
 
-    // Speak item name on item/mode change
+    // Speak item name on item/mode change & play demo first
     LaunchedEffect(currentIndex, mode) {
         userDrawnPoints = emptyList()
         strokeSuccess = false
         isFailedAttempt = false
-        feedbackMessage = "Start tracing anywhere on the letter! ✏️"
+        isDemoPlaying = true
+        feedbackMessage = "Watch Coach write ${currentItem.character} first! 🎬"
 
         if (mode == "uppercase") {
             audioEngine.speakPhonetic(currentItem.character, currentItem.word)
@@ -316,28 +320,36 @@ fun TracingGameScreen(
                     val w = size.width
                     val h = size.height
 
-                    // 1. Kindergarten Educational Guidelines
-                    // Top line (y = 0.12 * h)
+                    // 1. English 4-Line Notebook Ruling
+                    // Top line / Headline (Red, y = 0.12 * h)
                     drawLine(
-                        color = Color(0xFFCBD5E1),
+                        color = Color(0xFFEF4444),
                         start = Offset(0f, 0.12f * h),
                         end = Offset(w, 0.12f * h),
-                        strokeWidth = 2f
+                        strokeWidth = 2.5f
                     )
-                    // Mid line (dashed pink, y = 0.50 * h)
+                    // Midline (Dashed Blue, y = 0.50 * h)
                     drawLine(
-                        color = Color(0xFFF472B6),
+                        color = Color(0xFF3B82F6),
                         start = Offset(0f, 0.50f * h),
                         end = Offset(w, 0.50f * h),
                         strokeWidth = 2f,
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f), 0f)
                     )
-                    // Baseline (solid blue, y = 0.88 * h)
+                    // Baseline (Solid Dark Blue, y = 0.88 * h)
                     drawLine(
-                        color = Color(0xFF38BDF8),
+                        color = Color(0xFF1D4ED8),
                         start = Offset(0f, 0.88f * h),
                         end = Offset(w, 0.88f * h),
-                        strokeWidth = 3f
+                        strokeWidth = 3.5f
+                    )
+                    // Descender / Bottom line (Dashed Light Purple, y = 0.95 * h)
+                    drawLine(
+                        color = Color(0xFFC084FC),
+                        start = Offset(0f, 0.95f * h),
+                        end = Offset(w, 0.95f * h),
+                        strokeWidth = 1.5f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
                     )
 
                     // 2. Outer Guide Track

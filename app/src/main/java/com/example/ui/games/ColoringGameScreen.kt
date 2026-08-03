@@ -129,28 +129,89 @@ fun ColoringGameScreen(
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
-    // Speak item when displayed
-    LaunchedEffect(currentItem) {
+    // Coloring Studio Sub-Activities:
+    // "trace_color" -> Trace then Color
+    // "connect_dots" -> Connect the dots to build letter
+    // "follow_arrows" -> Follow arrow path
+    // "paint_inside" -> Paint inside letter shape
+    // "finish_missing" -> Finish missing part of letter
+    var studioActivity by remember { mutableStateOf("trace_color") }
+    var isLetterTraced by remember { mutableStateOf(false) }
+    var connectedDotsCount by remember { mutableIntStateOf(0) }
+
+    var isDemoPlaying by remember { mutableStateOf(false) }
+    var demoProgress by remember { mutableFloatStateOf(0f) }
+
+    // Coach Demo animation
+    LaunchedEffect(isDemoPlaying) {
+        if (isDemoPlaying) {
+            demoProgress = 0f
+            while (isDemoPlaying && demoProgress < 1.0f) {
+                kotlinx.coroutines.delay(25)
+                demoProgress += 0.02f
+            }
+            demoProgress = 1.0f
+            kotlinx.coroutines.delay(350)
+            isDemoPlaying = false
+        }
+    }
+
+    // Speak item & auto demo on load
+    LaunchedEffect(currentItem, studioActivity) {
         userStrokes = emptyList()
         bucketFillColor = null
         isFinished = false
+        isLetterTraced = false
+        connectedDotsCount = 0
+        isDemoPlaying = true
 
-        audioEngine.speak("Color ${currentItem.displayTitle} ${currentItem.emoji}! 🎨")
+        val activityName = when (studioActivity) {
+            "trace_color" -> "Trace then Color ${currentItem.displayTitle}!"
+            "connect_dots" -> "Connect the dots for ${currentItem.displayTitle}!"
+            "follow_arrows" -> "Follow arrows for ${currentItem.displayTitle}!"
+            "paint_inside" -> "Paint inside ${currentItem.displayTitle}!"
+            "finish_missing" -> "Finish the missing part of ${currentItem.displayTitle}!"
+            else -> "Color ${currentItem.displayTitle}!"
+        }
+        audioEngine.speak(activityName)
     }
 
     fun triggerCompletion() {
-        if (!isFinished) {
-            isFinished = true
-            showConfetti = true
-            repository.addStars(5)
-            repository.rewardColoring()
-            repository.rewardFinishGame()
-            userStars = repository.getStars()
+        if (isFinished) return
 
-            audioEngine.speak("Great job coloring ${currentItem.displayTitle}! +5 Stars!")
-            audioEngine.speakPraise()
-            showRewardDialog = true
+        val allUserPoints = userStrokes.flatMap { it.points }.map { Pair(it.x, it.y) }
+        
+        if (allUserPoints.size < 10 && bucketFillColor == null && !isLetterTraced) {
+            audioEngine.speak("Please draw or trace ${currentItem.displayTitle} first!")
+            return
         }
+
+        // Validate drawing quality
+        if (allUserPoints.size >= 10) {
+            val validation = HandwritingData.validateHandwritingTracing(
+                drawnPoints = allUserPoints,
+                strokes = currentItem.strokeGuidePoints,
+                canvasSize = 270f
+            )
+
+            if (!validation.isValid && studioActivity != "paint_inside") {
+                audioEngine.playWrongSound()
+                audioEngine.speak("Try Again! Follow the letter lines to color neatly. ❌")
+                isDemoPlaying = true
+                return
+            }
+        }
+
+        isFinished = true
+        showConfetti = true
+        repository.addStars(5)
+        repository.rewardColoring()
+        repository.rewardFinishGame()
+        userStars = repository.getStars()
+
+        audioEngine.speak("Great job with ${currentItem.displayTitle}! +5 Stars!")
+        audioEngine.speakPraise()
+        showRewardDialog = true
     }
 
     Box(
@@ -206,6 +267,41 @@ fun ColoringGameScreen(
                             fontSize = 11.sp
                         )
                     }
+                }
+            }
+
+            // Sub-Activity Row (Trace then Color, Connect Dots, Follow Arrows, Paint Inside, Finish Missing Part)
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val activities = listOf(
+                    "trace_color" to "✏️ Trace then Color",
+                    "connect_dots" to "🔢 Connect Dots",
+                    "follow_arrows" to "🏹 Follow Arrows",
+                    "paint_inside" to "🎨 Paint Inside",
+                    "finish_missing" to "🧩 Finish Missing Part"
+                )
+                itemsIndexed(activities) { _, (aKey, label) ->
+                    val isSelected = studioActivity == aKey
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { studioActivity = aKey },
+                        label = {
+                            Text(
+                                label,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                color = if (isSelected) Color.White else Color(0xFF78350F)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFD97706),
+                            containerColor = Color.White
+                        )
+                    )
                 }
             }
 

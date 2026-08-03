@@ -129,8 +129,11 @@ fun HandwritingWorkbookScreen(
                 demoProgress += 0.02f
             }
             demoProgress = 1.0f
-            delay(400)
+            delay(350)
             isDemoPlaying = false
+            if (!strokeSuccess) {
+                feedbackMessage = "Now your turn to trace on notebook lines! ✍️"
+            }
         }
     }
 
@@ -139,21 +142,21 @@ fun HandwritingWorkbookScreen(
         userDrawnPoints = emptyList()
         strokeSuccess = false
         isFailedAttempt = false
-        isDemoPlaying = false
+        isDemoPlaying = true
         rainbowPass = 0
         connectedDotCount = 0
         isLetterColored = false
 
         feedbackMessage = when (activeGameMode) {
-            "copybook" -> "Watch Coach demo or write on notebook lines! ✍️"
-            "rainbow" -> "Trace 5 times to complete the Rainbow! 🌈 (Pass 1/5)"
-            "dots" -> "Connect dots 1, 2, 3... in order! 🔢"
-            "color_letter" -> "Color the letter inside, then trace it! 🎨"
-            "copy_memory" -> "Watch Coach write first, then copy from memory! 🧠"
+            "copybook" -> "Watch Coach demo, then trace on notebook lines! ✍️"
+            "rainbow" -> "Trace 5 times with rainbow glitter! 🌈 (Pass 1/5)"
+            "dots" -> "Connect dots in order to build ${currentItem.character}! 🔢"
+            "color_letter" -> "Watch Coach demo, then trace & color inside! 🎨"
+            "complete_letter" -> "Watch Coach demo, then complete the missing stroke! 🧩"
+            "find_mistakes" -> "Watch Coach, then fix the mistake! 🔍"
+            "write_independent" -> "Watch Coach demo, then write independently! 📒"
             "numbers" -> "Learn & write number ${currentItem.character}! 🔟"
-            "shape_prep" -> "Trace shapes to prepare your hand control! 📐"
-            "pencil_control" -> "Drive along the road from Start 🚗 to Finish 🏁!"
-            else -> "Trace over the dotted lines! ✍️"
+            else -> "Watch Coach demo, then trace over the dotted lines! ✍️"
         }
 
         audioEngine.speak("Let's practice ${currentItem.displayTitle}!")
@@ -202,14 +205,14 @@ fun HandwritingWorkbookScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 val games = listOf(
-                    "copybook" to "📝 Copybook Writing",
-                    "rainbow" to "🌈 Rainbow Tracing",
+                    "copybook" to "📝 1. Trace Notebook",
+                    "color_letter" to "🖍 2. Color Letter",
+                    "complete_letter" to "🧩 3. Complete Part",
+                    "find_mistakes" to "🔍 4. Fix Mistakes",
+                    "rainbow" to "🎨 5. Decorate / Rainbow",
+                    "write_independent" to "📒 6. Write Alone",
                     "dots" to "🔢 Connect Dots",
-                    "color_letter" to "🎨 Color & Write",
-                    "copy_memory" to "🧠 Copy After Me",
-                    "numbers" to "🔟 Numbers 0-20",
-                    "shape_prep" to "📐 Shape Prep",
-                    "pencil_control" to "🚗 Pencil Road"
+                    "numbers" to "🔟 Numbers 0-20"
                 )
                 itemsIndexed(games) { _, (gKey, label) ->
                     val isSelected = activeGameMode == gKey

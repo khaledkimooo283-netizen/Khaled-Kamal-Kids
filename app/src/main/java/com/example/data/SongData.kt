@@ -48,11 +48,11 @@ object SongDataRepository {
             categoryEmoji = "🔢",
             themeColor = 0xFF3B82F6,
             lyricsLines = listOf(
-                SongLyricLine("0, 1, 2, 3, 4, 5... Count with me!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("Zero", "One", "Two", "Three", "Four", "Five")),
-                SongLyricLine("6, 7, 8, 9, 10... Fun and quick!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("Six", "Seven", "Eight", "Nine", "Ten")),
+                SongLyricLine("0, 1, 2, 3, 4, 5... Start counting!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("Zero", "One", "Two", "Three", "Four", "Five")),
+                SongLyricLine("6, 7, 8, 9, 10... Keep going!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("Six", "Seven", "Eight", "Nine", "Ten")),
                 SongLyricLine("11, 12, 13, 14, 15... Flying high!", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen")),
-                SongLyricLine("16, 17, 18, 19, 20... Reached the top!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
-                SongLyricLine("We counted zero all the way to twenty!", "We counted zero all the way to twenty!", "🌟", listOf("Zero to Twenty"))
+                SongLyricLine("16, 17, 18, 19, 20... All the way to 20!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
+                SongLyricLine("We counted from Zero all the way to Twenty!", "We counted from Zero all the way to Twenty!", "🌟", listOf("Zero to Twenty"))
             ),
             actionChallenge = MovementAction("👣 Jump up and down 2 times!", "👣", "JUMP")
         ),
@@ -92,32 +92,32 @@ object SongDataRepository {
             actionChallenge = MovementAction("👋 Wave hello to your animal friends!", "👋", "WAVE")
         ),
 
-        // 5. Days of the Week Song
+        // 5. Days of the Week Song (Starting strictly on Sunday)
         SongItem(
             id = "s_days",
             title = "Days of the Week Song",
             categoryEmoji = "📅",
             themeColor = 0xFF8B5CF6,
             lyricsLines = listOf(
-                SongLyricLine("Monday, Tuesday, Wednesday!", "Monday, Tuesday, Wednesday!", "🌅", listOf("Monday", "Tuesday", "Wednesday")),
-                SongLyricLine("Thursday, Friday, Saturday!", "Thursday, Friday, Saturday!", "☀️", listOf("Thursday", "Friday", "Saturday")),
-                SongLyricLine("And Sunday makes seven days!", "And Sunday makes seven days!", "🌈", listOf("Sunday")),
-                SongLyricLine("Monday to Sunday, seven days in a week!", "Monday to Sunday, seven days in a week!", "🎉", listOf("Seven Days"))
+                SongLyricLine("Sunday, Monday, Tuesday!", "Sunday, Monday, Tuesday!", "🌅", listOf("Sunday", "Monday", "Tuesday")),
+                SongLyricLine("Wednesday, Thursday, Friday!", "Wednesday, Thursday, Friday!", "☀️", listOf("Wednesday", "Thursday", "Friday")),
+                SongLyricLine("And Saturday makes seven days!", "And Saturday makes seven days!", "🌈", listOf("Saturday")),
+                SongLyricLine("Sunday to Saturday, 7 days in a week!", "Sunday to Saturday, seven days in a week!", "🎉", listOf("Seven Days"))
             ),
             actionChallenge = MovementAction("🔄 Spin around in a circle!", "🔄", "SPIN")
         ),
 
-        // 6. Months of the Year Song
+        // 6. Months of the Year Song (All 12 months including December)
         SongItem(
             id = "s_months",
             title = "Months of the Year Song",
             categoryEmoji = "🗓️",
             themeColor = 0xFF06B6D4,
             lyricsLines = listOf(
-                SongLyricLine("January, February, March, and April!", "January, February, March, and April!", "❄️", listOf("January", "February", "March", "April")),
-                SongLyricLine("May, June, July, and August!", "May, June, July, and August!", "🌻", listOf("May", "June", "July", "August")),
-                SongLyricLine("September, October, November, December!", "September, October, November, December!", "🍂", listOf("September", "October", "November", "December")),
-                SongLyricLine("All twelve months of the year!", "All twelve months of the year from January to December!", "🎄", listOf("Twelve", "Months"))
+                SongLyricLine("January, February, March, April!", "January, February, March, and April!", "❄️", listOf("January", "February", "March", "April")),
+                SongLyricLine("May, June, July, August!", "May, June, July, and August!", "🌻", listOf("May", "June", "July", "August")),
+                SongLyricLine("September, October, November, December!", "September, October, November, and December!", "🍂", listOf("September", "October", "November", "December")),
+                SongLyricLine("12 Months from January to December!", "All twelve months of the year from January to December!", "🎄", listOf("January to December"))
             ),
             actionChallenge = MovementAction("👏 Clap your hands for twelve months!", "👏", "CLAP")
         ),

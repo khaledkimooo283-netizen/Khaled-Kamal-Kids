@@ -1,20 +1,22 @@
 package com.example.ui.games
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaPlayer
 import android.media.MediaRecorder
-import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,19 +33,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.components.*
+import kotlinx.coroutines.delay
 import java.io.File
 
 data class SpeakingPromptItem(
-    val category: String, // "Letters", "Words", "Sentences"
+    val category: String, // "Letters", "Numbers", "Days", "Months", "Words", "Sentences"
     val targetText: String,
     val phoneticHint: String,
     val emoji: String,
@@ -52,8 +57,8 @@ data class SpeakingPromptItem(
 
 data class PronunciationResult(
     val score: Int,
-    val scoreRange: String, // "95–100%", "85–94%", "70–84%", "Below 70%"
-    val ratingTitle: String, // "Excellent ⭐⭐⭐⭐⭐", "Very Good ⭐⭐⭐⭐", "Good ⭐⭐⭐", "Try Again ❌"
+    val scoreRange: String,
+    val ratingTitle: String,
     val isAccepted: Boolean,
     val feedbackMessage: String,
     val recognizedSpeech: String
@@ -213,7 +218,7 @@ private class AudioRecordHelper(private val context: Context) {
             recordThread?.start()
             true
         } catch (e: Exception) {
-            Log.e("AudioRecordHelper", "Failed to start MediaRecorder", e)
+            Log.e("AudioRecordHelper", "Failed to start AudioRecord", e)
             createValidWavFallback(outputFile)
             audioFile = outputFile
             true
@@ -277,7 +282,7 @@ private class AudioRecordHelper(private val context: Context) {
 private class SpeechRecognizeHelper(private val context: Context) {
     private var speechRecognizer: SpeechRecognizer? = null
 
-    fun startListening(onResult: (String) -> Unit, onError: () -> Unit) {
+    fun startListening(onResult: (List<String>) -> Unit, onError: () -> Unit) {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             onError()
             return
@@ -296,16 +301,21 @@ private class SpeechRecognizeHelper(private val context: Context) {
                     }
                     override fun onResults(results: Bundle?) {
                         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        val topMatch = matches?.firstOrNull() ?: ""
-                        onResult(topMatch)
+                        onResult(matches ?: emptyList())
                     }
-                    override fun onPartialResults(partialResults: Bundle?) {}
+                    override fun onPartialResults(partialResults: Bundle?) {
+                        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        if (!matches.isNullOrEmpty()) {
+                            onResult(matches)
+                        }
+                    }
                     override fun onEvent(eventType: Int, params: Bundle?) {}
                 })
             }
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
             }
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
@@ -348,23 +358,21 @@ private fun levenshteinDistance(lhs: CharSequence, rhs: CharSequence): Int {
     return cost[lhsLength]
 }
 
-private fun evaluatePronunciation(targetText: String, speechInput: String): PronunciationResult {
+private fun evaluateSingleCandidate(targetText: String, speechInput: String): PronunciationResult {
     val cleanTarget = targetText.trim().lowercase().replace(Regex("[^a-z0-9 ]"), "")
     val cleanInput = speechInput.trim().lowercase().replace(Regex("[^a-z0-9 ]"), "")
 
-    // 1. Check for empty speech or silence
     if (cleanInput.isEmpty() || cleanInput == "silent") {
         return PronunciationResult(
             score = 0,
             scoreRange = "Below 70%",
             ratingTitle = "Try Again ❌",
             isAccepted = false,
-            feedbackMessage = "No English speech detected. Please speak clearly into the microphone!",
+            feedbackMessage = "No speech detected. Please speak clearly into the microphone!",
             recognizedSpeech = "[Silence]"
         )
     }
 
-    // 2. Check for Arabic or non-English speech
     val hasNonEnglish = speechInput.any { it in '\u0600'..'\u06FF' }
     if (hasNonEnglish) {
         return PronunciationResult(
@@ -377,56 +385,52 @@ private fun evaluatePronunciation(targetText: String, speechInput: String): Pron
         )
     }
 
-    // 3. Compare Target vs Input
+    // Direct exact or prefix match for single letters/numbers
+    val isLetterOrNumberMatch = cleanTarget.length <= 2 && (cleanInput == cleanTarget || cleanInput.startsWith(cleanTarget))
+
     val distance = levenshteinDistance(cleanTarget, cleanInput)
     val maxLen = maxOf(cleanTarget.length, cleanInput.length)
     val similarityRatio = if (maxLen == 0) 1.0 else (1.0 - (distance.toDouble() / maxLen))
 
-    val targetWords = cleanTarget.split(Regex("\\s+")).filter { it.isNotEmpty() }
-    val inputWords = cleanInput.split(Regex("\\s+")).filter { it.isNotEmpty() }
-
-    val matchedWords = targetWords.count { tw -> inputWords.any { iw -> levenshteinDistance(tw, iw) <= 1 } }
-    val wordMatchRatio = if (targetWords.isEmpty()) 0.0 else (matchedWords.toDouble() / targetWords.size)
-
-    val finalRatio = if (targetWords.size > 1) (similarityRatio * 0.4 + wordMatchRatio * 0.6) else similarityRatio
-    val scorePercent = (finalRatio * 100).toInt().coerceIn(0, 100)
+    val finalScore = if (isLetterOrNumberMatch) 100 else (similarityRatio * 100).toInt().coerceIn(0, 100)
 
     return when {
-        scorePercent >= 95 -> PronunciationResult(
-            score = scorePercent,
-            scoreRange = "95–100%",
-            ratingTitle = "Excellent ⭐⭐⭐⭐⭐",
+        finalScore >= 75 -> PronunciationResult(
+            score = finalScore,
+            scoreRange = if (finalScore >= 90) "95–100%" else "85–94%",
+            ratingTitle = if (finalScore >= 90) "Excellent ⭐⭐⭐⭐⭐" else "Very Good ⭐⭐⭐⭐",
             isAccepted = true,
-            feedbackMessage = "Perfect! You pronounced \"$targetText\" accurately!",
-            recognizedSpeech = speechInput
-        )
-        scorePercent >= 85 -> PronunciationResult(
-            score = scorePercent,
-            scoreRange = "85–94%",
-            ratingTitle = "Very Good ⭐⭐⭐⭐",
-            isAccepted = true,
-            feedbackMessage = "Very Good! Almost native English pronunciation.",
-            recognizedSpeech = speechInput
-        )
-        scorePercent >= 70 -> PronunciationResult(
-            score = scorePercent,
-            scoreRange = "70–84%",
-            ratingTitle = "Good ⭐⭐⭐",
-            isAccepted = true,
-            feedbackMessage = "Good job! Acceptable pronunciation.",
+            feedbackMessage = "Great Job! Excellent pronunciation of \"$targetText\"!",
             recognizedSpeech = speechInput
         )
         else -> PronunciationResult(
-            score = scorePercent,
+            score = finalScore,
             scoreRange = "Below 70%",
             ratingTitle = "Try Again ❌",
             isAccepted = false,
-            feedbackMessage = "Target was \"$targetText\", but heard \"$speechInput\". Please retry!",
+            feedbackMessage = "Target was \"$targetText\", but heard \"$speechInput\". Try again!",
             recognizedSpeech = speechInput
         )
     }
 }
 
+private fun evaluatePronunciationCandidates(targetText: String, candidates: List<String>): PronunciationResult {
+    if (candidates.isEmpty()) {
+        return PronunciationResult(
+            score = 0,
+            scoreRange = "Below 70%",
+            ratingTitle = "Try Again ❌",
+            isAccepted = false,
+            feedbackMessage = "No speech detected. Please speak clearly!",
+            recognizedSpeech = "[Silence]"
+        )
+    }
+
+    val evaluated = candidates.map { evaluateSingleCandidate(targetText, it) }
+    return evaluated.maxByOrNull { it.score } ?: evaluated.first()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RealSpeakingGameScreen(
     repository: KkDataRepository,
@@ -440,6 +444,17 @@ fun RealSpeakingGameScreen(
     var userStars by remember { mutableIntStateOf(repository.getStars()) }
     var selectedCategory by remember { mutableStateOf("Letters") }
 
+    // Request runtime microphone permission
+    var hasMicPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted -> hasMicPermission = isGranted }
+    )
+
     val promptList = remember {
         listOf(
             // Letters A-Z
@@ -451,6 +466,11 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Letters", "F", "Phonics sound: /f/", "🇫", Color(0xFFEC4899)),
             SpeakingPromptItem("Letters", "G", "Phonics sound: /g/", "🇬", Color(0xFFF59E0B)),
             SpeakingPromptItem("Letters", "H", "Phonics sound: /h/", "🇭", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Letters", "I", "Phonics sound: /aɪ/", "🇮", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Letters", "J", "Phonics sound: /dʒ/", "🇯", Color(0xFFEC4899)),
+            SpeakingPromptItem("Letters", "K", "Phonics sound: /k/", "🇰", Color(0xFFEF4444)),
+            SpeakingPromptItem("Letters", "L", "Phonics sound: /l/", "🇱", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Letters", "M", "Phonics sound: /m/", "🇲", Color(0xFF10B981)),
 
             // Numbers 0 to 20
             SpeakingPromptItem("Numbers", "Zero", "Say number 0", "0️⃣", Color(0xFF6366F1)),
@@ -464,39 +484,39 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Numbers", "Eight", "Say number 8", "8️⃣", Color(0xFFEC4899)),
             SpeakingPromptItem("Numbers", "Nine", "Say number 9", "9️⃣", Color(0xFFF43F5E)),
             SpeakingPromptItem("Numbers", "Ten", "Say number 10", "🔟", Color(0xFF14B8A6)),
-            SpeakingPromptItem("Numbers", "Eleven", "Say number 11", "1️⃣1️⃣", Color(0xFF8B5CF6)),
-            SpeakingPromptItem("Numbers", "Twelve", "Say number 12", "1️⃣2️⃣", Color(0xFF3B82F6)),
-            SpeakingPromptItem("Numbers", "Thirteen", "Say number 13", "1️⃣3️⃣", Color(0xFF06B6D4)),
-            SpeakingPromptItem("Numbers", "Fourteen", "Say number 14", "1️⃣4️⃣", Color(0xFF10B981)),
-            SpeakingPromptItem("Numbers", "Fifteen", "Say number 15", "1️⃣5️⃣", Color(0xFFEAB308)),
-            SpeakingPromptItem("Numbers", "Sixteen", "Say number 16", "1️⃣6️⃣", Color(0xFFF97316)),
-            SpeakingPromptItem("Numbers", "Seventeen", "Say number 17", "1️⃣7️⃣", Color(0xFFEF4444)),
-            SpeakingPromptItem("Numbers", "Eighteen", "Say number 18", "1️⃣8️⃣", Color(0xFFEC4899)),
-            SpeakingPromptItem("Numbers", "Nineteen", "Say number 19", "1️⃣9️⃣", Color(0xFF8B5CF6)),
-            SpeakingPromptItem("Numbers", "Twenty", "Say number 20", "2️⃣0️⃣", Color(0xFF10B981)),
+            SpeakingPromptItem("Numbers", "Eleven", "Say number 11", "1️⃣1️⃣", Color(0xFF6366F1)),
+            SpeakingPromptItem("Numbers", "Twelve", "Say number 12", "1️⃣2️⃣", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Numbers", "Thirteen", "Say number 13", "1️⃣3️⃣", Color(0xFFEC4899)),
+            SpeakingPromptItem("Numbers", "Fourteen", "Say number 14", "1️⃣4️⃣", Color(0xFFEF4444)),
+            SpeakingPromptItem("Numbers", "Fifteen", "Say number 15", "1️⃣5️⃣", Color(0xFFF97316)),
+            SpeakingPromptItem("Numbers", "Sixteen", "Say number 16", "1️⃣6️⃣", Color(0xFFEAB308)),
+            SpeakingPromptItem("Numbers", "Seventeen", "Say number 17", "1️⃣7️⃣", Color(0xFF10B981)),
+            SpeakingPromptItem("Numbers", "Eighteen", "Say number 18", "1️⃣8️⃣", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Numbers", "Nineteen", "Say number 19", "1️⃣9️⃣", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Numbers", "Twenty", "Say number 20", "2️⃣0️⃣", Color(0xFF14B8A6)),
 
-            // Days of the Week (Monday to Sunday)
-            SpeakingPromptItem("Days", "Monday", "1st day of the week", "🌅", Color(0xFFEF4444)),
-            SpeakingPromptItem("Days", "Tuesday", "2nd day of the week", "☀️", Color(0xFFF97316)),
-            SpeakingPromptItem("Days", "Wednesday", "3rd day of the week", "🌤️", Color(0xFFEAB308)),
-            SpeakingPromptItem("Days", "Thursday", "4th day of the week", "🌱", Color(0xFF10B981)),
-            SpeakingPromptItem("Days", "Friday", "5th day of the week", "🎈", Color(0xFF06B6D4)),
-            SpeakingPromptItem("Days", "Saturday", "6th day of the week", "🎉", Color(0xFF3B82F6)),
-            SpeakingPromptItem("Days", "Sunday", "7th day of the week", "🌈", Color(0xFF8B5CF6)),
+            // Days of the Week (Strictly starting Sunday to Saturday)
+            SpeakingPromptItem("Days", "Sunday", "1st day of the week", "🌅", Color(0xFFEF4444)),
+            SpeakingPromptItem("Days", "Monday", "2nd day of the week", "☀️", Color(0xFFF97316)),
+            SpeakingPromptItem("Days", "Tuesday", "3rd day of the week", "🌤️", Color(0xFFEAB308)),
+            SpeakingPromptItem("Days", "Wednesday", "4th day of the week", "🌿", Color(0xFF10B981)),
+            SpeakingPromptItem("Days", "Thursday", "5th day of the week", "🌈", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Days", "Friday", "6th day of the week", "🎉", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Days", "Saturday", "7th day of the week", "⭐", Color(0xFF8B5CF6)),
 
-            // Months of the Year (January to December)
+            // Months of the Year (All 12 months)
             SpeakingPromptItem("Months", "January", "Month 1", "❄️", Color(0xFF3B82F6)),
             SpeakingPromptItem("Months", "February", "Month 2", "💖", Color(0xFFEC4899)),
             SpeakingPromptItem("Months", "March", "Month 3", "🌱", Color(0xFF10B981)),
             SpeakingPromptItem("Months", "April", "Month 4", "🌧️", Color(0xFF06B6D4)),
-            SpeakingPromptItem("Months", "May", "Month 5", "🌸", Color(0xFFF43F5E)),
-            SpeakingPromptItem("Months", "June", "Month 6", "☀️", Color(0xFFEAB308)),
-            SpeakingPromptItem("Months", "July", "Month 7", "🏖️", Color(0xFFF97316)),
-            SpeakingPromptItem("Months", "August", "Month 8", "🌻", Color(0xFFD97706)),
-            SpeakingPromptItem("Months", "September", "Month 9", "🎒", Color(0xFF8B5CF6)),
-            SpeakingPromptItem("Months", "October", "Month 10", "🎃", Color(0xFFF97316)),
-            SpeakingPromptItem("Months", "November", "Month 11", "🍂", Color(0xFFB45309)),
-            SpeakingPromptItem("Months", "December", "Month 12", "🎄", Color(0xFF15803D)),
+            SpeakingPromptItem("Months", "May", "Month 5", "🌸", Color(0xFFEAB308)),
+            SpeakingPromptItem("Months", "June", "Month 6", "☀️", Color(0xFFF97316)),
+            SpeakingPromptItem("Months", "July", "Month 7", "🏖️", Color(0xFFEF4444)),
+            SpeakingPromptItem("Months", "August", "Month 8", "🌻", Color(0xFFF59E0B)),
+            SpeakingPromptItem("Months", "September", "Month 9", "🍂", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Months", "October", "Month 10", "🎃", Color(0xFFEC4899)),
+            SpeakingPromptItem("Months", "November", "Month 11", "🍁", Color(0xFFD97706)),
+            SpeakingPromptItem("Months", "December", "Month 12", "🎄", Color(0xFF16A34A)),
 
             // Words
             SpeakingPromptItem("Words", "Apple", "Say: Ap-ple", "🍎", Color(0xFFF97316)),
@@ -504,13 +524,10 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Words", "Dog", "Say: D-O-G", "🐶", Color(0xFF06B6D4)),
             SpeakingPromptItem("Words", "Elephant", "Say: El-e-phant", "🐘", Color(0xFFEC4899)),
             SpeakingPromptItem("Words", "Banana", "Say: Ba-na-na", "🍌", Color(0xFFEAB308)),
-            SpeakingPromptItem("Words", "Giraffe", "Say: Gi-raffe", "🦒", Color(0xFFD97706)),
 
             // Sentences
             SpeakingPromptItem("Sentences", "This is a cat", "Read clearly", "🐈", Color(0xFF6366F1)),
-            SpeakingPromptItem("Sentences", "I like apples", "Expressive voice", "🍎", Color(0xFF14B8A6)),
-            SpeakingPromptItem("Sentences", "The sun is hot", "Full sentence", "☀️", Color(0xFFD97706)),
-            SpeakingPromptItem("Sentences", "Today is Monday", "Expressive voice", "📅", Color(0xFF8B5CF6))
+            SpeakingPromptItem("Sentences", "I like apples", "Expressive voice", "🍎", Color(0xFF14B8A6))
         )
     }
 
@@ -527,7 +544,7 @@ fun RealSpeakingGameScreen(
     var isPlayingVoice by remember { mutableStateOf(false) }
     var hasRecordedAudio by remember { mutableStateOf(false) }
     var recordingTimerSec by remember { mutableIntStateOf(0) }
-    var recognizedSpeechText by remember { mutableStateOf("") }
+    var recognizedCandidates by remember { mutableStateOf<List<String>>(emptyList()) }
 
     var lastEvaluation by remember { mutableStateOf<PronunciationResult?>(null) }
     var showRewardDialog by remember { mutableStateOf(false) }
@@ -546,55 +563,52 @@ fun RealSpeakingGameScreen(
     )
 
     fun playTargetAudio() {
-        audioEngine.speak("Listen to coach: ${currentItem.targetText}!")
+        audioEngine.speak(currentItem.targetText)
     }
 
-    fun processSpeechAttempt(inputSpeech: String) {
-        val result = evaluatePronunciation(currentItem.targetText, inputSpeech)
+    fun performAutoEvaluation() {
+        val result = evaluatePronunciationCandidates(currentItem.targetText, recognizedCandidates)
         lastEvaluation = result
 
         if (result.isAccepted) {
             audioEngine.playCorrectSound()
-            val starsAwarded = when (result.scoreRange) {
-                "95–100%" -> 5
-                "85–94%" -> 4
-                else -> 3
-            }
-            repository.addStars(starsAwarded)
+            repository.addStars(5)
             repository.rewardPronunciation()
-            if (result.scoreRange == "95–100%") {
-                repository.rewardPerfectScore()
-            }
             userStars = repository.getStars()
             showRewardDialog = true
             showConfetti = true
+            audioEngine.speak("Great job! Perfect pronunciation!")
         } else {
             audioEngine.playWrongSound()
             audioEngine.speak("Try again! Listen to coach: ${currentItem.targetText}")
         }
     }
 
-    fun stopRecordingAndEvaluate() {
+    fun stopRecordingAndProcess() {
         isRecording = false
-        val recordedOk = recordHelper.stopRecording()
+        recordHelper.stopRecording()
         speechHelper.stopListening()
-        hasRecordedAudio = recordedOk
+        hasRecordedAudio = true
 
-        val textToEvaluate = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else ""
-        processSpeechAttempt(textToEvaluate)
+        // Step 4: Replay child's recorded voice automatically so they hear their real audio
+        isPlayingVoice = true
+        recordHelper.playRecordedVoice {
+            isPlayingVoice = false
+            // Step 5: Automatically compare & evaluate after replay
+            performAutoEvaluation()
+        }
     }
 
-    // Timer coroutine during recording
+    // Timer coroutine during recording (auto stops after 5s if child doesn't press stop)
     LaunchedEffect(isRecording) {
         if (isRecording) {
             recordingTimerSec = 0
-            while (isRecording && recordingTimerSec < 10) {
-                kotlinx.coroutines.delay(1000)
+            while (isRecording && recordingTimerSec < 5) {
+                delay(1000)
                 recordingTimerSec++
             }
             if (isRecording) {
-                // Auto-stop recording after 10 seconds
-                stopRecordingAndEvaluate()
+                stopRecordingAndProcess()
             }
         }
     }
@@ -603,7 +617,8 @@ fun RealSpeakingGameScreen(
         lastEvaluation = null
         hasRecordedAudio = false
         isRecording = false
-        recognizedSpeechText = ""
+        recognizedCandidates = emptyList()
+        // Step 1: Play Native English audio automatically when word loads
         playTargetAudio()
     }
 
@@ -625,7 +640,7 @@ fun RealSpeakingGameScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Leo Coach Speaking 🗣️",
+                title = "Pronunciation Coach 🗣️",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
@@ -644,7 +659,7 @@ fun RealSpeakingGameScreen(
             ) {
                 val categories = listOf(
                     "Letters" to "🔤 Letters",
-                    "Numbers" to "🔢 Numbers 0-20",
+                    "Numbers" to "🔢 Numbers",
                     "Days" to "📅 Days",
                     "Months" to "🗓️ Months",
                     "Words" to "🍎 Words",
@@ -657,7 +672,7 @@ fun RealSpeakingGameScreen(
                         onClick = {
                             selectedCategory = catKey
                             itemIndex = 0
-                            audioEngine.speak("$catKey speaking practice")
+                            audioEngine.speak("$catKey practice")
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isSelected) Color(0xFFDC2626) else Color.White,
@@ -674,15 +689,15 @@ fun RealSpeakingGameScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Highlighted Target Card
+            // Target Word Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .clip(RoundedCornerShape(24.dp)),
+                    .shadow(8.dp, RoundedCornerShape(24.dp)),
                 colors = CardDefaults.cardColors(
                     containerColor = if (lastEvaluation != null && !lastEvaluation!!.isAccepted) Color(0xFFFEF2F2) else Color.White
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                shape = RoundedCornerShape(24.dp),
                 border = androidx.compose.foundation.BorderStroke(
                     width = 3.dp,
                     color = if (lastEvaluation != null && !lastEvaluation!!.isAccepted) Color(0xFFEF4444) else currentItem.difficultyColor
@@ -694,56 +709,56 @@ fun RealSpeakingGameScreen(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = currentItem.emoji, fontSize = 52.sp)
+                    Text(text = currentItem.emoji, fontSize = 56.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    
-                    // Highlighted Word
+
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (lastEvaluation != null && !lastEvaluation!!.isAccepted) Color(0xFFFEE2E2) else Color(0xFFEFF6FF),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, if (lastEvaluation != null && !lastEvaluation!!.isAccepted) Color(0xFFEF4444) else Color(0xFF3B82F6))
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFEFF6FF),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF3B82F6))
                     ) {
                         Text(
                             text = currentItem.targetText,
-                            fontSize = 28.sp,
+                            fontSize = 32.sp,
                             fontWeight = FontWeight.Black,
-                            color = if (lastEvaluation != null && !lastEvaluation!!.isAccepted) Color(0xFF991B1B) else Color(0xFF1E293B),
+                            color = Color(0xFF1E293B),
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = currentItem.phoneticHint,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF64748B)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
+                    // Listen Again Button (Native English Audio)
                     Button(
                         onClick = { playTargetAudio() },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(Icons.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFDC2626))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Listen to Coach 🔊", color = Color(0xFF991B1B), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text("Listen Again 🔊", color = Color(0xFF991B1B), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Evaluation Result Card (Displays 95-100%, 85-94%, 70-84%, Below 70% Try Again)
+            // Automatic Evaluation Result Display
             lastEvaluation?.let { res ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
-                        .padding(vertical = 2.dp),
-                    shape = RoundedCornerShape(18.dp),
+                        .shadow(4.dp, RoundedCornerShape(20.dp)),
+                    shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (res.isAccepted) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
                     ),
@@ -755,28 +770,28 @@ fun RealSpeakingGameScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp),
+                            .padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                if (res.isAccepted) Icons.Filled.CheckCircle else Icons.Filled.Warning,
+                                if (res.isAccepted) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
                                 contentDescription = null,
-                                tint = if (res.isAccepted) Color(0xFF166534) else Color(0xFF991B1B),
-                                modifier = Modifier.size(20.dp)
+                                tint = if (res.isAccepted) Color(0xFF15803D) else Color(0xFFDC2626),
+                                modifier = Modifier.size(24.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "${res.ratingTitle} (${res.score}%)",
-                                fontSize = 15.sp,
+                                text = if (res.isAccepted) "🎉 ${res.ratingTitle}" else "❌ Try Again",
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Black,
                                 color = if (res.isAccepted) Color(0xFF15803D) else Color(0xFFB91C1C)
                             )
                         }
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = res.feedbackMessage,
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF334155),
                             textAlign = TextAlign.Center
@@ -787,24 +802,32 @@ fun RealSpeakingGameScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Microphone Recording Area with Pulsing Visualizer & Playback Controls
+            // Main Microphone Record / Stop Controls
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                
+
                 if (isRecording) {
                     Text(
-                        text = "🎙️ Recording Voice... 00:0${recordingTimerSec}s",
-                        fontSize = 14.sp,
+                        text = "🎙️ Listening & Recording... 00:0${recordingTimerSec}s",
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFFDC2626)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                } else if (isPlayingVoice) {
+                    Text(
+                        text = "🎧 Replaying your recorded voice...",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2563EB)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 Box(contentAlignment = Alignment.Center) {
                     if (isRecording) {
                         Box(
                             modifier = Modifier
-                                .size(90.dp)
+                                .size(100.dp)
                                 .scale(pulseScale)
                                 .clip(CircleShape)
                                 .background(Color(0xFFEF4444).copy(alpha = 0.3f))
@@ -814,46 +837,46 @@ fun RealSpeakingGameScreen(
                     Surface(
                         shape = CircleShape,
                         color = if (isRecording) Color(0xFFB91C1C) else Color(0xFFEF4444),
-                        shadowElevation = 8.dp,
+                        shadowElevation = 10.dp,
                         modifier = Modifier
-                            .size(76.dp)
+                            .size(80.dp)
                             .clickable {
+                                if (!hasMicPermission) {
+                                    launcher.launch(Manifest.permission.RECORD_AUDIO)
+                                    return@clickable
+                                }
+
                                 if (!isRecording) {
-                                    val startOk = recordHelper.startRecording()
+                                    recordHelper.startRecording()
                                     isRecording = true
                                     hasRecordedAudio = false
-                                    recognizedSpeechText = ""
+                                    recognizedCandidates = emptyList()
 
                                     speechHelper.startListening(
-                                        onResult = { result ->
-                                            recognizedSpeechText = result
+                                        onResult = { candidates ->
+                                            recognizedCandidates = candidates
                                         },
                                         onError = {
-                                            // Fallback
+                                            // Speech recognizer error fallback
                                         }
                                     )
-
-                                    if (!startOk) {
-                                        isRecording = false
-                                        audioEngine.speak("Speak out loud now!")
-                                    }
                                 } else {
-                                    stopRecordingAndEvaluate()
+                                    stopRecordingAndProcess()
                                 }
                             }
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(
-                                    Icons.Filled.Mic,
-                                    contentDescription = "Record",
+                                    imageVector = if (isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
+                                    contentDescription = if (isRecording) "Stop" else "Record",
                                     tint = Color.White,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(36.dp)
                                 )
                                 Text(
-                                    text = if (isRecording) "STOP" else "RECORD 🎙️",
+                                    text = if (isRecording) "STOP ⏹️" else "RECORD 🎙️",
                                     fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontWeight = FontWeight.Black,
                                     color = Color.White
                                 )
                             }
@@ -861,102 +884,64 @@ fun RealSpeakingGameScreen(
                     }
                 }
 
-                // Recorded Voice Controls: Playback & Re-record
-                if (hasRecordedAudio && !isRecording) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = {
-                                isPlayingVoice = true
-                                recordHelper.playRecordedVoice {
-                                    isPlayingVoice = false
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Icon(
-                                if (isPlayingVoice) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
-                                contentDescription = "Play My Voice",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                if (isPlayingVoice) "Playing Voice..." else "Play My Voice 🎧",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                        Button(
-                            onClick = {
-                                val input = if (recognizedSpeechText.isNotEmpty()) recognizedSpeechText else ""
-                                processSpeechAttempt(input)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Evaluate ⚡", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Test Speech Input Simulation:",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF78350F)
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Test Action Chips (Target Match, Wrong Word "Cat", Arabic, Silent)
+                // Replay Recorded Voice & Next Buttons
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    SuggestionChip(
-                        onClick = { processSpeechAttempt(currentItem.targetText) },
-                        label = { Text("🎯 Correct", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFDCFCE7))
-                    )
-                    SuggestionChip(
-                        onClick = { processSpeechAttempt("Cat") },
-                        label = { Text("❌ Wrong (\"Cat\")", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFFEE2E2))
-                    )
-                    SuggestionChip(
-                        onClick = { processSpeechAttempt("تفاحة") },
-                        label = { Text("🌐 Arabic", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFFEE2E2))
-                    )
-                    SuggestionChip(
-                        onClick = { processSpeechAttempt("silent") },
-                        label = { Text("🔇 Silent", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFF3F4F6))
-                    )
+                    Button(
+                        onClick = {
+                            isPlayingVoice = true
+                            recordHelper.playRecordedVoice {
+                                isPlayingVoice = false
+                            }
+                        },
+                        enabled = hasRecordedAudio && !isRecording,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(
+                            if (isPlayingVoice) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
+                            contentDescription = "Replay Voice",
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            if (isPlayingVoice) "Playing..." else "Replay My Voice 🎧",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            itemIndex++
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Next Word ➡️", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             KkLionMascot(
                 state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = "Press Record & speak in English!",
+                speechBubbleText = "Press Record & speak in English! I will listen!",
                 onClick = { playTargetAudio() }
             )
         }
 
         StarRewardDialog(
             isVisible = showRewardDialog,
-            title = "Pronunciation Champion! 🗣️",
-            message = "Score: ${lastEvaluation?.score ?: 100}% (${lastEvaluation?.ratingTitle ?: "Excellent"}) for \"${currentItem.targetText}\"!",
+            title = "Pronunciation Champion! 🗣️✨",
+            message = "Awesome! Perfect pronunciation of \"${currentItem.targetText}\"! You earned 5 Stars and 5 Coins!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
@@ -968,5 +953,3 @@ fun RealSpeakingGameScreen(
         ConfettiOverlay(isVisible = showConfetti)
     }
 }
-
-

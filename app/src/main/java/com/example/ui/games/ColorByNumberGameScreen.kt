@@ -54,17 +54,37 @@ fun ColorByNumberGameScreen(
 
     var selectedNumber by remember { mutableIntStateOf(1) }
 
-    // Region templates
-    var regions by remember(pictureIndex) {
-        mutableStateOf(
-            listOf(
-                NumberedRegion(0, 1, "Crown", Color(0xFFEF4444), "👑"),
-                NumberedRegion(1, 2, "Body", Color(0xFF3B82F6), "👕"),
-                NumberedRegion(2, 3, "Wings / Stars", Color(0xFFEAB308), "⭐"),
-                NumberedRegion(3, 4, "Grass / Shoes", Color(0xFF22C55E), "👟"),
-                NumberedRegion(4, 5, "Hat / Magic", Color(0xFFA855F7), "🎩")
+    // Letter Paint Templates including Color Capital A Red Apple Paint
+    val pages = remember {
+        listOf(
+            "Color Capital A Red Apple Paint 🍎" to listOf(
+                NumberedRegion(0, 1, "Capital Letter A", Color(0xFFEF4444), "🅰️"),
+                NumberedRegion(1, 1, "Red Apple", Color(0xFFEF4444), "🍎"),
+                NumberedRegion(2, 4, "Apple Leaf", Color(0xFF22C55E), "🍃"),
+                NumberedRegion(3, 3, "Sun Light", Color(0xFFEAB308), "☀️"),
+                NumberedRegion(4, 5, "Magic Star", Color(0xFFA855F7), "⭐")
+            ),
+            "Color Capital B Yellow Banana Paint 🍌" to listOf(
+                NumberedRegion(0, 3, "Capital Letter B", Color(0xFFEAB308), "🅱️"),
+                NumberedRegion(1, 3, "Yellow Banana", Color(0xFFEAB308), "🍌"),
+                NumberedRegion(2, 4, "Tree Stem", Color(0xFF22C55E), "🌴"),
+                NumberedRegion(3, 2, "Blue Sky", Color(0xFF3B82F6), "☁️"),
+                NumberedRegion(4, 1, "Red Ribbon", Color(0xFFEF4444), "🎀")
+            ),
+            "Color Capital C Cat Paint 🐱" to listOf(
+                NumberedRegion(0, 5, "Capital Letter C", Color(0xFFA855F7), "🔤"),
+                NumberedRegion(1, 1, "Cat Collar", Color(0xFFEF4444), "🐱"),
+                NumberedRegion(2, 3, "Cat Toy", Color(0xFFEAB308), "🧶"),
+                NumberedRegion(3, 2, "Milk Bowl", Color(0xFF3B82F6), "🥣"),
+                NumberedRegion(4, 4, "Green Grass", Color(0xFF22C55E), "🌿")
             )
         )
+    }
+
+    val currentPage = pages[pictureIndex % pages.size]
+
+    var regions by remember(pictureIndex) {
+        mutableStateOf(currentPage.second)
     }
 
     var showRewardDialog by remember { mutableStateOf(false) }
@@ -95,11 +115,11 @@ fun ColorByNumberGameScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Instructions Bar
+            // Instructions & Page Title Bar
             Text(
-                text = "Select Number & Color below, then tap matching region!",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
+                text = currentPage.first,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF6B21A8)
             )
 
