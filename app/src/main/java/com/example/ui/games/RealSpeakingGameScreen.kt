@@ -376,26 +376,54 @@ private fun evaluateSingleCandidate(targetText: String, speechInput: String): Pr
     val hasNonEnglish = speechInput.any { it in '\u0600'..'\u06FF' }
     if (hasNonEnglish) {
         return PronunciationResult(
-            score = 15,
+            score = 10,
             scoreRange = "Below 70%",
             ratingTitle = "Try Again ❌",
             isAccepted = false,
-            feedbackMessage = "Arabic speech detected! Please pronounce the word in English.",
+            feedbackMessage = "Arabic speech detected! Please pronounce \"$targetText\" in clear English.",
             recognizedSpeech = speechInput
         )
     }
 
-    // Direct exact or prefix match for single letters/numbers
-    val isLetterOrNumberMatch = cleanTarget.length <= 2 && (cleanInput == cleanTarget || cleanInput.startsWith(cleanTarget))
+    val targetWords = cleanTarget.split(" ").filter { it.isNotEmpty() }
+    val inputWords = cleanInput.split(" ").filter { it.isNotEmpty() }
 
-    val distance = levenshteinDistance(cleanTarget, cleanInput)
-    val maxLen = maxOf(cleanTarget.length, cleanInput.length)
-    val similarityRatio = if (maxLen == 0) 1.0 else (1.0 - (distance.toDouble() / maxLen))
+    var isAccepted = false
+    var finalScore = 0
 
-    val finalScore = if (isLetterOrNumberMatch) 100 else (similarityRatio * 100).toInt().coerceIn(0, 100)
+    if (targetWords.size == 1) {
+        val tWord = targetWords[0]
+        if (inputWords.contains(tWord) || cleanInput == cleanTarget) {
+            isAccepted = true
+            finalScore = 100
+        } else {
+            val bestDist = inputWords.minOfOrNull { levenshteinDistance(tWord, it) } ?: 99
+            if (tWord.length <= 4 && bestDist == 0) {
+                isAccepted = true
+                finalScore = 100
+            } else if (tWord.length >= 5 && bestDist <= 1) {
+                isAccepted = true
+                finalScore = 88
+            } else {
+                isAccepted = false
+                finalScore = 30
+            }
+        }
+    } else {
+        // Sentence evaluation: check matching word count
+        val matchedCount = targetWords.count { inputWords.contains(it) }
+        val matchRatio = matchedCount.toFloat() / targetWords.size.toFloat()
+        if (matchRatio >= 0.75f) {
+            isAccepted = true
+            finalScore = (matchRatio * 100).toInt()
+        } else {
+            isAccepted = false
+            finalScore = (matchRatio * 100).toInt()
+        }
+    }
 
-    return when {
-        finalScore >= 75 -> PronunciationResult(
+    return if (isAccepted) {
+        PronunciationResult(
             score = finalScore,
             scoreRange = if (finalScore >= 90) "95–100%" else "85–94%",
             ratingTitle = if (finalScore >= 90) "Excellent ⭐⭐⭐⭐⭐" else "Very Good ⭐⭐⭐⭐",
@@ -403,7 +431,8 @@ private fun evaluateSingleCandidate(targetText: String, speechInput: String): Pr
             feedbackMessage = "Great Job! Excellent pronunciation of \"$targetText\"!",
             recognizedSpeech = speechInput
         )
-        else -> PronunciationResult(
+    } else {
+        PronunciationResult(
             score = finalScore,
             scoreRange = "Below 70%",
             ratingTitle = "Try Again ❌",

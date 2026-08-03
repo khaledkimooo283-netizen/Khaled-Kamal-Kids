@@ -299,14 +299,6 @@ fun KkKidsApp(
             )
         }
 
-        composable("coloring") {
-            ColoringGameScreen(
-                repository = repository,
-                audioEngine = audioEngine,
-                onBackClick = { navController.popBackStack() }
-            )
-        }
-
         composable("odd_one_out") {
             OddOneOutScreen(
                 repository = repository,
