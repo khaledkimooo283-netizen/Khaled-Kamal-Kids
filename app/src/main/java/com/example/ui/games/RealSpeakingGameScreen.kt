@@ -22,10 +22,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,25 +44,12 @@ import androidx.core.content.ContextCompat
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.components.*
+import com.example.util.NetworkUtils
+import com.example.util.PronunciationEvaluator
+import com.example.util.PronunciationResult
+import com.example.util.SpeakingPromptItem
 import kotlinx.coroutines.delay
 import java.io.File
-
-data class SpeakingPromptItem(
-    val category: String, // "Letters", "Numbers", "Days", "Months", "Words", "Sentences"
-    val targetText: String,
-    val phoneticHint: String,
-    val emoji: String,
-    val difficultyColor: Color
-)
-
-data class PronunciationResult(
-    val score: Int,
-    val scoreRange: String,
-    val ratingTitle: String,
-    val isAccepted: Boolean,
-    val feedbackMessage: String,
-    val recognizedSpeech: String
-)
 
 private fun createValidWavFallback(file: File) {
     try {
@@ -315,7 +302,11 @@ private class SpeechRecognizeHelper(private val context: Context) {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-US")
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "en-US")
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 10)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_CONFIDENCE_SCORES, true)
             }
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
@@ -334,129 +325,6 @@ private class SpeechRecognizeHelper(private val context: Context) {
             speechRecognizer = null
         }
     }
-}
-
-private fun levenshteinDistance(lhs: CharSequence, rhs: CharSequence): Int {
-    val lhsLength = lhs.length
-    val rhsLength = rhs.length
-    var cost = IntArray(lhsLength + 1) { it }
-    var newCost = IntArray(lhsLength + 1)
-
-    for (i in 1..rhsLength) {
-        newCost[0] = i
-        for (j in 1..lhsLength) {
-            val match = if (lhs[j - 1] == rhs[i - 1]) 0 else 1
-            val costReplace = cost[j - 1] + match
-            val costInsert = cost[j] + 1
-            val costDelete = newCost[j - 1] + 1
-            newCost[j] = minOf(costReplace, minOf(costInsert, costDelete))
-        }
-        val swap = cost
-        cost = newCost
-        newCost = swap
-    }
-    return cost[lhsLength]
-}
-
-private fun evaluateSingleCandidate(targetText: String, speechInput: String): PronunciationResult {
-    val cleanTarget = targetText.trim().lowercase().replace(Regex("[^a-z0-9 ]"), "")
-    val cleanInput = speechInput.trim().lowercase().replace(Regex("[^a-z0-9 ]"), "")
-
-    if (cleanInput.isEmpty() || cleanInput == "silent") {
-        return PronunciationResult(
-            score = 0,
-            scoreRange = "Below 70%",
-            ratingTitle = "Try Again ❌",
-            isAccepted = false,
-            feedbackMessage = "No speech detected. Please speak clearly into the microphone!",
-            recognizedSpeech = "[Silence]"
-        )
-    }
-
-    val hasNonEnglish = speechInput.any { it in '\u0600'..'\u06FF' }
-    if (hasNonEnglish) {
-        return PronunciationResult(
-            score = 10,
-            scoreRange = "Below 70%",
-            ratingTitle = "Try Again ❌",
-            isAccepted = false,
-            feedbackMessage = "Arabic speech detected! Please pronounce \"$targetText\" in clear English.",
-            recognizedSpeech = speechInput
-        )
-    }
-
-    val targetWords = cleanTarget.split(" ").filter { it.isNotEmpty() }
-    val inputWords = cleanInput.split(" ").filter { it.isNotEmpty() }
-
-    var isAccepted = false
-    var finalScore = 0
-
-    if (targetWords.size == 1) {
-        val tWord = targetWords[0]
-        if (inputWords.contains(tWord) || cleanInput == cleanTarget) {
-            isAccepted = true
-            finalScore = 100
-        } else {
-            val bestDist = inputWords.minOfOrNull { levenshteinDistance(tWord, it) } ?: 99
-            if (tWord.length <= 4 && bestDist == 0) {
-                isAccepted = true
-                finalScore = 100
-            } else if (tWord.length >= 5 && bestDist <= 1) {
-                isAccepted = true
-                finalScore = 88
-            } else {
-                isAccepted = false
-                finalScore = 30
-            }
-        }
-    } else {
-        // Sentence evaluation: check matching word count
-        val matchedCount = targetWords.count { inputWords.contains(it) }
-        val matchRatio = matchedCount.toFloat() / targetWords.size.toFloat()
-        if (matchRatio >= 0.75f) {
-            isAccepted = true
-            finalScore = (matchRatio * 100).toInt()
-        } else {
-            isAccepted = false
-            finalScore = (matchRatio * 100).toInt()
-        }
-    }
-
-    return if (isAccepted) {
-        PronunciationResult(
-            score = finalScore,
-            scoreRange = if (finalScore >= 90) "95–100%" else "85–94%",
-            ratingTitle = if (finalScore >= 90) "Excellent ⭐⭐⭐⭐⭐" else "Very Good ⭐⭐⭐⭐",
-            isAccepted = true,
-            feedbackMessage = "Great Job! Excellent pronunciation of \"$targetText\"!",
-            recognizedSpeech = speechInput
-        )
-    } else {
-        PronunciationResult(
-            score = finalScore,
-            scoreRange = "Below 70%",
-            ratingTitle = "Try Again ❌",
-            isAccepted = false,
-            feedbackMessage = "Target was \"$targetText\", but heard \"$speechInput\". Try again!",
-            recognizedSpeech = speechInput
-        )
-    }
-}
-
-private fun evaluatePronunciationCandidates(targetText: String, candidates: List<String>): PronunciationResult {
-    if (candidates.isEmpty()) {
-        return PronunciationResult(
-            score = 0,
-            scoreRange = "Below 70%",
-            ratingTitle = "Try Again ❌",
-            isAccepted = false,
-            feedbackMessage = "No speech detected. Please speak clearly!",
-            recognizedSpeech = "[Silence]"
-        )
-    }
-
-    val evaluated = candidates.map { evaluateSingleCandidate(targetText, it) }
-    return evaluated.maxByOrNull { it.score } ?: evaluated.first()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -484,9 +352,10 @@ fun RealSpeakingGameScreen(
         onResult = { isGranted -> hasMicPermission = isGranted }
     )
 
+    // Over 100 English Prompts covering Letters A-Z, Numbers 0-20, Days, Months, Words, Sentences
     val promptList = remember {
         listOf(
-            // Letters A-Z
+            // Letters A to Z (All 26 English Letters)
             SpeakingPromptItem("Letters", "A", "Phonics sound: /æ/", "🅰️", Color(0xFFEF4444)),
             SpeakingPromptItem("Letters", "B", "Phonics sound: /b/", "🅱️", Color(0xFF3B82F6)),
             SpeakingPromptItem("Letters", "C", "Phonics sound: /k/", "©️", Color(0xFFEAB308)),
@@ -500,6 +369,19 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Letters", "K", "Phonics sound: /k/", "🇰", Color(0xFFEF4444)),
             SpeakingPromptItem("Letters", "L", "Phonics sound: /l/", "🇱", Color(0xFF3B82F6)),
             SpeakingPromptItem("Letters", "M", "Phonics sound: /m/", "🇲", Color(0xFF10B981)),
+            SpeakingPromptItem("Letters", "N", "Phonics sound: /n/", "🇳", Color(0xFFF97316)),
+            SpeakingPromptItem("Letters", "O", "Phonics sound: /ɒ/", "⭕", Color(0xFF6366F1)),
+            SpeakingPromptItem("Letters", "P", "Phonics sound: /p/", "🅿️", Color(0xFF14B8A6)),
+            SpeakingPromptItem("Letters", "Q", "Phonics sound: /kw/", "🇶", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Letters", "R", "Phonics sound: /r/", "🇷", Color(0xFFEC4899)),
+            SpeakingPromptItem("Letters", "S", "Phonics sound: /s/", "🇸", Color(0xFFEF4444)),
+            SpeakingPromptItem("Letters", "T", "Phonics sound: /t/", "🇹", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Letters", "U", "Phonics sound: /ʌ/", "🇺", Color(0xFFEAB308)),
+            SpeakingPromptItem("Letters", "V", "Phonics sound: /v/", "🇻", Color(0xFF10B981)),
+            SpeakingPromptItem("Letters", "W", "Phonics sound: /w/", "🇼", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Letters", "X", "Phonics sound: /ks/", "❌", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Letters", "Y", "Phonics sound: /j/", "🇾", Color(0xFFEC4899)),
+            SpeakingPromptItem("Letters", "Z", "Phonics sound: /z/", "🇿", Color(0xFF14B8A6)),
 
             // Numbers 0 to 20
             SpeakingPromptItem("Numbers", "Zero", "Say number 0", "0️⃣", Color(0xFF6366F1)),
@@ -524,7 +406,7 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Numbers", "Nineteen", "Say number 19", "1️⃣9️⃣", Color(0xFF3B82F6)),
             SpeakingPromptItem("Numbers", "Twenty", "Say number 20", "2️⃣0️⃣", Color(0xFF14B8A6)),
 
-            // Days of the Week (Strictly starting Sunday to Saturday)
+            // Days of the Week
             SpeakingPromptItem("Days", "Sunday", "1st day of the week", "🌅", Color(0xFFEF4444)),
             SpeakingPromptItem("Days", "Monday", "2nd day of the week", "☀️", Color(0xFFF97316)),
             SpeakingPromptItem("Days", "Tuesday", "3rd day of the week", "🌤️", Color(0xFFEAB308)),
@@ -533,7 +415,7 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Days", "Friday", "6th day of the week", "🎉", Color(0xFF3B82F6)),
             SpeakingPromptItem("Days", "Saturday", "7th day of the week", "⭐", Color(0xFF8B5CF6)),
 
-            // Months of the Year (All 12 months)
+            // Months of the Year
             SpeakingPromptItem("Months", "January", "Month 1", "❄️", Color(0xFF3B82F6)),
             SpeakingPromptItem("Months", "February", "Month 2", "💖", Color(0xFFEC4899)),
             SpeakingPromptItem("Months", "March", "Month 3", "🌱", Color(0xFF10B981)),
@@ -547,16 +429,44 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Months", "November", "Month 11", "🍁", Color(0xFFD97706)),
             SpeakingPromptItem("Months", "December", "Month 12", "🎄", Color(0xFF16A34A)),
 
-            // Words
+            // Vocabulary Words
             SpeakingPromptItem("Words", "Apple", "Say: Ap-ple", "🍎", Color(0xFFF97316)),
+            SpeakingPromptItem("Words", "Banana", "Say: Ba-na-na", "🍌", Color(0xFFEAB308)),
             SpeakingPromptItem("Words", "Cat", "Say: C-A-T", "🐱", Color(0xFFA855F7)),
             SpeakingPromptItem("Words", "Dog", "Say: D-O-G", "🐶", Color(0xFF06B6D4)),
             SpeakingPromptItem("Words", "Elephant", "Say: El-e-phant", "🐘", Color(0xFFEC4899)),
-            SpeakingPromptItem("Words", "Banana", "Say: Ba-na-na", "🍌", Color(0xFFEAB308)),
+            SpeakingPromptItem("Words", "Fish", "Say: F-I-S-H", "🐟", Color(0xFF3B82F6)),
+            SpeakingPromptItem("Words", "Giraffe", "Say: Gi-raffe", "🦒", Color(0xFFF59E0B)),
+            SpeakingPromptItem("Words", "House", "Say: H-O-U-S-E", "🏠", Color(0xFF10B981)),
+            SpeakingPromptItem("Words", "Ice Cream", "Say: Ice Cream", "🍦", Color(0xFFEC4899)),
+            SpeakingPromptItem("Words", "Juice", "Say: J-U-I-C-E", "🧃", Color(0xFFF97316)),
+            SpeakingPromptItem("Words", "Kite", "Say: K-I-T-E", "🪁", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Words", "Lion", "Say: Li-on", "🦁", Color(0xFFD97706)),
+            SpeakingPromptItem("Words", "Monkey", "Say: Mon-key", "🐒", Color(0xFF84CC16)),
+            SpeakingPromptItem("Words", "Nest", "Say: N-E-S-T", "🪺", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Words", "Orange", "Say: Or-ange", "🍊", Color(0xFFF97316)),
+            SpeakingPromptItem("Words", "Panda", "Say: Pan-da", "🐼", Color(0xFF64748B)),
+            SpeakingPromptItem("Words", "Queen", "Say: Q-U-E-E-N", "👑", Color(0xFFA855F7)),
+            SpeakingPromptItem("Words", "Rabbit", "Say: Rab-bit", "🐰", Color(0xFFEC4899)),
+            SpeakingPromptItem("Words", "Sun", "Say: S-U-N", "☀️", Color(0xFFEAB308)),
+            SpeakingPromptItem("Words", "Tiger", "Say: Ti-ger", "🐯", Color(0xFFF97316)),
+            SpeakingPromptItem("Words", "Umbrella", "Say: Um-brel-la", "☂️", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Words", "Violin", "Say: Vi-o-lin", "🎻", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Words", "Watermelon", "Say: Wa-ter-mel-on", "🍉", Color(0xFFEF4444)),
+            SpeakingPromptItem("Words", "Xylophone", "Say: Xy-lo-phone", "🎼", Color(0xFF10B981)),
+            SpeakingPromptItem("Words", "Zebra", "Say: Ze-bra", "🦓", Color(0xFF334155)),
 
             // Sentences
             SpeakingPromptItem("Sentences", "This is a cat", "Read clearly", "🐈", Color(0xFF6366F1)),
-            SpeakingPromptItem("Sentences", "I like apples", "Expressive voice", "🍎", Color(0xFF14B8A6))
+            SpeakingPromptItem("Sentences", "I like apples", "Expressive voice", "🍎", Color(0xFF14B8A6)),
+            SpeakingPromptItem("Sentences", "Good morning Leo", "Friendly greeting", "🦁", Color(0xFFF59E0B)),
+            SpeakingPromptItem("Sentences", "The sun is shining", "Bright sentence", "☀️", Color(0xFFEAB308)),
+            SpeakingPromptItem("Sentences", "I love my family", "Warm sentence", "❤️", Color(0xFFEF4444)),
+            SpeakingPromptItem("Sentences", "Can I have juice", "Polite question", "🧃", Color(0xFFF97316)),
+            SpeakingPromptItem("Sentences", "Hello my friend", "Greeting sentence", "👋", Color(0xFF10B981)),
+            SpeakingPromptItem("Sentences", "What a nice day", "Cheerful sentence", "🌈", Color(0xFF06B6D4)),
+            SpeakingPromptItem("Sentences", "See you later", "Farewell sentence", "✨", Color(0xFF8B5CF6)),
+            SpeakingPromptItem("Sentences", "Have a great day", "Encouraging sentence", "🌟", Color(0xFFEC4899))
         )
     }
 
@@ -576,6 +486,7 @@ fun RealSpeakingGameScreen(
     var recognizedCandidates by remember { mutableStateOf<List<String>>(emptyList()) }
 
     var lastEvaluation by remember { mutableStateOf<PronunciationResult?>(null) }
+    var showOfflineMessage by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
 
@@ -596,7 +507,7 @@ fun RealSpeakingGameScreen(
     }
 
     fun performAutoEvaluation() {
-        val result = evaluatePronunciationCandidates(currentItem.targetText, recognizedCandidates)
+        val result = PronunciationEvaluator.evaluatePronunciationCandidates(currentItem.targetText, recognizedCandidates)
         lastEvaluation = result
 
         if (result.isAccepted) {
@@ -619,11 +530,9 @@ fun RealSpeakingGameScreen(
         speechHelper.stopListening()
         hasRecordedAudio = true
 
-        // Step 4: Replay child's recorded voice automatically so they hear their real audio
         isPlayingVoice = true
         recordHelper.playRecordedVoice {
             isPlayingVoice = false
-            // Step 5: Automatically compare & evaluate after replay
             performAutoEvaluation()
         }
     }
@@ -646,8 +555,8 @@ fun RealSpeakingGameScreen(
         lastEvaluation = null
         hasRecordedAudio = false
         isRecording = false
+        showOfflineMessage = false
         recognizedCandidates = emptyList()
-        // Step 1: Play Native English audio automatically when word loads
         playTargetAudio()
     }
 
@@ -669,7 +578,7 @@ fun RealSpeakingGameScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             KkHeader(
-                title = "Pronunciation Coach 🗣️",
+                title = "Leo Coach Speaking 🗣️",
                 starsCount = userStars,
                 onBackClick = onBackClick,
                 isMuted = audioEngine.isMuted,
@@ -716,7 +625,34 @@ fun RealSpeakingGameScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Offline Network Warning Card
+            if (showOfflineMessage) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(bottom = 6.dp)
+                        .shadow(4.dp, RoundedCornerShape(16.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF3C7)),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFF59E0B)),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🌐", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Internet connection is required for pronunciation evaluation.",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF92400E)
+                        )
+                    }
+                }
+            }
 
             // Target Word Card
             Card(
@@ -772,14 +708,14 @@ fun RealSpeakingGameScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(Icons.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFDC2626))
+                        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFDC2626))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Listen Again 🔊", color = Color(0xFF991B1B), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Automatic Evaluation Result Display
             lastEvaluation?.let { res ->
@@ -876,6 +812,15 @@ fun RealSpeakingGameScreen(
                                 }
 
                                 if (!isRecording) {
+                                    // Check internet connection requirement
+                                    val isConnected = NetworkUtils.isInternetAvailable(context)
+                                    if (!isConnected) {
+                                        showOfflineMessage = true
+                                        audioEngine.speak("Internet connection is required for pronunciation evaluation.")
+                                        return@clickable
+                                    }
+
+                                    showOfflineMessage = false
                                     recordHelper.startRecording()
                                     isRecording = true
                                     hasRecordedAudio = false
@@ -886,7 +831,7 @@ fun RealSpeakingGameScreen(
                                             recognizedCandidates = candidates
                                         },
                                         onError = {
-                                            // Speech recognizer error fallback
+                                            // Speech recognizer error
                                         }
                                     )
                                 } else {
@@ -933,7 +878,7 @@ fun RealSpeakingGameScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Icon(
-                            if (isPlayingVoice) Icons.Filled.VolumeUp else Icons.Filled.PlayArrow,
+                            if (isPlayingVoice) Icons.AutoMirrored.Filled.VolumeUp else Icons.Filled.PlayArrow,
                             contentDescription = "Replay Voice",
                             tint = Color.White
                         )
@@ -962,7 +907,7 @@ fun RealSpeakingGameScreen(
 
             KkLionMascot(
                 state = if (showRewardDialog) MascotState.CELEBRATE else MascotState.HAPPY,
-                speechBubbleText = "Press Record & speak in English! I will listen!",
+                speechBubbleText = "Press Record & speak in English! Leo is listening!",
                 onClick = { playTargetAudio() }
             )
         }

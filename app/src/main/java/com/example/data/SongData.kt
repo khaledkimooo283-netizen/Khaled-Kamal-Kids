@@ -48,10 +48,10 @@ object SongDataRepository {
             categoryEmoji = "🔢",
             themeColor = 0xFF3B82F6,
             lyricsLines = listOf(
-                SongLyricLine("0, 1, 2, 3, 4, 5... Start counting!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("Zero", "One", "Two", "Three", "Four", "Five")),
-                SongLyricLine("6, 7, 8, 9, 10... Keep going!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("Six", "Seven", "Eight", "Nine", "Ten")),
-                SongLyricLine("11, 12, 13, 14, 15... Flying high!", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen")),
-                SongLyricLine("16, 17, 18, 19, 20... All the way to 20!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
+                SongLyricLine("0, 1, 2, 3, 4, 5... Start counting!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("0", "1", "2", "3", "4", "5", "Zero", "One", "Two", "Three", "Four", "Five")),
+                SongLyricLine("6, 7, 8, 9, 10... Keep going!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("6", "7", "8", "9", "10", "Six", "Seven", "Eight", "Nine", "Ten")),
+                SongLyricLine("11, 12, 13, 14, 15... Flying high!", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("11", "12", "13", "14", "15", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen")),
+                SongLyricLine("16, 17, 18, 19, 20... All the way to 20!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("16", "17", "18", "19", "20", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
                 SongLyricLine("We counted from Zero all the way to Twenty!", "We counted from Zero all the way to Twenty!", "🌟", listOf("Zero to Twenty"))
             ),
             actionChallenge = MovementAction("👣 Jump up and down 2 times!", "👣", "JUMP")

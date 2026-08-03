@@ -689,7 +689,10 @@ object HandwritingData {
         for (i in 0 until drawnPoints.size - 1) {
             val (x1, y1) = drawnPoints[i]
             val (x2, y2) = drawnPoints[i + 1]
-            totalDrawnLen += hypot(x2 - x1, y2 - y1)
+            val d = hypot(x2 - x1, y2 - y1)
+            if (d <= tolerance * 3f) {
+                totalDrawnLen += d
+            }
         }
 
         var totalGuideLen = 0f
@@ -817,33 +820,41 @@ object HandwritingData {
         // 5. Direction & Trajectory Flow Check
         var directionScore = 0
         var totalSegmentChecks = 0
-        val flatStrokes = strokes.flatten()
-        if (flatStrokes.size > 5) {
+        val indexedGuidePoints = mutableListOf<Triple<Int, Int, Pair<Float, Float>>>()
+        strokes.forEachIndexed { sIdx, stroke ->
+            stroke.forEachIndexed { pIdx, pt ->
+                indexedGuidePoints.add(Triple(sIdx, pIdx, pt))
+            }
+        }
+        if (indexedGuidePoints.size > 5) {
             for (i in 0 until drawnPoints.size - 3 step 3) {
                 val p1 = drawnPoints[i]
                 val p2 = drawnPoints[i + 3]
                 val dx = p2.first - p1.first
                 val dy = p2.second - p1.second
-                if (hypot(dx, dy) > 4f) {
-                    var bestGuideIdx = -1
+                val stepDist = hypot(dx, dy)
+                if (stepDist >= 4f && stepDist <= tolerance * 3f) {
+                    var bestIdx = -1
                     var bestDist = Float.MAX_VALUE
-                    flatStrokes.forEachIndexed { gIdx, gPt ->
-                        val d = hypot(p1.first - gPt.first * canvasSize, p1.second - gPt.second * canvasSize)
+                    indexedGuidePoints.forEachIndexed { idx, igp ->
+                        val d = hypot(p1.first - igp.third.first * canvasSize, p1.second - igp.third.second * canvasSize)
                         if (d < bestDist) {
                             bestDist = d
-                            bestGuideIdx = gIdx
+                            bestIdx = idx
                         }
                     }
 
-                    if (bestGuideIdx >= 0 && bestGuideIdx + 2 < flatStrokes.size) {
-                        val gPt1 = flatStrokes[bestGuideIdx]
-                        val gPt2 = flatStrokes[bestGuideIdx + 2]
-                        val gdx = gPt2.first * canvasSize - gPt1.first * canvasSize
-                        val gdy = gPt2.second * canvasSize - gPt1.second * canvasSize
-                        val dot = dx * gdx + dy * gdy
-                        totalSegmentChecks++
-                        if (dot >= -100f) {
-                            directionScore++
+                    if (bestIdx >= 0 && bestIdx + 2 < indexedGuidePoints.size) {
+                        val igp1 = indexedGuidePoints[bestIdx]
+                        val igp2 = indexedGuidePoints[bestIdx + 2]
+                        if (igp1.first == igp2.first) { // Same stroke check
+                            val gdx = igp2.third.first * canvasSize - igp1.third.first * canvasSize
+                            val gdy = igp2.third.second * canvasSize - igp1.third.second * canvasSize
+                            val dot = dx * gdx + dy * gdy
+                            totalSegmentChecks++
+                            if (dot >= -100f) {
+                                directionScore++
+                            }
                         }
                     }
                 }

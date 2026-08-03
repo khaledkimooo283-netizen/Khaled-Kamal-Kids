@@ -78,7 +78,7 @@ class HandwritingQaTest {
                 canvasSize = canvasSize
             )
 
-            assertTrue("Ideal tracing for Lowercase ${item.character} must be valid", validation.isValid)
+            assertTrue("Ideal tracing for Lowercase ${item.character} must be valid: ${validation.message}", validation.isValid)
             assertTrue("Coverage for ${item.character} should be >= 0.88", validation.coverage >= 0.88f)
             assertTrue("Accuracy for ${item.character} should be >= 0.85", validation.accuracy >= 0.85f)
 
