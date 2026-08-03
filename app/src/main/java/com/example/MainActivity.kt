@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -156,6 +157,22 @@ fun KkKidsApp(
 
         composable("missing_letter") {
             MissingLetterScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("magic_school_bag") {
+            MagicSchoolBagScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("make_pizza") {
+            MakePizzaScreen(
                 repository = repository,
                 audioEngine = audioEngine,
                 onBackClick = { navController.popBackStack() }

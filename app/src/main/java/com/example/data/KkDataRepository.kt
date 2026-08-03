@@ -75,7 +75,6 @@ class KkDataRepository(context: Context) {
 
     // --- Profile & Settings Data ---
     fun getChildName(): String = prefs.getString("child_name", "Ahmed") ?: "Ahmed"
-    fun setChildName(name: String) = prefs.edit().putString("child_name", name).apply()
 
     fun getDobDay(): Int = prefs.getInt("dob_day", 15)
     fun getDobMonth(): Int = prefs.getInt("dob_month", 6) // 1-12

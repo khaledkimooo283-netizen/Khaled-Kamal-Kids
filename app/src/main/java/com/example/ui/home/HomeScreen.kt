@@ -91,6 +91,8 @@ fun HomeScreen(
             HomeCardItem("sorting_game", "Sorting Game", "🔷", "Numbers", 0xFF3B82F6, route = "drag_match"),
 
             HomeCardItem("find_letter", "Find the Letter", "🔍", "Letters", 0xFF6366F1, route = "missing_letter"),
+            HomeCardItem("magic_school_bag", "Magic School Bag", "🎒", "Reading", 0xFF8B5CF6, route = "magic_school_bag"),
+            HomeCardItem("make_pizza", "Make Your Pizza", "🍕", "Numbers", 0xFFF97316, route = "make_pizza"),
             HomeCardItem("ice_cream_shop", "Ice Cream Shop", "🍦", "Numbers", 0xFFE11D48, route = "ice_cream"),
             HomeCardItem("dino_game", "Dino Eggs & Hunt", "🦖", "Adventure", 0xFF8B5CF6, route = "dino_hatch"),
             HomeCardItem("rewards", "Rewards & Badges", "🏆", "Rewards", 0xFFEAB308, route = "rewards"),
