@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.games.*
+import com.example.ui.games.learningworld.LeoLearningWorldScreen
 import com.example.ui.home.HomeScreen
 import com.example.ui.theme.MyApplicationTheme
 
@@ -104,6 +105,14 @@ fun KkKidsApp(
                     repository = repository,
                     audioEngine = audioEngine,
                     onNavigateToGame = { route -> navController.navigate(route) }
+                )
+            }
+
+            composable("learning_world") {
+                LeoLearningWorldScreen(
+                    repository = repository,
+                    audioEngine = audioEngine,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

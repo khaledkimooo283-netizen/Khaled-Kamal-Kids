@@ -613,4 +613,44 @@ data class MatchRound(
         }
         return list
     }
+
+    // --- Leo's Learning World Progression & Stars ---
+    fun getLearningWorldUnlockedIndex(): Int {
+        if (isParentUnlockAllWorldsEnabled()) return 8
+        return prefs.getInt("leo_world_unlocked_idx", 0) // 0 = Home unlocked initially
+    }
+
+    fun unlockNextLearningWorld(currentWorldIdx: Int) {
+        val next = (currentWorldIdx + 1).coerceAtMost(7)
+        val currentMax = prefs.getInt("leo_world_unlocked_idx", 0)
+        if (next > currentMax) {
+            prefs.edit().putInt("leo_world_unlocked_idx", next).apply()
+        }
+    }
+
+    fun getLearningWorldStars(worldId: String): Int {
+        return prefs.getInt("leo_world_stars_$worldId", 0)
+    }
+
+    fun setLearningWorldStars(worldId: String, stars: Int) {
+        val existing = getLearningWorldStars(worldId)
+        val maxStars = existing.coerceAtLeast(stars.coerceIn(0, 3))
+        prefs.edit().putInt("leo_world_stars_$worldId", maxStars).apply()
+    }
+
+    fun getLearningWorldActivityCompleted(worldId: String, activityName: String): Boolean {
+        return prefs.getBoolean("leo_world_${worldId}_act_$activityName", false)
+    }
+
+    fun setLearningWorldActivityCompleted(worldId: String, activityName: String) {
+        prefs.edit().putBoolean("leo_world_${worldId}_act_$activityName", true).apply()
+    }
+
+    fun isParentUnlockAllWorldsEnabled(): Boolean {
+        return prefs.getBoolean("leo_parent_unlock_all_worlds", false)
+    }
+
+    fun setParentUnlockAllWorldsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("leo_parent_unlock_all_worlds", enabled).apply()
+    }
 }
