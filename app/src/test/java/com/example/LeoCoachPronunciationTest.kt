@@ -126,6 +126,50 @@ class LeoCoachPronunciationTest {
     }
 
     @Test
+    fun testPromptSpecificLettersAndWords() {
+        // Letters A, B, C, E
+        val aResult = PronunciationEvaluator.evaluatePronunciationCandidates("A", listOf("a", "ay"))
+        assertTrue("Letter A should pass for 'a'", aResult.isAccepted)
+
+        val bResult = PronunciationEvaluator.evaluatePronunciationCandidates("B", listOf("b", "bee"))
+        assertTrue("Letter B should pass for 'bee'", bResult.isAccepted)
+
+        val bWrongBanana = PronunciationEvaluator.evaluatePronunciationCandidates("B", listOf("banana"))
+        assertFalse("Letter B should FAIL when child says 'banana'", bWrongBanana.isAccepted)
+
+        val bWrongBook = PronunciationEvaluator.evaluatePronunciationCandidates("B", listOf("book"))
+        assertFalse("Letter B should FAIL when child says 'book'", bWrongBook.isAccepted)
+
+        val cResult = PronunciationEvaluator.evaluatePronunciationCandidates("C", listOf("see"))
+        assertTrue("Letter C should pass for 'see'", cResult.isAccepted)
+
+        val eResult = PronunciationEvaluator.evaluatePronunciationCandidates("E", listOf("ee"))
+        assertTrue("Letter E should pass for 'ee'", eResult.isAccepted)
+
+        // Words: apple, ball, cat, dog, before
+        val applePass = PronunciationEvaluator.evaluatePronunciationCandidates("apple", listOf("apple"))
+        assertTrue("Word 'apple' should pass", applePass.isAccepted)
+
+        val ballPass = PronunciationEvaluator.evaluatePronunciationCandidates("ball", listOf("ball"))
+        assertTrue("Word 'ball' should pass", ballPass.isAccepted)
+
+        val catPass = PronunciationEvaluator.evaluatePronunciationCandidates("cat", listOf("cat"))
+        assertTrue("Word 'cat' should pass", catPass.isAccepted)
+
+        val dogPass = PronunciationEvaluator.evaluatePronunciationCandidates("dog", listOf("dog"))
+        assertTrue("Word 'dog' should pass", dogPass.isAccepted)
+
+        val beforePass = PronunciationEvaluator.evaluatePronunciationCandidates("before", listOf("before"))
+        assertTrue("Word 'before' should pass", beforePass.isAccepted)
+
+        val beforeWrongBanana = PronunciationEvaluator.evaluatePronunciationCandidates("before", listOf("banana"))
+        assertFalse("Word 'before' should FAIL when child says 'banana'", beforeWrongBanana.isAccepted)
+
+        val beforeWrongBook = PronunciationEvaluator.evaluatePronunciationCandidates("before", listOf("book"))
+        assertFalse("Word 'before' should FAIL when child says 'book'", beforeWrongBook.isAccepted)
+    }
+
+    @Test
     fun testNegativeAndArabicSpeechRejection() {
         // Wrong word target
         val wrongResult = PronunciationEvaluator.evaluatePronunciationCandidates("Apple", listOf("banana"))
@@ -134,10 +178,11 @@ class LeoCoachPronunciationTest {
         // Arabic speech
         val arabicResult = PronunciationEvaluator.evaluatePronunciationCandidates("Cat", listOf("قطة"))
         assertFalse("Cat should NOT be accepted when child spoke Arabic", arabicResult.isAccepted)
-        assertTrue("Feedback should mention Arabic speech", arabicResult.feedbackMessage.contains("Arabic"))
+        assertTrue("Feedback should mention English speech", arabicResult.feedbackMessage.contains("English"))
 
         // Silence / Empty input
         val silenceResult = PronunciationEvaluator.evaluatePronunciationCandidates("Dog", emptyList())
         assertFalse("Dog should NOT be accepted when there is silence", silenceResult.isAccepted)
+        assertEquals("I couldn't hear you. Try again.", silenceResult.feedbackMessage)
     }
 }

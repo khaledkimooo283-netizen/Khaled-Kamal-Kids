@@ -67,6 +67,7 @@ fun HomeScreen(
         listOf(
             HomeCardItem("learn_letters", "Learn Letters", "🔤", "Letters", 0xFF6366F1, route = "capital_small"),
             HomeCardItem("learn_numbers", "Learn Numbers", "🔢", "Numbers", 0xFFEC4899, route = "train"),
+            HomeCardItem("run_and_learn", "Run & Learn", "🏃", "Adventure", 0xFF10B981, route = "run_learn"),
             HomeCardItem("songs_karaoke", "Songs & Karaoke", "🎵", "Speaking", 0xFFF59E0B, route = "songs_music"),
 
             HomeCardItem("real_speaking", "Leo Coach Speaking", "🗣️", "Speaking", 0xFFDC2626, route = "real_speaking"),
@@ -81,7 +82,6 @@ fun HomeScreen(
             HomeCardItem("vocabulary_book", "Vocabulary Book", "📖", "Reading", 0xFF6366F1, route = "dictionary"),
             HomeCardItem("memory_game", "Memory Game", "🧠", "Creativity", 0xFFA855F7, route = "memory"),
             HomeCardItem("handwriting", "Handwriting Tracing", "✏️", "Writing", 0xFFEAB308, route = "tracing"),
-            HomeCardItem("workbook", "Letter Writing Workbook", "📝", "Writing", 0xFF059669, route = "handwriting_workbook"),
 
             HomeCardItem("puzzle_game", "Puzzle Game", "🧩", "Creativity", 0xFFA855F7, route = "odd_one_out"),
             HomeCardItem("treasure_hunt", "Treasure Hunt", "💎", "Adventure", 0xFFD97706, route = "treasure_hunt"),

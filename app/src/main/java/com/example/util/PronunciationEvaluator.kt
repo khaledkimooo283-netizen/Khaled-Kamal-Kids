@@ -175,7 +175,7 @@ object PronunciationEvaluator {
                 scoreRange = "Below 70%",
                 ratingTitle = "Try Again ❌",
                 isAccepted = false,
-                feedbackMessage = "Arabic speech detected! Please pronounce \"$targetText\" in clear English.",
+                feedbackMessage = "Please speak in English! Try again.",
                 recognizedSpeech = speechInput
             )
         }
@@ -189,7 +189,7 @@ object PronunciationEvaluator {
                 scoreRange = "Below 70%",
                 ratingTitle = "Try Again ❌",
                 isAccepted = false,
-                feedbackMessage = "No speech detected. Please speak clearly into the microphone!",
+                feedbackMessage = "I couldn't hear you. Try again.",
                 recognizedSpeech = "[Silence]"
             )
         }
@@ -200,13 +200,12 @@ object PronunciationEvaluator {
         var isAccepted = false
         var finalScore = 0
 
-        // 1. Single Letter evaluation (e.g., target = "a", "b", "c")
+        // 1. Single Letter evaluation (e.g., target = "a", "b", "c", "e")
         if (cleanTarget.length == 1 && cleanTarget in "a".."z") {
             val homophones = LETTER_HOMOPHONES[cleanTarget] ?: setOf(cleanTarget)
             val isMatch = cleanInput == cleanTarget ||
                     cleanInput in homophones ||
-                    inputWords.any { it == cleanTarget || it in homophones } ||
-                    cleanInput.startsWith(cleanTarget)
+                    inputWords.any { it == cleanTarget || it in homophones }
 
             if (isMatch) {
                 isAccepted = true
@@ -229,8 +228,7 @@ object PronunciationEvaluator {
         else if (DAY_EQUIVALENTS.containsKey(cleanTarget)) {
             val equivalents = DAY_EQUIVALENTS[cleanTarget] ?: setOf(cleanTarget)
             val isMatch = cleanInput in equivalents ||
-                    inputWords.any { it in equivalents } ||
-                    equivalents.any { cleanInput.contains(it) }
+                    inputWords.any { it in equivalents }
 
             if (isMatch) {
                 isAccepted = true
@@ -241,18 +239,24 @@ object PronunciationEvaluator {
         else if (MONTH_EQUIVALENTS.containsKey(cleanTarget)) {
             val equivalents = MONTH_EQUIVALENTS[cleanTarget] ?: setOf(cleanTarget)
             val isMatch = cleanInput in equivalents ||
-                    inputWords.any { it in equivalents } ||
-                    equivalents.any { cleanInput.contains(it) }
+                    inputWords.any { it in equivalents }
 
             if (isMatch) {
                 isAccepted = true
                 finalScore = 100
             }
         }
-        // 5. Single Word evaluation (e.g., "apple", "cat", "elephant", "watermelon")
+        // 5. Single Word evaluation (e.g., "apple", "cat", "dog", "before", "watermelon")
         else if (targetWords.size == 1) {
             val tWord = targetWords[0]
-            if (inputWords.contains(tWord) || cleanInput == cleanTarget || cleanInput.contains(tWord)) {
+            val cleanNoSpaceInput = cleanInput.replace(" ", "")
+            val cleanNoSpaceTarget = cleanTarget.replace(" ", "")
+
+            if (cleanInput == cleanTarget ||
+                cleanNoSpaceInput == cleanNoSpaceTarget ||
+                inputWords.contains(tWord) ||
+                (inputWords.size == 2 && (inputWords.contains("a") || inputWords.contains("an") || inputWords.contains("the")) && inputWords.contains(tWord))
+            ) {
                 isAccepted = true
                 finalScore = 100
             } else {
@@ -322,9 +326,9 @@ object PronunciationEvaluator {
             PronunciationResult(
                 score = finalScore,
                 scoreRange = if (finalScore >= 90) "95–100%" else "85–94%",
-                ratingTitle = if (finalScore >= 90) "Excellent ⭐⭐⭐⭐⭐" else "Very Good ⭐⭐⭐⭐",
+                ratingTitle = "Great Job! 🎉",
                 isAccepted = true,
-                feedbackMessage = "Great Job! Excellent pronunciation of \"$targetText\"!",
+                feedbackMessage = "Great job!",
                 recognizedSpeech = speechInput
             )
         } else {
@@ -333,7 +337,7 @@ object PronunciationEvaluator {
                 scoreRange = "Below 70%",
                 ratingTitle = "Try Again ❌",
                 isAccepted = false,
-                feedbackMessage = "Target was \"$targetText\", but heard \"$speechInput\". Try again!",
+                feedbackMessage = "Try again.",
                 recognizedSpeech = speechInput
             )
         }
@@ -346,7 +350,7 @@ object PronunciationEvaluator {
                 scoreRange = "Below 70%",
                 ratingTitle = "Try Again ❌",
                 isAccepted = false,
-                feedbackMessage = "No speech detected. Please speak clearly!",
+                feedbackMessage = "I couldn't hear you. Try again.",
                 recognizedSpeech = "[Silence]"
             )
         }

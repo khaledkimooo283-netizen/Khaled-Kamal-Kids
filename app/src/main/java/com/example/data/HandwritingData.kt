@@ -805,15 +805,17 @@ object HandwritingData {
             val widthRatio = uWidth / gWidth
             val heightRatio = uHeight / gHeight
 
-            if (widthRatio < 0.58f || heightRatio < 0.58f || widthRatio > 1.50f || heightRatio > 1.50f) {
-                return TracingValidationResult(
-                    isValid = false,
-                    coverage = coverageRatio,
-                    accuracy = accuracyRatio,
-                    directionCorrect = false,
-                    failedStrokeIndex = 0,
-                    message = "Try Again! Match the letter size and shape. ❌"
-                )
+            if (gWidth > 10f && gHeight > 10f) {
+                if (widthRatio < 0.45f || heightRatio < 0.45f || widthRatio > 1.60f || heightRatio > 1.60f) {
+                    return TracingValidationResult(
+                        isValid = false,
+                        coverage = coverageRatio,
+                        accuracy = accuracyRatio,
+                        directionCorrect = false,
+                        failedStrokeIndex = 0,
+                        message = "Try Again! Match the letter size and shape. ❌"
+                    )
+                }
             }
         }
 

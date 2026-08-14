@@ -127,7 +127,7 @@ private class AudioRecordHelper(private val context: Context) {
             val bufferSize = Math.max(minBufferSize, 2048)
 
             val audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 sampleRate,
                 channelConfig,
                 audioFormat,
@@ -269,9 +269,13 @@ private class AudioRecordHelper(private val context: Context) {
 private class SpeechRecognizeHelper(private val context: Context) {
     private var speechRecognizer: SpeechRecognizer? = null
 
-    fun startListening(onResult: (List<String>) -> Unit, onError: () -> Unit) {
+    fun startListening(
+        onCandidatesFound: (List<String>) -> Unit,
+        onError: (Int) -> Unit
+    ) {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            onError()
+            Log.e("SpeechRecognizeHelper", "Speech recognition not available on device")
+            onError(SpeechRecognizer.ERROR_CLIENT)
             return
         }
         try {
@@ -284,16 +288,19 @@ private class SpeechRecognizeHelper(private val context: Context) {
                     override fun onBufferReceived(buffer: ByteArray?) {}
                     override fun onEndOfSpeech() {}
                     override fun onError(error: Int) {
-                        onError()
+                        Log.e("SpeechRecognizeHelper", "SpeechRecognizer error code: $error")
+                        onError(error)
                     }
                     override fun onResults(results: Bundle?) {
                         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        onResult(matches ?: emptyList())
+                        if (!matches.isNullOrEmpty()) {
+                            onCandidatesFound(matches)
+                        }
                     }
                     override fun onPartialResults(partialResults: Bundle?) {
                         val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         if (!matches.isNullOrEmpty()) {
-                            onResult(matches)
+                            onCandidatesFound(matches)
                         }
                     }
                     override fun onEvent(eventType: Int, params: Bundle?) {}
@@ -311,16 +318,23 @@ private class SpeechRecognizeHelper(private val context: Context) {
             speechRecognizer?.startListening(intent)
         } catch (e: Exception) {
             Log.e("SpeechRecognizeHelper", "Failed to start speech recognition", e)
-            onError()
+            onError(SpeechRecognizer.ERROR_CLIENT)
         }
     }
 
     fun stopListening() {
         try {
             speechRecognizer?.stopListening()
-            speechRecognizer?.destroy()
         } catch (e: Exception) {
             Log.e("SpeechRecognizeHelper", "Failed to stop speech recognizer", e)
+        }
+    }
+
+    fun destroy() {
+        try {
+            speechRecognizer?.destroy()
+        } catch (e: Exception) {
+            Log.e("SpeechRecognizeHelper", "Failed to destroy speech recognizer", e)
         } finally {
             speechRecognizer = null
         }
@@ -517,10 +531,14 @@ fun RealSpeakingGameScreen(
             userStars = repository.getStars()
             showRewardDialog = true
             showConfetti = true
-            audioEngine.speak("Great job! Perfect pronunciation!")
+            audioEngine.speak("Great job!")
         } else {
             audioEngine.playWrongSound()
-            audioEngine.speak("Try again! Listen to coach: ${currentItem.targetText}")
+            if (result.feedbackMessage.contains("hear you")) {
+                audioEngine.speak("I couldn't hear you. Try again.")
+            } else {
+                audioEngine.speak("Try again.")
+            }
         }
     }
 
@@ -565,6 +583,7 @@ fun RealSpeakingGameScreen(
             recordHelper.stopRecording()
             recordHelper.stopPlayback()
             speechHelper.stopListening()
+            speechHelper.destroy()
         }
     }
 
@@ -824,14 +843,20 @@ fun RealSpeakingGameScreen(
                                     recordHelper.startRecording()
                                     isRecording = true
                                     hasRecordedAudio = false
+                                    val candidateList = mutableListOf<String>()
                                     recognizedCandidates = emptyList()
 
                                     speechHelper.startListening(
-                                        onResult = { candidates ->
-                                            recognizedCandidates = candidates
+                                        onCandidatesFound = { candidates ->
+                                            candidates.forEach { c ->
+                                                if (c.isNotBlank() && !candidateList.contains(c)) {
+                                                    candidateList.add(c)
+                                                }
+                                            }
+                                            recognizedCandidates = candidateList.toList()
                                         },
-                                        onError = {
-                                            // Speech recognizer error
+                                        onError = { errCode ->
+                                            Log.e("RealSpeakingScreen", "Speech recognition error code: $errCode")
                                         }
                                     )
                                 } else {

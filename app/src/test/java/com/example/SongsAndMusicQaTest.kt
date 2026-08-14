@@ -42,53 +42,86 @@ class SongsAndMusicQaTest {
     }
 
     @Test
-    fun testNumbersSongIncludesAll20Numbers() {
+    fun testNumbersSongIncludesAll21NumbersZeroThroughTwentyInExactSequence() {
         val numSong = SongDataRepository.songsList.find { it.id == "s_num" }
         assertNotNull("Numbers song must exist", numSong)
 
+        val expectedSequence = listOf(
+            "Zero", "One", "Two", "Three", "Four", "Five",
+            "Six", "Seven", "Eight", "Nine", "Ten",
+            "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
+            "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"
+        )
+
         val allTokens = numSong!!.lyricsLines.flatMap { it.tokens }
-        for (num in 1..20) {
-            val numStr = num.toString()
-            assertTrue(
-                "Numbers song MUST include number '$numStr' explicitly",
-                allTokens.contains(numStr)
-            )
-        }
+        val numberTokens = allTokens.filter { expectedSequence.contains(it) }
+
+        assertEquals(
+            "Numbers song MUST contain all 21 numbers from Zero to Twenty in exact sequence",
+            expectedSequence,
+            numberTokens
+        )
     }
 
     @Test
-    fun testDaysOfWeekSongIncludesAllSevenDays() {
+    fun testDaysOfWeekSongStartsWithSaturdayAndEndsWithFridayInExactSequence() {
         val daysSong = SongDataRepository.songsList.find { it.id == "s_days" }
         assertNotNull("Days of the week song must exist", daysSong)
 
-        val allTokens = daysSong!!.lyricsLines.flatMap { it.tokens }
-        val expectedDays = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        val expectedDays = listOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
-        expectedDays.forEach { day ->
-            assertTrue(
-                "Days of week song MUST include '$day'",
-                allTokens.contains(day)
-            )
-        }
+        val allTokens = daysSong!!.lyricsLines.flatMap { it.tokens }
+        val dayTokens = allTokens.filter { expectedDays.contains(it) }
+
+        assertEquals(
+            "Days of week song MUST start with Saturday and end with Friday in exact sequence",
+            expectedDays,
+            dayTokens
+        )
     }
 
     @Test
-    fun testMonthsOfYearSongIncludesAllTwelveMonths() {
+    fun testMonthsOfYearSongIncludesAllTwelveMonthsIncludingDecember() {
         val monthsSong = SongDataRepository.songsList.find { it.id == "s_months" }
         assertNotNull("Months of year song must exist", monthsSong)
 
-        val allTokens = monthsSong!!.lyricsLines.flatMap { it.tokens }
         val expectedMonths = listOf(
             "January", "February", "March", "April",
             "May", "June", "July", "August",
             "September", "October", "November", "December"
         )
 
-        expectedMonths.forEach { month ->
-            assertTrue(
-                "Months of year song MUST include '$month'",
-                allTokens.contains(month)
-            )
+        val allTokens = monthsSong!!.lyricsLines.flatMap { it.tokens }
+        val monthTokens = allTokens.filter { expectedMonths.contains(it) }
+
+        assertEquals(
+            "Months of year song MUST include all 12 months including December in exact sequence",
+            expectedMonths,
+            monthTokens
+        )
+    }
+
+    @Test
+    fun testPhonicsAndVocabularySongIncludesFullAToZSequence() {
+        val vocabSong = SongDataRepository.songsList.find { it.id == "s_vocab" }
+        assertNotNull("Phonics & Vocabulary song must exist", vocabSong)
+
+        val expectedLetters = ('A'..'Z').map { it.toString() }
+        val expectedWords = listOf(
+            "Apple", "Ball", "Cat", "Dog", "Elephant", "Fish", "Giraffe", "Hat",
+            "Ice cream", "Juice", "Kite", "Lion", "Monkey", "Nose", "Orange",
+            "Pizza", "Queen", "Rabbit", "Sun", "Tiger", "Umbrella", "Van",
+            "Watermelon", "Xylophone", "Yo-yo", "Zebra"
+        )
+
+        val allTokens = vocabSong!!.lyricsLines.flatMap { it.tokens }
+
+        expectedLetters.forEach { letter ->
+            assertTrue("Phonics song MUST contain letter '$letter'", allTokens.contains(letter))
+        }
+
+        expectedWords.forEach { word ->
+            assertTrue("Phonics song MUST contain word '$word'", allTokens.contains(word))
         }
     }
 

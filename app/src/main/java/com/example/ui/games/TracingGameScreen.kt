@@ -434,32 +434,51 @@ fun TracingGameScreen(
                         )
                     }
 
-                    // 5. Draw Animated Demo Pen Path
+                    // 5. Draw Animated Demo Pen Path (Stroke-by-Stroke Order)
                     if (isDemoPlaying) {
-                        val allDemoPts = guideStrokes.flatten()
-                        if (allDemoPts.isNotEmpty()) {
-                            val targetIndex = (demoProgress * (allDemoPts.size - 1)).toInt().coerceIn(0, allDemoPts.size - 1)
-                            val demoPath = Path()
-                            demoPath.moveTo(allDemoPts[0].first * w, allDemoPts[0].second * h)
-                            for (i in 1..targetIndex) {
-                                demoPath.lineTo(allDemoPts[i].first * w, allDemoPts[i].second * h)
+                        val totalPoints = guideStrokes.sumOf { it.size }
+                        if (totalPoints > 0) {
+                            val globalProgressIdx = (demoProgress * (totalPoints - 1)).toInt().coerceIn(0, totalPoints - 1)
+                            var accumulatedCount = 0
+
+                            guideStrokes.forEachIndexed { _, strokePts ->
+                                if (strokePts.size > 1) {
+                                    val strokeStartIdx = accumulatedCount
+                                    val strokeEndIdx = accumulatedCount + strokePts.size - 1
+                                    accumulatedCount += strokePts.size
+
+                                    if (globalProgressIdx >= strokeStartIdx) {
+                                        val pointsToDraw = (globalProgressIdx - strokeStartIdx + 1).coerceAtMost(strokePts.size)
+                                        val demoPath = Path()
+                                        demoPath.moveTo(strokePts[0].first * w, strokePts[0].second * h)
+                                        for (i in 1 until pointsToDraw) {
+                                            demoPath.lineTo(strokePts[i].first * w, strokePts[i].second * h)
+                                        }
+                                        drawPath(
+                                            path = demoPath,
+                                            color = Color(0xFF0284C7),
+                                            style = Stroke(width = 24f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                        )
+
+                                        if (globalProgressIdx in strokeStartIdx..strokeEndIdx) {
+                                            val activeLocalIdx = (globalProgressIdx - strokeStartIdx).coerceIn(0, strokePts.size - 1)
+                                            val tip = strokePts[activeLocalIdx]
+                                            drawCircle(
+                                                color = Color(0xFFF59E0B),
+                                                radius = 22f,
+                                                center = Offset(tip.first * w, tip.second * h)
+                                            )
+                                            drawCircle(
+                                                color = Color.White,
+                                                radius = 10f,
+                                                center = Offset(tip.first * w, tip.second * h)
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    accumulatedCount += strokePts.size
+                                }
                             }
-                            drawPath(
-                                path = demoPath,
-                                color = Color(0xFF0284C7),
-                                style = Stroke(width = 24f, cap = StrokeCap.Round, join = StrokeJoin.Round)
-                            )
-                            val tip = allDemoPts[targetIndex]
-                            drawCircle(
-                                color = Color(0xFFF59E0B),
-                                radius = 22f,
-                                center = Offset(tip.first * w, tip.second * h)
-                            )
-                            drawCircle(
-                                color = Color.White,
-                                radius = 10f,
-                                center = Offset(tip.first * w, tip.second * h)
-                            )
                         }
                     }
                 }

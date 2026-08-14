@@ -41,17 +41,17 @@ object SongDataRepository {
             actionChallenge = MovementAction("👏 Clap your hands 3 times!", "👏", "CLAP")
         ),
 
-        // 2. Numbers 0 to 20 Song (Complete 0-20, no numbers skipped)
+        // 2. Numbers 0 to 20 Song (Complete 0-20, no numbers skipped, exact sequence Zero to Twenty)
         SongItem(
             id = "s_num",
             title = "Numbers 0 to 20 Song",
             categoryEmoji = "🔢",
             themeColor = 0xFF3B82F6,
             lyricsLines = listOf(
-                SongLyricLine("0, 1, 2, 3, 4, 5... Start counting!", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("0", "1", "2", "3", "4", "5", "Zero", "One", "Two", "Three", "Four", "Five")),
-                SongLyricLine("6, 7, 8, 9, 10... Keep going!", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("6", "7", "8", "9", "10", "Six", "Seven", "Eight", "Nine", "Ten")),
-                SongLyricLine("11, 12, 13, 14, 15... Flying high!", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("11", "12", "13", "14", "15", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen")),
-                SongLyricLine("16, 17, 18, 19, 20... All the way to 20!", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("16", "17", "18", "19", "20", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
+                SongLyricLine("Zero, One, Two, Three, Four, Five", "Zero, One, Two, Three, Four, Five", "0️⃣", listOf("Zero", "One", "Two", "Three", "Four", "Five")),
+                SongLyricLine("Six, Seven, Eight, Nine, Ten", "Six, Seven, Eight, Nine, Ten", "5️⃣", listOf("Six", "Seven", "Eight", "Nine", "Ten")),
+                SongLyricLine("Eleven, Twelve, Thirteen, Fourteen, Fifteen", "Eleven, Twelve, Thirteen, Fourteen, Fifteen", "🔟", listOf("Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen")),
+                SongLyricLine("Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "Sixteen, Seventeen, Eighteen, Nineteen, Twenty", "2️⃣0️⃣", listOf("Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty")),
                 SongLyricLine("We counted from Zero all the way to Twenty!", "We counted from Zero all the way to Twenty!", "🌟", listOf("Zero to Twenty"))
             ),
             actionChallenge = MovementAction("👣 Jump up and down 2 times!", "👣", "JUMP")
@@ -92,17 +92,17 @@ object SongDataRepository {
             actionChallenge = MovementAction("👋 Wave hello to your animal friends!", "👋", "WAVE")
         ),
 
-        // 5. Days of the Week Song (Starting strictly on Sunday)
+        // 5. Days of the Week Song (Starting strictly on Saturday, through to Friday)
         SongItem(
             id = "s_days",
             title = "Days of the Week Song",
             categoryEmoji = "📅",
             themeColor = 0xFF8B5CF6,
             lyricsLines = listOf(
-                SongLyricLine("Sunday, Monday, Tuesday!", "Sunday, Monday, Tuesday!", "🌅", listOf("Sunday", "Monday", "Tuesday")),
-                SongLyricLine("Wednesday, Thursday, Friday!", "Wednesday, Thursday, Friday!", "☀️", listOf("Wednesday", "Thursday", "Friday")),
-                SongLyricLine("And Saturday makes seven days!", "And Saturday makes seven days!", "🌈", listOf("Saturday")),
-                SongLyricLine("Sunday to Saturday, 7 days in a week!", "Sunday to Saturday, seven days in a week!", "🎉", listOf("Seven Days"))
+                SongLyricLine("Saturday, Sunday, Monday!", "Saturday, Sunday, Monday!", "🌅", listOf("Saturday", "Sunday", "Monday")),
+                SongLyricLine("Tuesday, Wednesday, Thursday!", "Tuesday, Wednesday, Thursday!", "☀️", listOf("Tuesday", "Wednesday", "Thursday")),
+                SongLyricLine("And Friday makes seven days!", "And Friday makes seven days!", "🌈", listOf("Friday")),
+                SongLyricLine("Saturday to Friday, 7 days in a week!", "Saturday to Friday, seven days in a week!", "🎉", listOf("Seven Days"))
             ),
             actionChallenge = MovementAction("🔄 Spin around in a circle!", "🔄", "SPIN")
         ),
@@ -114,10 +114,10 @@ object SongDataRepository {
             categoryEmoji = "🗓️",
             themeColor = 0xFF06B6D4,
             lyricsLines = listOf(
-                SongLyricLine("January, February, March, April!", "January, February, March, and April!", "❄️", listOf("January", "February", "March", "April")),
-                SongLyricLine("May, June, July, August!", "May, June, July, and August!", "🌻", listOf("May", "June", "July", "August")),
-                SongLyricLine("September, October, November, December!", "September, October, November, and December!", "🍂", listOf("September", "October", "November", "December")),
-                SongLyricLine("12 Months from January to December!", "All twelve months of the year from January to December!", "🎄", listOf("January to December"))
+                SongLyricLine("January, February, March, April", "January, February, March, April", "❄️", listOf("January", "February", "March", "April")),
+                SongLyricLine("May, June, July, August", "May, June, July, August", "🌻", listOf("May", "June", "July", "August")),
+                SongLyricLine("September, October, November, December", "September, October, November, December", "🍂", listOf("September", "October", "November", "December")),
+                SongLyricLine("Twelve months from January to December!", "Twelve months from January to December!", "🎄", listOf("January to December"))
             ),
             actionChallenge = MovementAction("👏 Clap your hands for twelve months!", "👏", "CLAP")
         ),
@@ -138,20 +138,27 @@ object SongDataRepository {
             actionChallenge = MovementAction("👋 Wave hello and smile!", "👋", "WAVE")
         ),
 
-        // 8. Vocabulary & Phonics Song (A to Z Phonics)
+        // 8. Vocabulary & Phonics Song (Complete A to Z Phonics)
         SongItem(
             id = "s_vocab",
             title = "Phonics & Vocabulary Song (A-Z)",
             categoryEmoji = "🔤",
             themeColor = 0xFF14B8A6,
             lyricsLines = listOf(
-                SongLyricLine("A is for Apple... A A Apple!", "A is for Apple! A, A, Apple!", "🍎", listOf("A", "Apple")),
-                SongLyricLine("B is for Ball... B B Ball!", "B is for Ball! B, B, Ball!", "⚽", listOf("B", "Ball")),
-                SongLyricLine("C is for Cat... C C Cat!", "C is for Cat! C, C, Cat!", "🐱", listOf("C", "Cat")),
-                SongLyricLine("D is for Dog... D D Dog!", "D is for Dog! D, D, Dog!", "🐶", listOf("D", "Dog")),
-                SongLyricLine("E is for Elephant... E E Elephant!", "E is for Elephant! E, E, Elephant!", "🐘", listOf("E", "Elephant")),
-                SongLyricLine("F is for Fish... F F Fish!", "F is for Fish! F, F, Fish!", "🐟", listOf("F", "Fish")),
-                SongLyricLine("G to Z Phonics fun for everyone!", "G to Z Phonics fun for everyone!", "🌟", listOf("Phonics"))
+                SongLyricLine("A is for Apple, B is for Ball", "A is for Apple! B is for Ball!", "🍎", listOf("A", "Apple", "B", "Ball")),
+                SongLyricLine("C is for Cat, D is for Dog", "C is for Cat! D is for Dog!", "🐱", listOf("C", "Cat", "D", "Dog")),
+                SongLyricLine("E is for Elephant, F is for Fish", "E is for Elephant! F is for Fish!", "🐘", listOf("E", "Elephant", "F", "Fish")),
+                SongLyricLine("G is for Giraffe, H is for Hat", "G is for Giraffe! H is for Hat!", "🦒", listOf("G", "Giraffe", "H", "Hat")),
+                SongLyricLine("I is for Ice cream, J is for Juice", "I is for Ice cream! J is for Juice!", "🍦", listOf("I", "Ice cream", "J", "Juice")),
+                SongLyricLine("K is for Kite, L is for Lion", "K is for Kite! L is for Lion!", "🪁", listOf("K", "Kite", "L", "Lion")),
+                SongLyricLine("M is for Monkey, N is for Nose", "M is for Monkey! N is for Nose!", "🐒", listOf("M", "Monkey", "N", "Nose")),
+                SongLyricLine("O is for Orange, P is for Pizza", "O is for Orange! P is for Pizza!", "🍊", listOf("O", "Orange", "P", "Pizza")),
+                SongLyricLine("Q is for Queen, R is for Rabbit", "Q is for Queen! R is for Rabbit!", "👑", listOf("Q", "Queen", "R", "Rabbit")),
+                SongLyricLine("S is for Sun, T is for Tiger", "S is for Sun! T is for Tiger!", "☀️", listOf("S", "Sun", "T", "Tiger")),
+                SongLyricLine("U is for Umbrella, V is for Van", "U is for Umbrella! V is for Van!", "☂️", listOf("U", "Umbrella", "V", "Van")),
+                SongLyricLine("W is for Watermelon, X is for Xylophone", "W is for Watermelon! X is for Xylophone!", "🍉", listOf("W", "Watermelon", "X", "Xylophone")),
+                SongLyricLine("Y is for Yo-yo, Z is for Zebra", "Y is for Yo-yo! Z is for Zebra!", "🦓", listOf("Y", "Yo-yo", "Z", "Zebra")),
+                SongLyricLine("Phonics fun from A to Z!", "Phonics fun from A to Z!", "🌟", listOf("Phonics A to Z"))
             ),
             actionChallenge = MovementAction("👣 Jump like an elephant!", "🐘", "JUMP")
         )

@@ -329,56 +329,62 @@ fun SongsAndMusicScreen(
         label = "ScaleAnim"
     )
 
-    // Synchronized Preloaded Audio & Singing Logic
-    LaunchedEffect(isSongPlaying, currentSongIndex, isKaraokeMode) {
-        if (isSongPlaying) {
-            currentLineIndex = 0
-            currentTokenIndex = -1
-            isMovementPaused = false
+    // Reset playback indices when changing song or mode
+    LaunchedEffect(currentSongIndex, isKaraokeMode) {
+        audioEngine.stop()
+        isSongPlaying = false
+        currentLineIndex = 0
+        currentTokenIndex = -1
+        isMovementPaused = false
+    }
 
-            for (i in currentSong.lyricsLines.indices) {
-                if (!isSongPlaying) break
-                currentLineIndex = i
-                val line = currentSong.lyricsLines[i]
+    // Synchronized Preloaded Audio & Singing Logic
+    LaunchedEffect(isSongPlaying) {
+        if (isSongPlaying) {
+            val totalLines = currentSong.lyricsLines.size
+            if (currentLineIndex >= totalLines) {
+                currentLineIndex = 0
+                currentTokenIndex = -1
+            }
+
+            while (currentLineIndex < totalLines && isSongPlaying) {
+                val line = currentSong.lyricsLines[currentLineIndex]
 
                 if (!isKaraokeMode) {
                     if (line.tokens.isNotEmpty()) {
-                        for (tIdx in line.tokens.indices) {
+                        val startToken = if (currentTokenIndex in 0 until line.tokens.size) currentTokenIndex else 0
+                        for (tIdx in startToken until line.tokens.size) {
                             if (!isSongPlaying) break
                             currentTokenIndex = tIdx
                             val token = line.tokens[tIdx]
                             audioEngine.speakAndWait(token)
                             delay(180)
                         }
-                        currentTokenIndex = -1
+                        if (isSongPlaying) currentTokenIndex = -1
                     } else {
                         audioEngine.speakAndWait(line.spokenText)
                         delay(250)
                     }
                 } else {
                     if (line.tokens.isNotEmpty()) {
-                        for (tIdx in line.tokens.indices) {
+                        val startToken = if (currentTokenIndex in 0 until line.tokens.size) currentTokenIndex else 0
+                        for (tIdx in startToken until line.tokens.size) {
                             if (!isSongPlaying) break
                             currentTokenIndex = tIdx
                             delay(600)
                         }
-                        currentTokenIndex = -1
+                        if (isSongPlaying) currentTokenIndex = -1
                     } else {
                         delay(2200)
                     }
                 }
 
-                // Trigger Movement Action Challenge at mid-song
-                if (i == currentSong.lyricsLines.size / 2) {
-                    isMovementPaused = true
-                    audioEngine.speakAndWait("Pause! ${currentSong.actionChallenge.promptText}")
-                    while (isMovementPaused && isSongPlaying) {
-                        delay(300)
-                    }
-                }
+                if (!isSongPlaying) break
+                currentLineIndex++
+                currentTokenIndex = -1
             }
 
-            if (isSongPlaying && !isMovementPaused) {
+            if (isSongPlaying && currentLineIndex >= totalLines) {
                 showConfetti = true
                 repository.addStars(5)
                 userStars = repository.getStars()
@@ -386,7 +392,11 @@ fun SongsAndMusicScreen(
                 audioEngine.speakAndWait("Bravo! You sang ${currentSong.title}!")
                 showRewardDialog = true
                 isSongPlaying = false
+                currentLineIndex = 0
+                currentTokenIndex = -1
             }
+        } else {
+            audioEngine.stop()
         }
     }
 
@@ -523,23 +533,47 @@ fun SongsAndMusicScreen(
                             color = Color.White
                         )
 
-                        IconButton(
-                            onClick = {
-                                isSongPlaying = !isSongPlaying
-                                if (isSongPlaying) {
-                                    audioEngine.speak("Let's sing ${currentSong.title}!")
-                                }
-                            },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color.White, CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = if (isSongPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                contentDescription = "Play Control",
-                                tint = Color(currentSong.themeColor),
-                                modifier = Modifier.size(32.dp)
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Restart Button
+                            IconButton(
+                                onClick = {
+                                    audioEngine.stop()
+                                    isSongPlaying = false
+                                    currentLineIndex = 0
+                                    currentTokenIndex = -1
+                                    isSongPlaying = true
+                                },
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(Color.White.copy(alpha = 0.85f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = "Restart Song",
+                                    tint = Color(currentSong.themeColor),
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+
+                            // Play / Pause Button
+                            IconButton(
+                                onClick = {
+                                    isSongPlaying = !isSongPlaying
+                                    if (isSongPlaying) {
+                                        audioEngine.speak("Singing ${currentSong.title}!")
+                                    }
+                                },
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(Color.White, CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (isSongPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                    contentDescription = "Play Control",
+                                    tint = Color(currentSong.themeColor),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
                         }
                     }
 

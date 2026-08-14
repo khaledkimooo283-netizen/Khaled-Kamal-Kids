@@ -123,6 +123,14 @@ fun KkKidsApp(
             )
         }
 
+        composable("run_learn") {
+            RunAndLearnScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         composable("dictionary") {
             DictionaryScreen(
                 repository = repository,
@@ -375,14 +383,6 @@ fun KkKidsApp(
 
         composable("real_speaking") {
             RealSpeakingGameScreen(
-                repository = repository,
-                audioEngine = audioEngine,
-                onBackClick = { navController.popBackStack() }
-            )
-        }
-
-        composable("handwriting_workbook") {
-            HandwritingWorkbookScreen(
                 repository = repository,
                 audioEngine = audioEngine,
                 onBackClick = { navController.popBackStack() }
