@@ -24,7 +24,7 @@ import com.example.data.KkDataRepository
 import com.example.ui.components.*
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 
 data class NumberQuantityInfo(
     val number: Int,
@@ -199,7 +199,7 @@ fun TypingGameScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
-                                imageVector = Icons.Filled.VolumeUp,
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                 contentDescription = "Pronounce",
                                 tint = Color(0xFF8E24AA),
                                 modifier = Modifier.size(24.dp)

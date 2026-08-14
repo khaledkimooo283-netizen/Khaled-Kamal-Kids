@@ -559,7 +559,7 @@ fun ProfileSettingsScreen(
                             color = Color(0xFF1E293B)
                         )
 
-                        Divider(color = Color(0xFFF1F5F9))
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
 
                         Row(
                             modifier = Modifier
@@ -851,7 +851,7 @@ fun SkillProgressBar(skillName: String, accuracy: Int, barColor: Color) {
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
-            progress = accuracy / 100f,
+            progress = { accuracy / 100f },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)

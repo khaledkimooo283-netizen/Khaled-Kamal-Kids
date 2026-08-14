@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -300,7 +301,7 @@ fun ColorByNumberGameScreen(
                         .background(Color.White, CircleShape)
                         .shadow(2.dp, CircleShape)
                 ) {
-                    Icon(Icons.Filled.ArrowForward, contentDescription = "Next", tint = Color(0xFF9333EA))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next", tint = Color(0xFF9333EA))
                 }
             }
 

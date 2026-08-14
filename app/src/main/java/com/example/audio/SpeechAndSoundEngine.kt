@@ -79,7 +79,11 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
 
         if (!isTtsReady || tts == null) return
 
-        val locale = if (language == "Arabic") Locale("ar", "EG") else Locale.US
+        val locale = if (language == "Arabic") {
+            Locale.Builder().setLanguage("ar").setRegion("EG").build()
+        } else {
+            Locale.US
+        }
         val res = tts?.setLanguage(locale)
         if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
             // Fallback to US if specific language not fully supported
