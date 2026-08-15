@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -819,7 +820,7 @@ fun ListenAndChooseActivity(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.padding(bottom = 20.dp)
         ) {
-            Icon(Icons.Default.VolumeUp, contentDescription = "Play Word")
+            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Play Word")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Listen Again", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
