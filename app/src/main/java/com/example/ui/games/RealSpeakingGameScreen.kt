@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,11 +45,15 @@ import androidx.core.content.ContextCompat
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.components.*
+import com.example.util.AssessmentErrorType
 import com.example.util.NetworkUtils
+import com.example.util.PhonemeDictionary
+import com.example.util.PronunciationAssessmentResult
 import com.example.util.PronunciationEvaluator
 import com.example.util.PronunciationResult
 import com.example.util.SpeakingPromptItem
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 
 private fun createValidWavFallback(file: File) {
@@ -349,6 +354,7 @@ fun RealSpeakingGameScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val recordHelper = remember { AudioRecordHelper(context) }
     val speechHelper = remember { SpeechRecognizeHelper(context) }
 
@@ -481,7 +487,10 @@ fun RealSpeakingGameScreen(
             SpeakingPromptItem("Sentences", "What a nice day", "Cheerful sentence", "🌈", Color(0xFF06B6D4)),
             SpeakingPromptItem("Sentences", "See you later", "Farewell sentence", "✨", Color(0xFF8B5CF6)),
             SpeakingPromptItem("Sentences", "Have a great day", "Encouraging sentence", "🌟", Color(0xFFEC4899))
-        )
+        ).map { item ->
+            val (ipa, phonemes) = PhonemeDictionary.getIpaAndPhonemes(item.targetText)
+            item.copy(ipaPhonemes = ipa, phonemes = phonemes)
+        }
     }
 
     val filteredPrompts = remember(selectedCategory) {
@@ -495,11 +504,13 @@ fun RealSpeakingGameScreen(
 
     var isRecording by remember { mutableStateOf(false) }
     var isPlayingVoice by remember { mutableStateOf(false) }
+    var isEvaluating by remember { mutableStateOf(false) }
     var hasRecordedAudio by remember { mutableStateOf(false) }
     var recordingTimerSec by remember { mutableIntStateOf(0) }
     var recognizedCandidates by remember { mutableStateOf<List<String>>(emptyList()) }
 
     var lastEvaluation by remember { mutableStateOf<PronunciationResult?>(null) }
+    var lastAssessmentResult by remember { mutableStateOf<PronunciationAssessmentResult?>(null) }
     var showOfflineMessage by remember { mutableStateOf(false) }
     var showRewardDialog by remember { mutableStateOf(false) }
     var showConfetti by remember { mutableStateOf(false) }
@@ -520,24 +531,82 @@ fun RealSpeakingGameScreen(
         audioEngine.speak(currentItem.targetText)
     }
 
-    fun performAutoEvaluation() {
-        val result = PronunciationEvaluator.evaluatePronunciationCandidates(currentItem.targetText, recognizedCandidates)
-        lastEvaluation = result
+    fun evaluateCapturedAudio() {
+        val audioFile = recordHelper.audioFile ?: run {
+            lastEvaluation = PronunciationResult(
+                score = 0,
+                scoreRange = "Below 70%",
+                ratingTitle = "Try Again ❌",
+                isAccepted = false,
+                feedbackMessage = "Leo couldn't hear you. Please speak into the microphone!",
+                recognizedSpeech = "[Silence]"
+            )
+            return
+        }
 
-        if (result.isAccepted) {
-            audioEngine.playCorrectSound()
-            repository.addStars(5)
-            repository.rewardPronunciation()
-            userStars = repository.getStars()
-            showRewardDialog = true
-            showConfetti = true
-            audioEngine.speak("Great job!")
-        } else {
-            audioEngine.playWrongSound()
-            if (result.feedbackMessage.contains("hear you")) {
-                audioEngine.speak("I couldn't hear you. Try again.")
-            } else {
-                audioEngine.speak("Try again.")
+        isEvaluating = true
+        coroutineScope.launch {
+            try {
+                val assessment = PronunciationEvaluator.evaluateAudio(
+                    context = context,
+                    audioFile = audioFile,
+                    targetText = currentItem.targetText,
+                    referencePhonemes = currentItem.ipaPhonemes,
+                    category = currentItem.category
+                )
+
+                lastAssessmentResult = assessment
+                val legacy = assessment.toLegacyResult()
+                lastEvaluation = legacy
+                isEvaluating = false
+
+                if (assessment.passed) {
+                    audioEngine.playCorrectSound()
+                    repository.addStars(5)
+                    repository.rewardPronunciation()
+                    userStars = repository.getStars()
+                    showRewardDialog = true
+                    showConfetti = true
+                    audioEngine.speak("Great job! Perfect pronunciation!")
+                } else {
+                    when (assessment.errorType) {
+                        AssessmentErrorType.NO_SPEECH -> {
+                            audioEngine.speak("I couldn't hear you. Try speaking into the microphone!")
+                        }
+                        AssessmentErrorType.AUDIO_TOO_QUIET -> {
+                            audioEngine.speak("Speak a little louder so Leo can hear you!")
+                        }
+                        AssessmentErrorType.AUDIO_TOO_SHORT -> {
+                            audioEngine.speak("Say the whole word clearly for Leo!")
+                        }
+                        AssessmentErrorType.PERMISSION_DENIED -> {
+                            audioEngine.speak("Microphone permission is required to listen.")
+                        }
+                        else -> {
+                            audioEngine.playWrongSound()
+                            audioEngine.speak("Not quite! Listen to Leo and try again.")
+                            delay(1800)
+                            playTargetAudio()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("RealSpeakingScreen", "Evaluation error", e)
+                isEvaluating = false
+                val fallback = PronunciationEvaluator.evaluatePronunciationCandidates(currentItem.targetText, recognizedCandidates)
+                lastEvaluation = fallback
+                if (fallback.isAccepted) {
+                    audioEngine.playCorrectSound()
+                    repository.addStars(5)
+                    repository.rewardPronunciation()
+                    userStars = repository.getStars()
+                    showRewardDialog = true
+                    showConfetti = true
+                    audioEngine.speak("Great job!")
+                } else {
+                    audioEngine.playWrongSound()
+                    audioEngine.speak("Try again.")
+                }
             }
         }
     }
@@ -551,7 +620,7 @@ fun RealSpeakingGameScreen(
         isPlayingVoice = true
         recordHelper.playRecordedVoice {
             isPlayingVoice = false
-            performAutoEvaluation()
+            evaluateCapturedAudio()
         }
     }
 
@@ -571,8 +640,10 @@ fun RealSpeakingGameScreen(
 
     LaunchedEffect(currentItem) {
         lastEvaluation = null
+        lastAssessmentResult = null
         hasRecordedAudio = false
         isRecording = false
+        isEvaluating = false
         showOfflineMessage = false
         recognizedCandidates = emptyList()
         playTargetAudio()
@@ -664,7 +735,7 @@ fun RealSpeakingGameScreen(
                         Text("🌐", fontSize = 24.sp)
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Internet connection is required for pronunciation evaluation.",
+                            text = "Internet connection is recommended for advanced AI pronunciation feedback.",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF92400E)
@@ -713,7 +784,7 @@ fun RealSpeakingGameScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = currentItem.phoneticHint,
+                        text = "${currentItem.phoneticHint} • ${currentItem.ipaPhonemes}",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF64748B)
@@ -725,7 +796,8 @@ fun RealSpeakingGameScreen(
                     Button(
                         onClick = { playTargetAudio() },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.testTag("listen_again_button")
                     ) {
                         Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Listen", tint = Color(0xFFDC2626))
                         Spacer(modifier = Modifier.width(6.dp))
@@ -737,49 +809,81 @@ fun RealSpeakingGameScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Automatic Evaluation Result Display
-            lastEvaluation?.let { res ->
+            if (isEvaluating) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth(0.9f)
                         .shadow(4.dp, RoundedCornerShape(20.dp)),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (res.isAccepted) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        2.dp,
-                        if (res.isAccepted) Color(0xFF22C55E) else Color(0xFFEF4444)
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF3B82F6))
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (res.isAccepted) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
-                                contentDescription = null,
-                                tint = if (res.isAccepted) Color(0xFF15803D) else Color(0xFFDC2626),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(0xFF2563EB),
+                            strokeWidth = 2.5.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Leo is evaluating your pronunciation... 🦁✨",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E40AF)
+                        )
+                    }
+                }
+            } else {
+                lastEvaluation?.let { res ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth(0.9f)
+                            .shadow(4.dp, RoundedCornerShape(20.dp)),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (res.isAccepted) Color(0xFFDCFCE7) else Color(0xFFFEE2E2)
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            2.dp,
+                            if (res.isAccepted) Color(0xFF22C55E) else Color(0xFFEF4444)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (res.isAccepted) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
+                                    contentDescription = null,
+                                    tint = if (res.isAccepted) Color(0xFF15803D) else Color(0xFFDC2626),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (res.isAccepted) "🎉 ${res.ratingTitle}" else "❌ ${res.ratingTitle}",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (res.isAccepted) Color(0xFF15803D) else Color(0xFFB91C1C)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (res.isAccepted) "🎉 ${res.ratingTitle}" else "❌ Try Again",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Black,
-                                color = if (res.isAccepted) Color(0xFF15803D) else Color(0xFFB91C1C)
+                                text = res.feedbackMessage,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF334155),
+                                textAlign = TextAlign.Center
                             )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = res.feedbackMessage,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF334155),
-                            textAlign = TextAlign.Center
-                        )
                     }
                 }
             }
@@ -824,6 +928,7 @@ fun RealSpeakingGameScreen(
                         shadowElevation = 10.dp,
                         modifier = Modifier
                             .size(80.dp)
+                            .testTag("record_mic_button")
                             .clickable {
                                 if (!hasMicPermission) {
                                     launcher.launch(Manifest.permission.RECORD_AUDIO)
@@ -831,14 +936,6 @@ fun RealSpeakingGameScreen(
                                 }
 
                                 if (!isRecording) {
-                                    // Check internet connection requirement
-                                    val isConnected = NetworkUtils.isInternetAvailable(context)
-                                    if (!isConnected) {
-                                        showOfflineMessage = true
-                                        audioEngine.speak("Internet connection is required for pronunciation evaluation.")
-                                        return@clickable
-                                    }
-
                                     showOfflineMessage = false
                                     recordHelper.startRecording()
                                     isRecording = true
@@ -900,7 +997,8 @@ fun RealSpeakingGameScreen(
                         },
                         enabled = hasRecordedAudio && !isRecording,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.testTag("replay_voice_button")
                     ) {
                         Icon(
                             if (isPlayingVoice) Icons.AutoMirrored.Filled.VolumeUp else Icons.Filled.PlayArrow,
@@ -921,7 +1019,8 @@ fun RealSpeakingGameScreen(
                             itemIndex++
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.testTag("next_word_button")
                     ) {
                         Text("Next Word ➡️", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
