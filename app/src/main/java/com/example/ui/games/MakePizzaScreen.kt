@@ -223,7 +223,9 @@ fun MakePizzaScreen(
                             text = "Put ${targetCount} ${targetIngredient.emoji} ${nameStr}!",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF9A3412)
+                            color = Color(0xFF9A3412),
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
 

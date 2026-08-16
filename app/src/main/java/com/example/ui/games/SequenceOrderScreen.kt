@@ -156,9 +156,12 @@ fun SequenceOrderScreen(
                         ) {
                             Text(
                                 text = if (isBlank && selectedChoice != null) selectedChoice!! else item,
-                                fontSize = 32.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Black,
-                                color = if (isBlank) Color(0xFF854D0E) else Color(0xFF14532D)
+                                color = if (isBlank) Color(0xFF854D0E) else Color(0xFF14532D),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -226,7 +229,10 @@ fun SequenceOrderScreen(
                                 text = choice,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFF14532D)
+                                color = Color(0xFF14532D),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }

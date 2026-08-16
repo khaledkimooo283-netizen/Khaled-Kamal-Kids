@@ -219,7 +219,10 @@ fun AlphabetTrainContent(
                                     text = car,
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = if (car == "?") Color(0xFF92400E) else Color.White
+                                    color = if (car == "?") Color(0xFF92400E) else Color.White,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
@@ -269,7 +272,10 @@ fun AlphabetTrainContent(
                             text = option,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFFB45309)
+                            color = Color(0xFFB45309),
+                            maxLines = 1,
+                            softWrap = false,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

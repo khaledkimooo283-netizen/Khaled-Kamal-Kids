@@ -176,7 +176,8 @@ fun TypingGameScreen(
                         // Header Row: Big Digit + Word + Sound
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
@@ -184,9 +185,11 @@ fun TypingGameScreen(
                             ) {
                                 Text(
                                     text = "${numInfo.number}",
-                                    fontSize = 26.sp,
+                                    fontSize = 24.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color.White,
+                                    maxLines = 1,
+                                    softWrap = false,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                                 )
                             }
@@ -195,7 +198,9 @@ fun TypingGameScreen(
                                 text = numInfo.word,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF4A148C)
+                                color = Color(0xFF4A148C),
+                                maxLines = 1,
+                                softWrap = false
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Icon(
@@ -273,37 +278,51 @@ fun TypingGameScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Target Slots
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp)
+            // Target Slots (Horizontally aligned, responsive size)
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                targetWord.forEachIndexed { idx, char ->
-                    val userChar = typedInput.getOrNull(idx)?.uppercase() ?: ""
-                    val isCorrect = userChar == char.toString()
+                val totalChars = targetWord.length.coerceAtLeast(1)
+                val availableW = maxWidth - 16.dp
+                val slotSize = (availableW / totalChars).coerceIn(30.dp, 46.dp)
+                val fontSize = if (slotSize < 34.dp) 16.sp else if (slotSize < 40.dp) 18.sp else 22.sp
 
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .padding(3.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                when {
-                                    userChar.isNotEmpty() && isCorrect -> Color(0xFFC8E6C9)
-                                    userChar.isNotEmpty() -> Color(0xFFFFCDD2)
-                                    else -> Color.White
-                                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    targetWord.forEachIndexed { idx, char ->
+                        val userChar = typedInput.getOrNull(idx)?.uppercase() ?: ""
+                        val isCorrect = userChar == char.toString()
+
+                        Box(
+                            modifier = Modifier
+                                .size(slotSize)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    when {
+                                        userChar.isNotEmpty() && isCorrect -> Color(0xFFC8E6C9)
+                                        userChar.isNotEmpty() -> Color(0xFFFFCDD2)
+                                        else -> Color.White
+                                    }
+                                )
+                                .border(2.dp, Color(0xFF8E24AA), RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = userChar,
+                                fontSize = fontSize,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF4A148C),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
                             )
-                            .border(2.dp, Color(0xFF8E24AA), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = userChar,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF4A148C)
-                        )
+                        }
                     }
                 }
             }

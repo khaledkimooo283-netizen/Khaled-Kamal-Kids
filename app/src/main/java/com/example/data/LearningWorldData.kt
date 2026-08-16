@@ -444,6 +444,191 @@ object LearningWorldData {
                 WorldPhraseItem("Rocket is fast!", "⚡", "Concept"),
                 WorldPhraseItem("Hello, astronaut!", "👨‍🚀", "Greeting")
             )
+        ),
+
+        // 9. PARK
+        WorldEnvironment(
+            id = "park",
+            shortName = "Park",
+            title = "Sunny Park",
+            emoji = "🏞️",
+            themeColorHex = 0xFF059669,
+            accentColorHex = 0xFF34D399,
+            description = "Enjoy picnics, ponds, ducks, kites, and green lawns!",
+            leoGreeting = "What a lovely day at the sunny park! Let's have fun outdoors!",
+            targetContainerName = "Picnic Basket",
+            targetContainerEmoji = "🧺",
+            sortCategoryA = "Picnic",
+            sortCategoryB = "Nature",
+            vocabList = listOf(
+                LearningVocabItem("pk_kite", "kite", "🪁", "Toys", "park", "Fly the diamond kite high.", "Kite", colorHex = 0xFFEC4899),
+                LearningVocabItem("pk_pond", "pond", "🌊", "Nature", "park", "Ducks swim in the cool pond.", "Pond", colorHex = 0xFF0284C7),
+                LearningVocabItem("pk_duck", "duck", "🦆", "Animals", "park", "The duck quacks happily.", "Duck", colorHex = 0xFFEAB308),
+                LearningVocabItem("pk_picnic", "picnic", "🧺", "Picnic", "park", "Delicious picnic on the grass.", "Picnic", colorHex = 0xFFD97706),
+                LearningVocabItem("pk_grass", "grass", "🌱", "Nature", "park", "Soft green fresh grass.", "Grass", colorHex = 0xFF16A34A),
+                LearningVocabItem("pk_tree", "tree", "🌳", "Nature", "park", "Rest under the shade tree.", "Tree", colorHex = 0xFF15803D),
+                LearningVocabItem("pk_bench", "bench", "🪵", "Furniture", "park", "Sit down on the wooden bench.", "Bench", colorHex = 0xFF78350F),
+                LearningVocabItem("pk_fountain", "fountain", "⛲", "Park", "park", "The splashing water fountain.", "Fountain", colorHex = 0xFF06B6D4)
+            ),
+            verbs = listOf(
+                ActionVerbItem("pkv_fly", "fly", "🪁", "Fly the kite in the wind!"),
+                ActionVerbItem("pkv_walk", "walk", "🚶", "Walk around the peaceful pond."),
+                ActionVerbItem("pkv_feed", "feed", "🦆", "Feed bread crumbs to ducks."),
+                ActionVerbItem("pkv_relax", "relax", "🧘", "Relax in the warm sunshine.")
+            ),
+            phrases = listOf(
+                WorldPhraseItem("Fly the kite!", "🪁", "Activity"),
+                WorldPhraseItem("Feed the ducks.", "🦆", "Care"),
+                WorldPhraseItem("The park is green!", "🌱", "Nature"),
+                WorldPhraseItem("Have a picnic!", "🧺", "Fun")
+            )
+        ),
+
+        // 10. PLAYGROUND
+        WorldEnvironment(
+            id = "playground",
+            shortName = "Playground",
+            title = "Fun Playground",
+            emoji = "🛝",
+            themeColorHex = 0xFFF97316,
+            accentColorHex = 0xFFFDBA74,
+            description = "Swings, slides, merry-go-round, sandbox, and climbing!",
+            leoGreeting = "Yippee! Welcome to the playground! Time to swing, slide, and climb!",
+            targetContainerName = "Play Locker",
+            targetContainerEmoji = "🎒",
+            sortCategoryA = "Rides",
+            sortCategoryB = "Games",
+            vocabList = listOf(
+                LearningVocabItem("pg_slide", "slide", "🛝", "Rides", "playground", "Slide down fast and safe.", "Slide", colorHex = 0xFFEF4444),
+                LearningVocabItem("pg_swing", "swing", "🪢", "Rides", "playground", "Swing up towards the blue sky.", "Swing", colorHex = 0xFF3B82F6),
+                LearningVocabItem("pg_sandbox", "sandbox", "🏖️", "Games", "playground", "Build castles in the sandbox.", "Sandbox", colorHex = 0xFFF59E0B),
+                LearningVocabItem("pg_seesaw", "seesaw", "⚖️", "Rides", "playground", "Up and down on the seesaw.", "Seesaw", colorHex = 0xFF8B5CF6),
+                LearningVocabItem("pg_ball", "ball", "⚽", "Games", "playground", "Kick the bouncy playground ball.", "Ball", colorHex = 0xFF10B981),
+                LearningVocabItem("pg_ladder", "ladder", "🪜", "Rides", "playground", "Climb the colorful ladder.", "Ladder", colorHex = 0xFFEA580C)
+            ),
+            verbs = listOf(
+                ActionVerbItem("pgv_slide", "slide", "🛝", "Slide down with joy!"),
+                ActionVerbItem("pgv_swing", "swing", "🪢", "Swing higher and higher!"),
+                ActionVerbItem("pgv_climb", "climb", "🧗", "Climb safely to the top."),
+                ActionVerbItem("pgv_play", "play", "🎈", "Play together with buddies!")
+            ),
+            phrases = listOf(
+                WorldPhraseItem("Slide down!", "🛝", "Fun"),
+                WorldPhraseItem("Swing high in the sky!", "🪢", "Adventure"),
+                WorldPhraseItem("Take turns kindly.", "🤝", "Sharing"),
+                WorldPhraseItem("Play in the sandbox!", "🏖️", "Creativity")
+            )
+        ),
+
+        // 11. KITCHEN
+        WorldEnvironment(
+            id = "kitchen",
+            shortName = "Kitchen",
+            title = "Chef's Kitchen",
+            emoji = "🍳",
+            themeColorHex = 0xFFE11D48,
+            accentColorHex = 0xFFFB7185,
+            description = "Cook, bake, blend juices, and wash up tasty foods!",
+            leoGreeting = "Chef Leo here! Let's cook some delicious treats together in the kitchen!",
+            targetContainerName = "Chef Pot",
+            targetContainerEmoji = "🍲",
+            sortCategoryA = "Cookware",
+            sortCategoryB = "Ingredients",
+            vocabList = listOf(
+                LearningVocabItem("kt_pot", "pot", "🍲", "Cookware", "kitchen", "Boil warm soup in the pot.", "Pot", colorHex = 0xFF475569),
+                LearningVocabItem("kt_pan", "pan", "🍳", "Cookware", "kitchen", "Sizzle eggs in the frying pan.", "Pan", colorHex = 0xFF0F172A),
+                LearningVocabItem("kt_oven", "oven", "♨️", "Appliances", "kitchen", "Bake warm cookies in the oven.", "Oven", colorHex = 0xFFD97706),
+                LearningVocabItem("kt_fridge", "fridge", "🧊", "Appliances", "kitchen", "Keep milk cold in the fridge.", "Fridge", colorHex = 0xFF0284C7),
+                LearningVocabItem("kt_spoon", "spoon", "🥄", "Cookware", "kitchen", "Stir the yummy sauce with spoon.", "Spoon", colorHex = 0xFF64748B),
+                LearningVocabItem("kt_fruit", "fruit", "🍓", "Ingredients", "kitchen", "Sweet juicy red strawberries.", "Fruit", colorHex = 0xFFDC2626),
+                LearningVocabItem("kt_vegetable", "vegetable", "🥕", "Ingredients", "kitchen", "Crunchy orange carrot.", "Vegetable", colorHex = 0xFFEA580C)
+            ),
+            verbs = listOf(
+                ActionVerbItem("ktv_cook", "cook", "🍳", "Cook delicious dinner!"),
+                ActionVerbItem("ktv_bake", "bake", "🥖", "Bake yummy cookies."),
+                ActionVerbItem("ktv_wash", "wash", "🧼", "Wash your hands before eating."),
+                ActionVerbItem("ktv_stir", "stir", "🥄", "Stir the pot gently.")
+            ),
+            phrases = listOf(
+                WorldPhraseItem("Cook yummy soup!", "🍲", "Cooking"),
+                WorldPhraseItem("Wash your hands.", "🧼", "Hygiene"),
+                WorldPhraseItem("Bake tasty cookies.", "🍪", "Baking"),
+                WorldPhraseItem("Taste good!", "😋", "Enjoyment")
+            )
+        ),
+
+        // 12. BEDROOM
+        WorldEnvironment(
+            id = "bedroom",
+            shortName = "Bedroom",
+            title = "Cozy Bedroom",
+            emoji = "🛏️",
+            themeColorHex = 0xFF7C3AED,
+            accentColorHex = 0xFFA78BFA,
+            description = "Soft beds, storybooks, teddy bears, and sweet dreams!",
+            leoGreeting = "Welcome to the cozy bedroom! Let's read a story and get comfortable!",
+            targetContainerName = "Nightstand",
+            targetContainerEmoji = "🏮",
+            sortCategoryA = "Sleep",
+            sortCategoryB = "Play",
+            vocabList = listOf(
+                LearningVocabItem("bd_bed", "bed", "🛏️", "Sleep", "bedroom", "A soft comfy wooden bed.", "Bed", colorHex = 0xFF3B82F6),
+                LearningVocabItem("bd_pillow", "pillow", "🛋️", "Sleep", "bedroom", "Rest your head on the pillow.", "Pillow", colorHex = 0xFF8B5CF6),
+                LearningVocabItem("bd_blanket", "blanket", "🧶", "Sleep", "bedroom", "Tuck under the warm blanket.", "Blanket", colorHex = 0xFFEC4899),
+                LearningVocabItem("bd_teddy", "teddy bear", "🧸", "Play", "bedroom", "Hug the fluffy teddy bear.", "Teddy bear", colorHex = 0xFFD97706),
+                LearningVocabItem("bd_clock", "clock", "⏰", "Objects", "bedroom", "The ticking bedtime alarm clock.", "Clock", colorHex = 0xFFF59E0B),
+                LearningVocabItem("bd_closet", "closet", "🚪", "Furniture", "bedroom", "Hang clean clothes in closet.", "Closet", colorHex = 0xFF78350F),
+                LearningVocabItem("bd_slippers", "slippers", "🥿", "Sleep", "bedroom", "Warm fluffy bedroom slippers.", "Slippers", colorHex = 0xFFF472B6)
+            ),
+            verbs = listOf(
+                ActionVerbItem("bdv_sleep", "sleep", "😴", "Close your eyes and sleep well."),
+                ActionVerbItem("bdv_read", "read", "📖", "Read a wonderful bedtime story."),
+                ActionVerbItem("bdv_hug", "hug", "🧸", "Hug your teddy bear tight!"),
+                ActionVerbItem("bdv_dream", "dream", "✨", "Dream of magical adventures.")
+            ),
+            phrases = listOf(
+                WorldPhraseItem("Good night!", "🌙", "Bedtime"),
+                WorldPhraseItem("Read a bedtime story.", "📖", "Story"),
+                WorldPhraseItem("Sweet dreams!", "✨", "Wishes"),
+                WorldPhraseItem("Sleep tight.", "😴", "Comfort")
+            )
+        ),
+
+        // 13. ANIMAL AREA / SAFARI
+        WorldEnvironment(
+            id = "animals",
+            shortName = "Animals",
+            title = "Safari Wildlife",
+            emoji = "🦁",
+            themeColorHex = 0xFFD97706,
+            accentColorHex = 0xFFFBBF24,
+            description = "Lions, elephants, monkeys, giraffes, and zebras in the wild!",
+            leoGreeting = "Roar! Welcome to the Safari Wildlife area! Meet amazing animal friends!",
+            targetContainerName = "Safari Jeep",
+            targetContainerEmoji = "🚙",
+            sortCategoryA = "Big Cats",
+            sortCategoryB = "Herbivores",
+            vocabList = listOf(
+                LearningVocabItem("an_lion", "lion", "🦁", "Big Cats", "animals", "The brave king lion roars.", "Lion", colorHex = 0xFFF59E0B),
+                LearningVocabItem("an_tiger", "tiger", "🐯", "Big Cats", "animals", "The striped tiger pounces.", "Tiger", colorHex = 0xFFEA580C),
+                LearningVocabItem("an_elephant", "elephant", "🐘", "Herbivores", "animals", "The big elephant sprays water.", "Elephant", colorHex = 0xFF0284C7),
+                LearningVocabItem("an_giraffe", "giraffe", "🦒", "Herbivores", "animals", "The tall giraffe reaches leaves.", "Giraffe", colorHex = 0xFFEAB308),
+                LearningVocabItem("an_zebra", "zebra", "🦓", "Herbivores", "animals", "The striped zebra runs across plains.", "Zebra", colorHex = 0xFF1E293B),
+                LearningVocabItem("an_monkey", "monkey", "🐵", "Herbivores", "animals", "The cheeky monkey swings in trees.", "Monkey", colorHex = 0xFF854D0E),
+                LearningVocabItem("an_hippo", "hippo", "🦛", "Herbivores", "animals", "The big hippo swims in the river.", "Hippo", colorHex = 0xFF475569)
+            ),
+            verbs = listOf(
+                ActionVerbItem("anv_roar", "roar", "🦁", "Roar loud like a brave lion!"),
+                ActionVerbItem("anv_swing", "swing", "🐵", "Swing through the jungle branches."),
+                ActionVerbItem("anv_run", "run", "🦓", "Run fast across the savanna!"),
+                ActionVerbItem("anv_watch", "watch", "👀", "Watch wild animals respectfully.")
+            ),
+            phrases = listOf(
+                WorldPhraseItem("The lion roars!", "🦁", "Roar"),
+                WorldPhraseItem("Giraffe is so tall!", "🦒", "Height"),
+                WorldPhraseItem("Elephant is strong!", "🐘", "Strength"),
+                WorldPhraseItem("Look at the zebra!", "🦓", "Discovery")
+            )
         )
     )
 

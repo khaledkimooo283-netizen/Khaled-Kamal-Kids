@@ -16,6 +16,7 @@ fun LeoLearningWorldScreen(
     onBackClick: () -> Unit
 ) {
     var selectedWorld by remember { mutableStateOf<WorldEnvironment?>(null) }
+    var selectedCharacterLetter by remember { mutableStateOf<Char?>(null) }
 
     // Record session learning time
     DisposableEffect(Unit) {
@@ -29,35 +30,47 @@ fun LeoLearningWorldScreen(
 
     // Handle back button
     BackHandler {
-        if (selectedWorld != null) {
+        if (selectedCharacterLetter != null) {
+            selectedCharacterLetter = null
+        } else if (selectedWorld != null) {
             selectedWorld = null
         } else {
             onBackClick()
         }
     }
 
-    Crossfade(
-        targetState = selectedWorld,
-        label = "worldScreenCrossfade",
-        modifier = Modifier.fillMaxSize()
-    ) { currentWorld ->
-        if (currentWorld == null) {
+    when {
+        selectedCharacterLetter != null -> {
+            LetterCharacterAdventureScreen(
+                repository = repository,
+                audioEngine = audioEngine,
+                initialLetter = selectedCharacterLetter ?: 'A',
+                onBackClick = {
+                    selectedCharacterLetter = null
+                }
+            )
+        }
+        selectedWorld != null -> {
+            WorldActivityScreen(
+                world = selectedWorld!!,
+                repository = repository,
+                audioEngine = audioEngine,
+                onBackToMap = {
+                    selectedWorld = null
+                }
+            )
+        }
+        else -> {
             LearningWorldMapScreen(
                 repository = repository,
                 audioEngine = audioEngine,
                 onSelectWorld = { world ->
                     selectedWorld = world
                 },
+                onSelectCharacter = { char ->
+                    selectedCharacterLetter = char
+                },
                 onBackClick = onBackClick
-            )
-        } else {
-            WorldActivityScreen(
-                world = currentWorld,
-                repository = repository,
-                audioEngine = audioEngine,
-                onBackToMap = {
-                    selectedWorld = null
-                }
             )
         }
     }

@@ -778,6 +778,8 @@ fun RealSpeakingGameScreen(
                             fontWeight = FontWeight.Black,
                             color = Color(0xFF1E293B),
                             textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            softWrap = false,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
                         )
                     }

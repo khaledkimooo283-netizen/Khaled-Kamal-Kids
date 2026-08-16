@@ -41,6 +41,7 @@ fun LearningWorldMapScreen(
     repository: KkDataRepository,
     audioEngine: SpeechAndSoundEngine,
     onSelectWorld: (WorldEnvironment) -> Unit,
+    onSelectCharacter: (Char) -> Unit = {},
     onBackClick: () -> Unit
 ) {
     val childName = repository.getChildName()
@@ -232,6 +233,99 @@ fun LearningWorldMapScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // 3D Letter Character Adventure World Banner
+                item {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(8.dp, RoundedCornerShape(24.dp))
+                            .clickable {
+                                audioEngine.playClickSound()
+                                audioEngine.speak("Welcome to 3D Letter Adventure World! Meet your 26 letter friends!")
+                                onSelectCharacter('A')
+                            }
+                            .testTag("world_card_letter_adventures"),
+                        shape = RoundedCornerShape(24.dp),
+                        color = Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            Color(0xFF6366F1), // Indigo
+                                            Color(0xFFEC4899), // Pink
+                                            Color(0xFFF59E0B)  // Gold
+                                        )
+                                    )
+                                )
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color.White.copy(alpha = 0.95f),
+                                    modifier = Modifier.size(68.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("✨🍎🐻", fontSize = 22.sp)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(14.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.White.copy(alpha = 0.3f),
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "🌟 3D ADVENTURE WORLD",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "3D Letter Characters (A-Z)",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "Meet 26 3D animated friends, phonics, quests & vocabulary!",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.92f),
+                                        maxLines = 1
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = Color(0xFF6366F1),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 itemsIndexed(worlds) { index, world ->
                     val isUnlocked = isParentUnlockAll || index <= unlockedIdx
                     val worldStars = repository.getLearningWorldStars(world.id)

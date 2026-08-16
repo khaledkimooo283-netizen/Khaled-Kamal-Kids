@@ -116,6 +116,14 @@ fun KkKidsApp(
                 )
             }
 
+            composable("letter_characters") {
+                com.example.ui.games.learningworld.LetterCharacterAdventureScreen(
+                    repository = repository,
+                    audioEngine = audioEngine,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
         composable("songs_music") {
             SongsAndMusicScreen(
                 repository = repository,

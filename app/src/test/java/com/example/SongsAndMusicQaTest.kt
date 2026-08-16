@@ -135,4 +135,87 @@ class SongsAndMusicQaTest {
         assertTrue("Greetings song must contain 'Please'", allTokens.contains("Please"))
         assertTrue("Greetings song must contain 'Thank You'", allTokens.contains("Thank You"))
     }
+
+    @Test
+    fun testSongDataValidatorValidatesAllSongsSuccessfully() {
+        val isValid = com.example.data.SongDataValidator.validateAll()
+        assertTrue("SongDataValidator.validateAll() must pass for all songs without error", isValid)
+    }
+
+    @Test
+    fun testSingleSourceOfTruthLearningItemsIntegrity() {
+        val songs = SongDataRepository.songsList
+
+        songs.forEach { song ->
+            assertTrue("Song ${song.title} must have items", song.items.isNotEmpty())
+            song.items.forEachIndexed { idx, item ->
+                assertEquals("Item id must match its sequence index", idx, item.id)
+                assertTrue("Item displayText in ${song.title} must not be blank", item.displayText.isNotBlank())
+                assertTrue("Item spokenText in ${song.title} must not be blank", item.spokenText.isNotBlank())
+                assertTrue("Item visualEmoji in ${song.title} must not be blank", item.visualEmoji.isNotBlank())
+            }
+        }
+    }
+
+    @Test
+    fun testNumbersSongItemsExactZeroToTwenty() {
+        val numSong = SongDataRepository.songsList.first { it.id == "s_num" }
+        assertEquals("Numbers song must have exactly 21 items", 21, numSong.items.size)
+
+        val expectedSpoken = listOf(
+            "Zero", "One", "Two", "Three", "Four", "Five",
+            "Six", "Seven", "Eight", "Nine", "Ten",
+            "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
+            "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"
+        )
+
+        expectedSpoken.forEachIndexed { idx, expectedWord ->
+            val item = numSong.items[idx]
+            assertEquals("Spoken text at $idx must be $expectedWord", expectedWord, item.spokenText)
+            assertTrue("Display text at $idx must contain $idx", item.displayText.contains(idx.toString()) || item.displayText.contains(expectedWord))
+        }
+    }
+
+    @Test
+    fun testDaysOfWeekSongItemsExactSaturdayToFriday() {
+        val daysSong = SongDataRepository.songsList.first { it.id == "s_days" }
+        assertEquals("Days song must have exactly 7 items", 7, daysSong.items.size)
+
+        val expectedDays = listOf("Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+        expectedDays.forEachIndexed { idx, expectedDay ->
+            val item = daysSong.items[idx]
+            assertEquals("Day at $idx must be $expectedDay", expectedDay, item.spokenText)
+            assertEquals("Day displayText at $idx must be $expectedDay", expectedDay, item.displayText)
+        }
+    }
+
+    @Test
+    fun testMonthsOfYearSongItemsExactJanuaryToDecember() {
+        val monthsSong = SongDataRepository.songsList.first { it.id == "s_months" }
+        assertEquals("Months song must have exactly 12 items", 12, monthsSong.items.size)
+
+        val expectedMonths = listOf(
+            "January", "February", "March", "April",
+            "May", "June", "July", "August",
+            "September", "October", "November", "December"
+        )
+        expectedMonths.forEachIndexed { idx, expectedMonth ->
+            val item = monthsSong.items[idx]
+            assertEquals("Month at $idx must be $expectedMonth", expectedMonth, item.spokenText)
+            assertEquals("Month displayText at $idx must be $expectedMonth", expectedMonth, item.displayText)
+        }
+    }
+
+    @Test
+    fun testPhonicsSongItemsExactAToZ() {
+        val vocabSong = SongDataRepository.songsList.first { it.id == "s_vocab" }
+        assertEquals("Phonics song must have exactly 26 items", 26, vocabSong.items.size)
+
+        val letters = ('A'..'Z').toList()
+        letters.forEachIndexed { idx, letterChar ->
+            val item = vocabSong.items[idx]
+            assertTrue("Phonics item at $idx must start with letter $letterChar", item.displayText.startsWith(letterChar.toString()))
+            assertTrue("Spoken text at $idx must mention letter $letterChar", item.spokenText.startsWith("$letterChar is for"))
+        }
+    }
 }

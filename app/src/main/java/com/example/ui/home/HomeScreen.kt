@@ -66,6 +66,7 @@ fun HomeScreen(
     val homeCards = remember {
         listOf(
             HomeCardItem("leo_learning_world", "Leo's Learning World", "🦁", "Adventure", 0xFFF59E0B, route = "learning_world"),
+            HomeCardItem("letter_characters", "3D Letter Characters (A-Z)", "🍎", "Letters", 0xFF6366F1, route = "letter_characters"),
             HomeCardItem("learn_letters", "Learn Letters", "🔤", "Letters", 0xFF6366F1, route = "capital_small"),
             HomeCardItem("learn_numbers", "Learn Numbers", "🔢", "Numbers", 0xFFEC4899, route = "train"),
             HomeCardItem("run_and_learn", "Run & Learn", "🏃", "Adventure", 0xFF10B981, route = "run_learn"),

@@ -176,7 +176,9 @@ fun FishingGameScreen(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF00838F),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
 
@@ -243,7 +245,10 @@ fun FishingGameScreen(
                                     text = fish.charOrNum,
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }

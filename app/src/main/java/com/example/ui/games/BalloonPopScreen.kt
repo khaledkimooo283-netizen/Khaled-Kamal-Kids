@@ -159,7 +159,9 @@ fun BalloonPopScreen(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF283593),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
 
@@ -216,7 +218,10 @@ fun BalloonPopScreen(
                                     text = balloon.text,
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }

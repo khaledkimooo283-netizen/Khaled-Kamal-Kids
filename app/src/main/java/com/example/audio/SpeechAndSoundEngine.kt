@@ -10,7 +10,10 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
@@ -31,6 +34,7 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
     var currentLanguage: String = "English"
 
     private val utteranceCallbacks = ConcurrentHashMap<String, () -> Unit>()
+    private val speakMutex = Mutex()
 
     // SoundPool for instant feedback sound effects
     private var soundPool: SoundPool? = null
@@ -163,36 +167,43 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
             return true
         }
 
-        val utteranceId = "SONG_UTT_${System.currentTimeMillis()}_${(1000..9999).random()}"
-        lastSpokenText = text
-        lastSpeakTimestamp = System.currentTimeMillis()
+        return speakMutex.withLock {
+            val utteranceId = "SONG_UTT_${System.currentTimeMillis()}_${(1000..9999).random()}"
+            lastSpokenText = text
+            lastSpeakTimestamp = System.currentTimeMillis()
 
-        return suspendCancellableCoroutine { continuation ->
-            utteranceCallbacks[utteranceId] = {
-                if (continuation.isActive) {
-                    continuation.resume(true)
+            val success = withTimeoutOrNull(6500L) {
+                suspendCancellableCoroutine<Boolean> { continuation ->
+                    utteranceCallbacks[utteranceId] = {
+                        if (continuation.isActive) {
+                            continuation.resume(true)
+                        }
+                    }
+
+                    continuation.invokeOnCancellation {
+                        utteranceCallbacks.remove(utteranceId)
+                    }
+
+                    val params = Bundle().apply {
+                        putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, voiceVolume)
+                    }
+
+                    try {
+                        val result = tts?.speak(text, queueMode, params, utteranceId)
+                        if (result != TextToSpeech.SUCCESS) {
+                            utteranceCallbacks.remove(utteranceId)
+                            if (continuation.isActive) continuation.resume(false)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SpeechEngine", "Error in speakAndWait", e)
+                        utteranceCallbacks.remove(utteranceId)
+                        if (continuation.isActive) continuation.resume(false)
+                    }
                 }
-            }
+            } ?: true // If timeout expires, continue safely without hanging
 
-            continuation.invokeOnCancellation {
-                utteranceCallbacks.remove(utteranceId)
-            }
-
-            val params = Bundle().apply {
-                putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, voiceVolume)
-            }
-
-            try {
-                val result = tts?.speak(text, queueMode, params, utteranceId)
-                if (result != TextToSpeech.SUCCESS) {
-                    utteranceCallbacks.remove(utteranceId)
-                    if (continuation.isActive) continuation.resume(false)
-                }
-            } catch (e: Exception) {
-                Log.e("SpeechEngine", "Error in speakAndWait", e)
-                utteranceCallbacks.remove(utteranceId)
-                if (continuation.isActive) continuation.resume(false)
-            }
+            utteranceCallbacks.remove(utteranceId)
+            success
         }
     }
 
@@ -274,7 +285,14 @@ class SpeechAndSoundEngine(private val context: Context) : TextToSpeech.OnInitLi
     }
 
     fun stop() {
-        tts?.stop()
+        try {
+            tts?.stop()
+            val pending = utteranceCallbacks.values.toList()
+            utteranceCallbacks.clear()
+            pending.forEach { it.invoke() }
+        } catch (e: Exception) {
+            Log.e("SpeechEngine", "Error stopping TTS", e)
+        }
         bgmEngine.pause()
     }
 

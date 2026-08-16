@@ -238,7 +238,10 @@ fun TracingGameScreen(
                     text = "${currentItem.displayTitle} ${currentItem.emoji}",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF0369A1)
+                    color = Color(0xFF0369A1),
+                    maxLines = 1,
+                    softWrap = false,
+                    textAlign = TextAlign.Center
                 )
 
                 IconButton(

@@ -144,7 +144,10 @@ fun DinoHatchScreen(
                                 text = egg.text,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFF3E2723)
+                                color = Color(0xFF3E2723),
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }

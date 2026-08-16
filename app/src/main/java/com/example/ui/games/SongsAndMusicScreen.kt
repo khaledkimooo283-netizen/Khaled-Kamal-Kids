@@ -291,8 +291,7 @@ fun SongsAndMusicScreen(
     var isKaraokeMode by remember { mutableStateOf(false) } // False: Sing Along, True: Karaoke
     var currentSongIndex by remember { mutableIntStateOf(0) }
     var isSongPlaying by remember { mutableStateOf(false) }
-    var currentLineIndex by remember { mutableIntStateOf(0) }
-    var currentTokenIndex by remember { mutableIntStateOf(-1) }
+    var currentItemIndex by remember { mutableIntStateOf(0) }
 
     var isRecordingKaraoke by remember { mutableStateOf(false) }
     var isPlayingRecordedVoice by remember { mutableStateOf(false) }
@@ -317,84 +316,69 @@ fun SongsAndMusicScreen(
 
     val songsList = remember { SongDataRepository.songsList }
     val currentSong = songsList[currentSongIndex]
+    val totalItems = currentSong.items.size
+    val currentItem = currentSong.items.getOrElse(currentItemIndex) { currentSong.items.first() }
 
     // Dancing Bounce Animation
     val infiniteTransition = rememberInfiniteTransition(label = "DanceBounce")
     val danceScale by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.12f,
+        initialValue = 0.94f,
+        targetValue = 1.10f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "ScaleAnim"
     )
 
-    // Reset playback indices when changing song or mode
+    // Reset playback index when changing song or mode
     LaunchedEffect(currentSongIndex, isKaraokeMode) {
         audioEngine.stop()
         isSongPlaying = false
-        currentLineIndex = 0
-        currentTokenIndex = -1
+        currentItemIndex = 0
         isMovementPaused = false
     }
 
-    // Synchronized Preloaded Audio & Singing Logic
+    // Synchronized Single-Source-of-Truth Playback Loop
     LaunchedEffect(isSongPlaying) {
         if (isSongPlaying) {
-            val totalLines = currentSong.lyricsLines.size
-            if (currentLineIndex >= totalLines) {
-                currentLineIndex = 0
-                currentTokenIndex = -1
+            if (currentItemIndex >= totalItems) {
+                currentItemIndex = 0
             }
 
-            while (currentLineIndex < totalLines && isSongPlaying) {
-                val line = currentSong.lyricsLines[currentLineIndex]
+            while (currentItemIndex < totalItems && isSongPlaying) {
+                val item = currentSong.items[currentItemIndex]
 
                 if (!isKaraokeMode) {
-                    if (line.tokens.isNotEmpty()) {
-                        val startToken = if (currentTokenIndex in 0 until line.tokens.size) currentTokenIndex else 0
-                        for (tIdx in startToken until line.tokens.size) {
-                            if (!isSongPlaying) break
-                            currentTokenIndex = tIdx
-                            val token = line.tokens[tIdx]
-                            audioEngine.speakAndWait(token)
-                            delay(180)
-                        }
-                        if (isSongPlaying) currentTokenIndex = -1
-                    } else {
-                        audioEngine.speakAndWait(line.spokenText)
-                        delay(250)
-                    }
+                    // Educational Audio: Wait for exact speech completion before advancing
+                    audioEngine.speakAndWait(item.spokenText)
+                    if (!isSongPlaying) break
+                    delay(160) // Clean rhythmic breath interval between words
                 } else {
-                    if (line.tokens.isNotEmpty()) {
-                        val startToken = if (currentTokenIndex in 0 until line.tokens.size) currentTokenIndex else 0
-                        for (tIdx in startToken until line.tokens.size) {
-                            if (!isSongPlaying) break
-                            currentTokenIndex = tIdx
-                            delay(600)
-                        }
-                        if (isSongPlaying) currentTokenIndex = -1
-                    } else {
-                        delay(2200)
-                    }
+                    // Karaoke Mode: Pace for child singing
+                    delay(900)
                 }
 
                 if (!isSongPlaying) break
-                currentLineIndex++
-                currentTokenIndex = -1
+
+                if (currentItemIndex + 1 < totalItems) {
+                    currentItemIndex++
+                } else {
+                    // Song Completed
+                    currentItemIndex = totalItems - 1
+                    break
+                }
             }
 
-            if (isSongPlaying && currentLineIndex >= totalLines) {
+            if (isSongPlaying && currentItemIndex >= totalItems - 1) {
                 showConfetti = true
                 repository.addStars(5)
                 userStars = repository.getStars()
                 audioEngine.speakPraise()
-                audioEngine.speakAndWait("Bravo! You sang ${currentSong.title}!")
+                audioEngine.speakAndWait("Bravo! You completed ${currentSong.title}!")
                 showRewardDialog = true
                 isSongPlaying = false
-                currentLineIndex = 0
-                currentTokenIndex = -1
+                currentItemIndex = 0
             }
         } else {
             audioEngine.stop()
@@ -421,9 +405,9 @@ fun SongsAndMusicScreen(
             // Mode Toggle: Sing Along vs. Karaoke
             Row(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    .fillMaxWidth(0.92f)
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
                     onClick = {
@@ -433,12 +417,20 @@ fun SongsAndMusicScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (!isKaraokeMode) Color(0xFFEC4899) else Color(0xFFFBCFE8)
                     ),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Sing Along", tint = if (!isKaraokeMode) Color.White else Color(0xFF9D174D))
+                    Icon(
+                        Icons.AutoMirrored.Filled.VolumeUp,
+                        contentDescription = "Sing Along",
+                        tint = if (!isKaraokeMode) Color.White else Color(0xFF9D174D)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("▶️ Sing Along", fontWeight = FontWeight.Bold, color = if (!isKaraokeMode) Color.White else Color(0xFF9D174D))
+                    Text(
+                        "▶️ Sing Along",
+                        fontWeight = FontWeight.Bold,
+                        color = if (!isKaraokeMode) Color.White else Color(0xFF9D174D)
+                    )
                 }
 
                 Button(
@@ -449,12 +441,20 @@ fun SongsAndMusicScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isKaraokeMode) Color(0xFF8B5CF6) else Color(0xFFDDD6FE)
                     ),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Filled.Mic, contentDescription = "Karaoke", tint = if (isKaraokeMode) Color.White else Color(0xFF5B21B6))
+                    Icon(
+                        Icons.Filled.Mic,
+                        contentDescription = "Karaoke",
+                        tint = if (isKaraokeMode) Color.White else Color(0xFF5B21B6)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("🎤 Karaoke", fontWeight = FontWeight.Bold, color = if (isKaraokeMode) Color.White else Color(0xFF5B21B6))
+                    Text(
+                        "🎤 Karaoke",
+                        fontWeight = FontWeight.Bold,
+                        color = if (isKaraokeMode) Color.White else Color(0xFF5B21B6)
+                    )
                 }
             }
 
@@ -462,32 +462,33 @@ fun SongsAndMusicScreen(
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 items(songsList.size) { index ->
                     val song = songsList[index]
                     val isSelected = index == currentSongIndex
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(18.dp))
                             .background(
                                 if (isSelected) Color(song.themeColor) else Color.White
                             )
                             .border(
                                 width = if (isSelected) 3.dp else 1.5.dp,
                                 color = Color(song.themeColor),
-                                shape = RoundedCornerShape(20.dp)
+                                shape = RoundedCornerShape(18.dp)
                             )
                             .clickable {
                                 currentSongIndex = index
                                 isSongPlaying = false
+                                currentItemIndex = 0
                                 audioEngine.speak("Selected ${song.title}!")
                             }
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = song.categoryEmoji, fontSize = 22.sp)
+                            Text(text = song.categoryEmoji, fontSize = 20.sp)
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = song.title,
@@ -500,20 +501,20 @@ fun SongsAndMusicScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // Main Concert Stage Card
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
+                    .fillMaxWidth(0.94f)
                     .weight(1f)
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(26.dp))
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color(currentSong.themeColor), Color(0xFF4C1D95))
+                            colors = listOf(Color(currentSong.themeColor), Color(0xFF311042))
                         )
                     )
-                    .padding(16.dp),
+                    .padding(14.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -521,67 +522,123 @@ fun SongsAndMusicScreen(
                     verticalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Song Header
+                    // Song Header Bar with Controls
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = currentSong.title,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
+                        Column {
+                            Text(
+                                text = currentSong.title,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Item ${currentItemIndex + 1} of $totalItems",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
 
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Playback Controls Row: Prev, Play/Pause, Next, Restart
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Previous Item Button
+                            IconButton(
+                                onClick = {
+                                    audioEngine.stop()
+                                    isSongPlaying = false
+                                    currentItemIndex = (currentItemIndex - 1).coerceAtLeast(0)
+                                    audioEngine.speak(currentSong.items[currentItemIndex].spokenText)
+                                },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .background(Color.White.copy(alpha = 0.85f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.SkipPrevious,
+                                    contentDescription = "Previous Item",
+                                    tint = Color(currentSong.themeColor),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
                             // Restart Button
                             IconButton(
                                 onClick = {
                                     audioEngine.stop()
                                     isSongPlaying = false
-                                    currentLineIndex = 0
-                                    currentTokenIndex = -1
+                                    currentItemIndex = 0
                                     isSongPlaying = true
                                 },
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(38.dp)
                                     .background(Color.White.copy(alpha = 0.85f), CircleShape)
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Refresh,
                                     contentDescription = "Restart Song",
                                     tint = Color(currentSong.themeColor),
-                                    modifier = Modifier.size(26.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
 
                             // Play / Pause Button
                             IconButton(
                                 onClick = {
-                                    isSongPlaying = !isSongPlaying
                                     if (isSongPlaying) {
-                                        audioEngine.speak("Singing ${currentSong.title}!")
+                                        isSongPlaying = false
+                                        audioEngine.stop()
+                                    } else {
+                                        if (currentItemIndex >= totalItems - 1) {
+                                            currentItemIndex = 0
+                                        }
+                                        isSongPlaying = true
                                     }
                                 },
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(46.dp)
                                     .background(Color.White, CircleShape)
                             ) {
                                 Icon(
                                     imageVector = if (isSongPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                                    contentDescription = "Play Control",
+                                    contentDescription = "Play / Pause",
                                     tint = Color(currentSong.themeColor),
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+
+                            // Next Item Button
+                            IconButton(
+                                onClick = {
+                                    audioEngine.stop()
+                                    isSongPlaying = false
+                                    currentItemIndex = (currentItemIndex + 1).coerceAtMost(totalItems - 1)
+                                    audioEngine.speak(currentSong.items[currentItemIndex].spokenText)
+                                },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .background(Color.White.copy(alpha = 0.85f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.SkipNext,
+                                    contentDescription = "Next Item",
+                                    tint = Color(currentSong.themeColor),
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                         }
                     }
 
-                    // Animated Dancing Character Avatar Stage
+                    // Animated Dancing Character Avatar
                     Box(
                         modifier = Modifier
-                            .size(110.dp)
+                            .size(90.dp)
                             .scale(if (isSongPlaying) danceScale else 1f)
                             .background(Color.White.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
@@ -589,115 +646,115 @@ fun SongsAndMusicScreen(
                         val currentPartnerEmoji = dancePartners.find { it.id == activeDancePartner }?.emoji ?: "🦁"
                         Text(
                             text = currentPartnerEmoji,
-                            fontSize = 64.sp
+                            fontSize = 52.sp
                         )
                     }
 
-                    // Active Lyrics Line Card or Movement Challenge Overlay
-                    if (isMovementPaused) {
-                        // Movement Challenge Interruption!
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(Color(0xFFFEF08A))
-                                .border(3.dp, Color(0xFFEAB308), RoundedCornerShape(20.dp))
-                                .clickable {
-                                    isMovementPaused = false
-                                    audioEngine.speakPraise()
-                                    audioEngine.speak("Awesome movement! Continuing song!")
-                                }
-                                .padding(14.dp),
-                            contentAlignment = Alignment.Center
+                    // Active Learning Item Card (Primary Authoritative Display)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(Color.White.copy(alpha = 0.95f))
+                            .border(3.dp, Color(0xFFFDE047), RoundedCornerShape(22.dp))
+                            .clickable {
+                                audioEngine.speak(currentItem.spokenText)
+                            }
+                            .padding(14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(text = currentSong.actionChallenge.actionEmoji, fontSize = 40.sp)
-                                Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = currentItem.visualEmoji,
+                                fontSize = 42.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = currentItem.displayText,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E1B4B),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                            if (currentItem.subtitle.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = currentSong.actionChallenge.promptText,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF854D0E),
+                                    text = currentItem.subtitle,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF6B7280),
                                     textAlign = TextAlign.Center
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            // Status Pill
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (isSongPlaying) Color(0xFFFEF08A) else Color(0xFFF3F4F6))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
                                 Text(
-                                    text = "Tap to Complete Action! ⭐",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFFCA8A04)
+                                    text = if (isSongPlaying) "🔊 Playing • Tap to repeat" else "🎵 Tap card to speak",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSongPlaying) Color(0xFF854D0E) else Color(0xFF4B5563)
                                 )
                             }
                         }
-                    } else {
-                        // Current Lyric Display
-                        val activeLine = currentSong.lyricsLines.getOrElse(currentLineIndex) { currentSong.lyricsLines[0] }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(Color.White.copy(alpha = 0.95f))
-                                .clickable {
-                                    audioEngine.speak(activeLine.spokenText)
-                                }
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    text = activeLine.highlightEmoji,
-                                    fontSize = 38.sp
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = activeLine.lineText,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF1E1B4B),
-                                    textAlign = TextAlign.Center
-                                )
+                    }
 
-                                if (activeLine.tokens.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        horizontalArrangement = Arrangement.Center,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        activeLine.tokens.forEachIndexed { tokenIdx, tokenStr ->
-                                            val isHighlighted = tokenIdx == currentTokenIndex
-                                            Box(
-                                                modifier = Modifier
-                                                    .padding(horizontal = 3.dp, vertical = 2.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(
-                                                        if (isHighlighted) Color(0xFFFACC15) else Color(0xFFF1F5F9)
-                                                    )
-                                                    .border(
-                                                        width = if (isHighlighted) 2.dp else 1.dp,
-                                                        color = if (isHighlighted) Color(0xFFEAB308) else Color(0xFFCBD5E1),
-                                                        shape = RoundedCornerShape(10.dp)
-                                                    )
-                                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = tokenStr,
-                                                    fontSize = if (isHighlighted) 16.sp else 13.sp,
-                                                    fontWeight = if (isHighlighted) FontWeight.Black else FontWeight.Bold,
-                                                    color = if (isHighlighted) Color(0xFF713F12) else Color(0xFF475569)
-                                                )
-                                            }
-                                        }
+                    // Learning Items Ribbon (Scrollable Full Sequence)
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(currentSong.items.size) { itemIdx ->
+                            val item = currentSong.items[itemIdx]
+                            val isItemActive = itemIdx == currentItemIndex
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (isItemActive) Color(0xFFFACC15) else Color.White.copy(alpha = 0.25f)
+                                    )
+                                    .border(
+                                        width = if (isItemActive) 2.5.dp else 1.dp,
+                                        color = if (isItemActive) Color.White else Color.White.copy(alpha = 0.4f),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable {
+                                        audioEngine.stop()
+                                        isSongPlaying = false
+                                        currentItemIndex = itemIdx
+                                        audioEngine.speak(item.spokenText)
                                     }
-                                }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (item.chipLabel.isNotBlank()) item.chipLabel else item.displayText,
+                                    fontSize = if (isItemActive) 14.sp else 12.sp,
+                                    fontWeight = if (isItemActive) FontWeight.Black else FontWeight.Bold,
+                                    color = if (isItemActive) Color(0xFF713F12) else Color.White,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             // Dedicated Karaoke Recording & Replay Control Panel
             if (isKaraokeMode) {
@@ -706,13 +763,13 @@ fun SongsAndMusicScreen(
                     color = Color.White,
                     shadowElevation = 4.dp,
                     modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .padding(horizontal = 12.dp)
+                        .fillMaxWidth(0.92f)
+                        .padding(horizontal = 8.dp)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -724,7 +781,7 @@ fun SongsAndMusicScreen(
                                     if (ok) {
                                         isRecordingKaraoke = true
                                         hasKaraokeRecording = false
-                                        isSongPlaying = true // Start instrumental accompaniment while recording
+                                        isSongPlaying = true // Start playback pacing while recording
                                     } else {
                                         audioEngine.speak("Microphone ready! Sing along!")
                                     }
@@ -784,30 +841,30 @@ fun SongsAndMusicScreen(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
             // Dance Partners Selector Row
             Text(
                 text = "Choose Dancing Partner 🕺:",
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color(0xFF831843)
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(dancePartners) { partner ->
                     val isSelected = partner.id == activeDancePartner
                     Box(
                         modifier = Modifier
-                            .size(52.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(if (isSelected) Color(0xFFEC4899) else Color.White)
                             .border(2.dp, Color(0xFFEC4899), CircleShape)
@@ -817,12 +874,12 @@ fun SongsAndMusicScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = partner.emoji, fontSize = 28.sp)
+                        Text(text = partner.emoji, fontSize = 24.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
         }
 
         ConfettiOverlay(isVisible = showConfetti)
@@ -830,7 +887,7 @@ fun SongsAndMusicScreen(
         StarRewardDialog(
             isVisible = showRewardDialog,
             title = "Super Star Singer! 🎤⭐",
-            message = "You sang '${currentSong.title}' and completed all dance moves!",
+            message = "You sang '${currentSong.title}' and completed all items!",
             onNext = {
                 showRewardDialog = false
                 showConfetti = false
