@@ -45,6 +45,8 @@ fun Character3DFigurine(
     size: Dp = 160.dp,
     showSpeechBubble: Boolean = false,
     speechText: String = "",
+    carriedItemEmoji: String? = null,
+    facingAngle: Float = 0f,
     onClick: () -> Unit = {}
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "char3DAnimation")
@@ -75,18 +77,29 @@ fun Character3DFigurine(
         initialValue = -8f,
         targetValue = 8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(400, easing = FastOutSlowInEasing),
+            animation = tween(360, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "walkSway"
     )
 
+    // Running cadence
+    val runBounce by infiniteTransition.animateFloat(
+        initialValue = -12f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(220, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "runBounce"
+    )
+
     // Jumping
     val jumpBounce by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = -35f,
+        targetValue = -40f,
         animationSpec = infiniteRepeatable(
-            animation = tween(450, easing = FastOutLinearInEasing),
+            animation = tween(420, easing = FastOutLinearInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "jumpBounce"
@@ -106,7 +119,7 @@ fun Character3DFigurine(
     // Celebrate twirl
     val celebrateScale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = 1.15f,
+        targetValue = 1.18f,
         animationSpec = infiniteRepeatable(
             animation = tween(350, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -125,40 +138,103 @@ fun Character3DFigurine(
         label = "speakPulse"
     )
 
+    // Carried item bounce
+    val carryBounce by infiniteTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(300, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "carryBounce"
+    )
+
     val currentOffsetY = when (actionState) {
         CharacterActionState.IDLE -> idleFloat
         CharacterActionState.WALK -> sin(walkSway * 0.1f) * 6f
+        CharacterActionState.RUN -> runBounce
         CharacterActionState.JUMP -> jumpBounce
+        CharacterActionState.FALL -> 8f
+        CharacterActionState.LAND -> 14f
         CharacterActionState.WAVE -> idleFloat * 0.5f
         CharacterActionState.CELEBRATE -> jumpBounce * 0.7f
         CharacterActionState.REACT -> -10f
         CharacterActionState.SPEAK -> idleFloat * 0.4f
+        CharacterActionState.PICK_UP -> 8f
+        CharacterActionState.THROW -> -12f
+        CharacterActionState.PULL -> 6f
+        CharacterActionState.CARRY -> sin(walkSway * 0.1f) * 5f
+        CharacterActionState.RESCUE -> jumpBounce * 0.5f
+        CharacterActionState.PLACE -> 6f
     }
 
     val currentScale = when (actionState) {
         CharacterActionState.IDLE -> breatheScale
         CharacterActionState.WALK -> 1.0f
+        CharacterActionState.RUN -> 1.05f
         CharacterActionState.JUMP -> if (jumpBounce < -15f) 1.05f else 0.95f
+        CharacterActionState.FALL -> 0.96f
+        CharacterActionState.LAND -> 1.08f
         CharacterActionState.WAVE -> 1.02f
         CharacterActionState.CELEBRATE -> celebrateScale
         CharacterActionState.REACT -> 1.12f
         CharacterActionState.SPEAK -> speakPulse
+        CharacterActionState.PICK_UP -> 0.92f
+        CharacterActionState.THROW -> 1.06f
+        CharacterActionState.PULL -> 0.96f
+        CharacterActionState.CARRY -> 1.0f
+        CharacterActionState.RESCUE -> 1.1f
+        CharacterActionState.PLACE -> 0.95f
     }
 
     val currentRotation = when (actionState) {
         CharacterActionState.IDLE -> 0f
         CharacterActionState.WALK -> walkSway
+        CharacterActionState.RUN -> walkSway * 1.4f
         CharacterActionState.JUMP -> walkSway * 0.3f
+        CharacterActionState.FALL -> 2f
+        CharacterActionState.LAND -> 0f
         CharacterActionState.WAVE -> waveRotation
         CharacterActionState.CELEBRATE -> waveRotation * 1.5f
         CharacterActionState.REACT -> 0f
         CharacterActionState.SPEAK -> waveRotation * 0.3f
+        CharacterActionState.PICK_UP -> -5f
+        CharacterActionState.THROW -> -10f
+        CharacterActionState.PULL -> 8f
+        CharacterActionState.CARRY -> walkSway * 0.6f
+        CharacterActionState.RESCUE -> waveRotation * 0.8f
+        CharacterActionState.PLACE -> 5f
     }
+
+    val isFacingLeft = facingAngle > 90f && facingAngle < 270f
 
     Column(
         modifier = modifier.width(IntrinsicSize.Min),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Overhead Carried Item (if active)
+        if (carriedItemEmoji != null || actionState == CharacterActionState.CARRY) {
+            val displayEmoji = carriedItemEmoji ?: "🍎"
+            Surface(
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.95f),
+                shadowElevation = 6.dp,
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color(character.themeColorHex)),
+                modifier = Modifier
+                    .padding(bottom = 2.dp)
+                    .graphicsLayer {
+                        translationY = carryBounce
+                    }
+            ) {
+                Box(
+                    modifier = Modifier.padding(6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(displayEmoji, fontSize = 26.sp)
+                }
+            }
+        }
+
         // Speech Bubble if active
         if (showSpeechBubble && speechText.isNotBlank()) {
             Surface(
@@ -219,7 +295,7 @@ fun Character3DFigurine(
                     .fillMaxSize()
                     .graphicsLayer {
                         translationY = currentOffsetY
-                        scaleX = currentScale
+                        scaleX = if (isFacingLeft) -currentScale else currentScale
                         scaleY = currentScale
                         rotationZ = currentRotation
                     }

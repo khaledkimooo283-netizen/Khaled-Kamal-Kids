@@ -9,15 +9,32 @@ data class CharacterVocabItem(
     val phoneticSpelling: String = ""
 )
 
+enum class MissionGameplayType {
+    ROPE_RESCUE,        // 1. Pick up rope -> Move to water -> Throw rope -> Pull friend to safety
+    ROLLING_BASKET,     // 2. Chase/catch rolling item -> Carry item -> Deliver to Basket
+    INTERACT_ACTIVATE,  // 3. Approach machine/vehicle -> Activate/Launch/Play
+    BRIDGE_ENCOUNTER    // 4. Navigate across terrain/bridge -> Feed or greet friend
+}
+
 data class CharacterMission(
     val id: String,
     val title: String,
     val description: String,
     val targetWord: String,
     val targetEmoji: String,
-    val options: List<String>,
-    val optionEmojis: List<String>,
-    val correctIndex: Int,
+    val options: List<String> = emptyList(),
+    val optionEmojis: List<String> = emptyList(),
+    val correctIndex: Int = 0,
+    val gameplayType: MissionGameplayType = MissionGameplayType.ROLLING_BASKET,
+    val step1Prompt: String = "",
+    val step2Prompt: String = "",
+    val step3Prompt: String = "",
+    val storyPrompt: String = "",
+    val rescueActionPrompt: String = "",
+    val goalLocationName: String = "Basket",
+    val goalEmoji: String = "🧺",
+    val ropeItemEmoji: String = "🪢",
+    val obstacleEmoji: String = "🪵",
     val rewardCoins: Int = 10,
     val rewardStars: Int = 1
 )
@@ -25,11 +42,20 @@ data class CharacterMission(
 enum class CharacterActionState {
     IDLE,
     WALK,
+    RUN,
     JUMP,
+    FALL,
+    LAND,
     WAVE,
     CELEBRATE,
     REACT,
-    SPEAK
+    SPEAK,
+    PICK_UP,
+    THROW,
+    PULL,
+    CARRY,
+    RESCUE,
+    PLACE
 }
 
 data class LetterCharacter(
@@ -66,14 +92,65 @@ object LetterCharacterData {
             vocabulary = listOf(
                 CharacterVocabItem("Apple", "🍎", "The sweet red Apple is juicy and yummy.", "تفاحة", phoneticSpelling = "AP-uhl"),
                 CharacterVocabItem("Ant", "🐜", "The tiny Ant carries a big green leaf.", "نملة", phoneticSpelling = "ANT"),
-                CharacterVocabItem("Arm", "💪", "I can raise my strong Arm high in the sky!", "ذراع", phoneticSpelling = "AHM"),
-                CharacterVocabItem("Animal", "🐾", "The cute friendly Animal plays in the grass.", "حيوان", phoneticSpelling = "AN-ih-muhl"),
-                CharacterVocabItem("Airplane", "✈️", "The fast Airplane flies above the white clouds.", "طائرة", phoneticSpelling = "AIR-playn")
+                CharacterVocabItem("Airplane", "✈️", "The fast Airplane flies above the white clouds.", "طائرة", phoneticSpelling = "AIR-playn"),
+                CharacterVocabItem("Alligator", "🐊", "The friendly green Alligator smiles by the river.", "تمساح", phoneticSpelling = "AL-uh-gay-ter"),
+                CharacterVocabItem("Animal", "🐾", "The cute friendly Animal plays in the grass.", "حيوان", phoneticSpelling = "AN-ih-muhl")
             ),
             missions = listOf(
-                CharacterMission("m_a1", "Find the Apple!", "Tap the juicy red Apple to help Apple grow big and strong!", "Apple", "🍎", listOf("Apple", "Ball", "Cat"), listOf("🍎", "⚽", "🐱"), 0),
-                CharacterMission("m_a2", "Find the Tiny Ant!", "Can you spot the little crawling Ant?", "Ant", "🐜", listOf("Dog", "Ant", "Duck"), listOf("🐶", "🐜", "🦆"), 1),
-                CharacterMission("m_a3", "Beginning Sound /æ/", "Which word starts with letter A sound /æ/?", "Airplane", "✈️", listOf("Fish", "Egg", "Airplane"), listOf("🐟", "🥚", "✈️"), 2)
+                CharacterMission(
+                    id = "m_a1",
+                    title = "Help the Ant!",
+                    description = "Rescue the little Ant trapped near the water using the rope!",
+                    targetWord = "Ant",
+                    targetEmoji = "🐜",
+                    gameplayType = MissionGameplayType.ROPE_RESCUE,
+                    storyPrompt = "Oh no! The tiny Ant is trapped near the water! Find the rope to rescue Ant!",
+                    step1Prompt = "Walk to the rope and pick it up!",
+                    step2Prompt = "Go to the water edge and throw the rope to Ant!",
+                    step3Prompt = "Pull the rope to bring Ant safely to the grass!",
+                    ropeItemEmoji = "🪢",
+                    goalLocationName = "Green Meadow",
+                    goalEmoji = "🌱"
+                ),
+                CharacterMission(
+                    id = "m_a2",
+                    title = "Find the Apple!",
+                    description = "OH NO! THE APPLE FELL! Catch the rolling Apple and put it in the Basket!",
+                    targetWord = "Apple",
+                    targetEmoji = "🍎",
+                    gameplayType = MissionGameplayType.ROLLING_BASKET,
+                    storyPrompt = "OH NO! THE APPLE FELL! Run and catch the rolling Apple, then place it in the Picnic Basket!",
+                    step1Prompt = "Run after the rolling Apple and catch it!",
+                    step2Prompt = "Carry the Apple and place it in the Picnic Basket!",
+                    goalLocationName = "Picnic Basket",
+                    goalEmoji = "🧺"
+                ),
+                CharacterMission(
+                    id = "m_a3",
+                    title = "Launch the Airplane!",
+                    description = "Walk to the Airplane on the runway and start the propeller!",
+                    targetWord = "Airplane",
+                    targetEmoji = "✈️",
+                    gameplayType = MissionGameplayType.INTERACT_ACTIVATE,
+                    storyPrompt = "The Airplane is ready on the runway! Guide Letter A to the Airplane and start the flight!",
+                    step1Prompt = "Walk over to the Airplane runway!",
+                    step2Prompt = "Press Start to launch the Airplane!",
+                    goalLocationName = "Sky Runway",
+                    goalEmoji = "🏁"
+                ),
+                CharacterMission(
+                    id = "m_a4",
+                    title = "Meet the Alligator!",
+                    description = "Cross the river bridge and become best friends with the friendly Alligator!",
+                    targetWord = "Alligator",
+                    targetEmoji = "🐊",
+                    gameplayType = MissionGameplayType.BRIDGE_ENCOUNTER,
+                    storyPrompt = "Friendly Alligator is smiling across the bridge! Cross over and greet Alligator!",
+                    step1Prompt = "Walk across the cobblestone bridge!",
+                    step2Prompt = "Wave hello and share a treat with Alligator!",
+                    goalLocationName = "River Bridge",
+                    goalEmoji = "🌉"
+                )
             ),
             unlockBadgeName = "Apple Star Explorer"
         ),

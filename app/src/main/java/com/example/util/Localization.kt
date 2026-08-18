@@ -69,6 +69,18 @@ object Localization {
         "reading" to mapOf("English" to "Reading", "Arabic" to "القراءة"),
         "matching" to mapOf("English" to "Matching", "Arabic" to "المطابقة"),
 
+        // Settings Structure
+        "section_general" to mapOf("English" to "General", "Arabic" to "عام"),
+        "section_sound" to mapOf("English" to "Sound", "Arabic" to "الصوت"),
+        "section_language" to mapOf("English" to "Language", "Arabic" to "اللغة"),
+        "section_progress" to mapOf("English" to "Progress", "Arabic" to "التقدم"),
+        "section_contact_support" to mapOf("English" to "Contact & Support", "Arabic" to "التواصل والدعم"),
+        "section_about" to mapOf("English" to "About", "Arabic" to "عن التطبيق"),
+        "whatsapp_label" to mapOf("English" to "WhatsApp", "Arabic" to "واتساب"),
+        "email_label" to mapOf("English" to "Email", "Arabic" to "البريد الإلكتروني"),
+        "app_version_label" to mapOf("English" to "App Version", "Arabic" to "إصدار التطبيق"),
+        "reset_progress" to mapOf("English" to "Reset All Progress 🗑️", "Arabic" to "إعادة ضبط كل التقدم 🗑️"),
+
         // Categories
         "cat_reading" to mapOf("English" to "Reading & Phonics 📚", "Arabic" to "القراءة واللفظ 📚"),
         "cat_writing" to mapOf("English" to "Writing & Tracing ✏️", "Arabic" to "الكتابة والتتبع ✏️"),

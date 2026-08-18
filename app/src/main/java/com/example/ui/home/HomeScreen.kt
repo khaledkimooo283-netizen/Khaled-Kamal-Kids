@@ -156,25 +156,12 @@ fun HomeScreen(
                         Text(text = avatarEmoji, fontSize = 22.sp)
                         Spacer(modifier = Modifier.width(6.dp))
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Welcome,",
-                                    fontSize = 10.sp,
-                                    color = Color(0xFF64748B),
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "v1.0.23",
-                                    fontSize = 9.sp,
-                                    color = Color(0xFF475569),
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(Color(0xFFE2E8F0))
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                                )
-                            }
+                            Text(
+                                text = "Welcome,",
+                                fontSize = 10.sp,
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
+                            )
                             Text(
                                 text = childName,
                                 fontSize = 13.sp,

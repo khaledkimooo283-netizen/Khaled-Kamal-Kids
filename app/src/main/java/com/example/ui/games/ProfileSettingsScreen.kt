@@ -1,5 +1,8 @@
 package com.example.ui.games
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,8 +18,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -27,11 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.BuildConfig
 import com.example.audio.SpeechAndSoundEngine
 import com.example.data.KkDataRepository
 import com.example.ui.components.*
@@ -110,7 +118,12 @@ fun ProfileSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Child Profile Header Card
+                val context = LocalContext.current
+                val supportWhatsAppNumber = "01092472677"
+                val supportEmailAddress = "khaledkmal500@gmail.com"
+                val appVersionDisplay = "v${BuildConfig.VERSION_NAME}"
+
+                // 1. GENERAL SECTION
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -120,29 +133,44 @@ fun ProfileSettingsScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("⚙️", fontSize = 20.sp)
+                            Text(
+                                text = Localization.tr("section_general", appLanguage),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E293B)
+                            )
+                        }
+
+                        // Child Profile Info
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(68.dp)
+                                    .size(64.dp)
                                     .clip(CircleShape)
                                     .background(Color(0xFFFEF3C7))
                                     .border(2.dp, Color(0xFFF59E0B), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = avatarEmoji, fontSize = 38.sp)
+                                Text(text = avatarEmoji, fontSize = 34.sp)
                             }
 
-                            Spacer(modifier = Modifier.width(14.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = childName,
-                                    fontSize = 22.sp,
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color(0xFF1E293B)
                                 )
@@ -155,14 +183,11 @@ fun ProfileSettingsScreen(
 
                             IconButton(
                                 onClick = { showEditProfileDialog = true },
-                                modifier = Modifier
-                                    .background(Color(0xFFEFF6FF), CircleShape)
+                                modifier = Modifier.background(Color(0xFFEFF6FF), CircleShape)
                             ) {
                                 Icon(Icons.Filled.Edit, contentDescription = "Edit Profile", tint = Color(0xFF2563EB))
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(14.dp))
 
                         // Stats Summary Pill Row
                         Row(
@@ -173,41 +198,84 @@ fun ProfileSettingsScreen(
                             StatChip("⭐ Stars", "$userStars", Color(0xFFDBEAFE), Color(0xFF1E3A8A))
                             StatChip("📅 Streak", "$userStreak Days", Color(0xFFDCFCE7), Color(0xFF14532D))
                         }
-                    }
-                }
 
-                // Adaptive Weakness Detection & Recommendation Card
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFCA5A5))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "💡", fontSize = 28.sp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Adaptive Recommendation",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF991B1B)
-                            )
-                            Text(
-                                text = "Needs practice in ${lowestSkill.first} (${lowestSkill.second}% accuracy). Let's practice today!",
-                                fontSize = 13.sp,
-                                color = Color(0xFF7F1D1D)
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                        // Gameplay Difficulty
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(text = Localization.tr("difficulty_level", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val diffList: List<Pair<String, String>> = listOf(
+                                    Pair("Easy", Localization.tr("easy", appLanguage)),
+                                    Pair("Medium", Localization.tr("medium", appLanguage)),
+                                    Pair("Hard", Localization.tr("hard", appLanguage))
+                                )
+                                diffList.forEach { item ->
+                                    val levelKey = item.first
+                                    val label = item.second
+                                    FilterChip(
+                                        selected = gameDifficulty == levelKey,
+                                        onClick = {
+                                            gameDifficulty = levelKey
+                                            repository.setGameDifficulty(levelKey)
+                                        },
+                                        label = { Text(label) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Tracing Sensitivity
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(text = Localization.tr("tracing_sensitivity", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val sensList: List<Pair<String, String>> = listOf(
+                                    Pair("Low", Localization.tr("low", appLanguage)),
+                                    Pair("Medium", Localization.tr("medium", appLanguage)),
+                                    Pair("High", Localization.tr("high", appLanguage))
+                                )
+                                sensList.forEach { item ->
+                                    val sensKey = item.first
+                                    val label = item.second
+                                    FilterChip(
+                                        selected = tracingSensitivity == sensKey,
+                                        onClick = {
+                                            tracingSensitivity = sensKey
+                                            repository.setTracingSensitivity(sensKey)
+                                        },
+                                        label = { Text(label) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Large Text Mode
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = Localization.tr("large_text_mode", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
+                            Switch(
+                                checked = isLargeTextMode,
+                                onCheckedChange = {
+                                    isLargeTextMode = it
+                                    repository.setLargeTextMode(it)
+                                }
                             )
                         }
                     }
                 }
 
-                // Learning Dashboard & Skill Analytics
+                // 2. SOUND SECTION
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -217,54 +285,21 @@ fun ProfileSettingsScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "Learning Analytics 📊",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF1E293B)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        SkillProgressBar("Listening", listeningAcc, Color(0xFFA855F7))
-                        SkillProgressBar("Writing & Tracing", tracingAcc, Color(0xFF3B82F6))
-                        SkillProgressBar("Spelling & Typing", typingAcc, Color(0xFFF59E0B))
-                        SkillProgressBar("Reading", readingAcc, Color(0xFFEC4899))
-                        SkillProgressBar("Matching", matchingAcc, Color(0xFF10B981))
-                    }
-                }
-
-                // App Settings Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Settings ⚙️",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF1E293B)
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = "Audio & Voice Settings 🔊",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("🔊", fontSize = 20.sp)
+                            Text(
+                                text = Localization.tr("section_sound", appLanguage),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E293B)
+                            )
+                        }
 
                         // Voice Volume
                         Text(text = Localization.tr("voice_volume", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
@@ -278,10 +313,10 @@ fun ProfileSettingsScreen(
                             colors = SliderDefaults.colors(thumbColor = Color(0xFF2563EB), activeTrackColor = Color(0xFF3B82F6))
                         )
 
-                        // Voice Type Selector (Child Voice, Female Teacher, Male Teacher)
+                        // Voice Type Selector
                         Text(text = Localization.tr("voice_style", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             val voiceOptions: List<Pair<String, String>> = listOf(
@@ -311,7 +346,7 @@ fun ProfileSettingsScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(color = Color(0xFFF1F5F9))
 
                         // Background Music Toggle + Slider
                         Row(
@@ -342,6 +377,7 @@ fun ProfileSettingsScreen(
                             )
                         }
 
+                        // Sound Effects Toggle
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -357,189 +393,10 @@ fun ProfileSettingsScreen(
                                 }
                             )
                         }
-
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFE2E8F0))
-
-                        // Gameplay & Tracing Settings
-                        Text(
-                            text = Localization.tr("gameplay_difficulty", appLanguage),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(text = Localization.tr("difficulty_level", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val diffList: List<Pair<String, String>> = listOf(
-                                Pair("Easy", Localization.tr("easy", appLanguage)),
-                                Pair("Medium", Localization.tr("medium", appLanguage)),
-                                Pair("Hard", Localization.tr("hard", appLanguage))
-                            )
-                            diffList.forEach { item ->
-                                val levelKey = item.first
-                                val label = item.second
-                                FilterChip(
-                                    selected = gameDifficulty == levelKey,
-                                    onClick = {
-                                        gameDifficulty = levelKey
-                                        repository.setGameDifficulty(levelKey)
-                                    },
-                                    label = { Text(label) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(text = Localization.tr("tracing_sensitivity", appLanguage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val sensList: List<Pair<String, String>> = listOf(
-                                Pair("Low", Localization.tr("low", appLanguage)),
-                                Pair("Medium", Localization.tr("medium", appLanguage)),
-                                Pair("High", Localization.tr("high", appLanguage))
-                            )
-                            sensList.forEach { item ->
-                                val sensKey = item.first
-                                val label = item.second
-                                FilterChip(
-                                    selected = tracingSensitivity == sensKey,
-                                    onClick = {
-                                        tracingSensitivity = sensKey
-                                        repository.setTracingSensitivity(sensKey)
-                                    },
-                                    label = { Text(label) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFE2E8F0))
-
-                        // Accessibility & Language
-                        Text(
-                            text = Localization.tr("accessibility_lang", appLanguage),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = Localization.tr("large_text_mode", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
-                            Switch(
-                                checked = isLargeTextMode,
-                                onCheckedChange = {
-                                    isLargeTextMode = it
-                                    repository.setLargeTextMode(it)
-                                }
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = Localization.tr("language", appLanguage), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF334155))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(
-                                    selected = appLanguage == "English",
-                                    onClick = {
-                                        appLanguage = "English"
-                                        repository.setLanguage("English")
-                                        audioEngine.applyVoiceConfig(voiceType, voiceVolume, "English")
-                                        audioEngine.speak("Language changed to English!")
-                                    },
-                                    label = { Text(Localization.tr("english", appLanguage)) }
-                                )
-                                FilterChip(
-                                    selected = appLanguage == "Arabic",
-                                    onClick = {
-                                        appLanguage = "Arabic"
-                                        repository.setLanguage("Arabic")
-                                        audioEngine.applyVoiceConfig(voiceType, voiceVolume, "Arabic")
-                                        audioEngine.speak("تم تغيير اللغة إلى العربية!")
-                                    },
-                                    label = { Text(Localization.tr("arabic", appLanguage)) }
-                                )
-                            }
-                        }
-
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFE2E8F0))
-
-                        // Change Parent PIN Button
-        OutlinedButton(
-            onClick = {
-                pendingParentAction = {
-                    newPinValue = ""
-                    showChangePinDialog = true
-                }
-                showParentGatePinDialog = true
-            },
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color(0xFF2563EB))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(Localization.tr("change_pin_btn", appLanguage), fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFE2E8F0))
-                .padding(10.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Application Version 1.0.23 (Build 23) ✅",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF1E293B)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Parent Protected Reset Button
-        Button(
-            onClick = {
-                pendingParentAction = {
-                    repository.resetAllProgress()
-                    userStars = repository.getStars()
-                    audioEngine.speak(if (appLanguage == "Arabic") "تم إعادة ضبط التقدم بنجاح" else "Progress reset successfully!")
-                }
-                showParentGatePinDialog = true
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color.White)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(Localization.tr("reset_progress", appLanguage), fontWeight = FontWeight.Bold, color = Color.White)
-        }
                     }
                 }
 
-                // Help & Support Section Card (Rule 16)
+                // 3. LANGUAGE SECTION
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -550,93 +407,392 @@ fun ProfileSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("🌐", fontSize = 20.sp)
+                            Text(
+                                text = Localization.tr("section_language", appLanguage),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E293B)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            FilterChip(
+                                selected = appLanguage == "English",
+                                onClick = {
+                                    appLanguage = "English"
+                                    repository.setLanguage("English")
+                                    audioEngine.applyVoiceConfig(voiceType, voiceVolume, "English")
+                                    audioEngine.speak("Language changed to English!")
+                                },
+                                label = { Text(Localization.tr("english", appLanguage), fontWeight = FontWeight.Bold) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            FilterChip(
+                                selected = appLanguage == "Arabic",
+                                onClick = {
+                                    appLanguage = "Arabic"
+                                    repository.setLanguage("Arabic")
+                                    audioEngine.applyVoiceConfig(voiceType, voiceVolume, "Arabic")
+                                    audioEngine.speak("تم تغيير اللغة إلى العربية!")
+                                },
+                                label = { Text(Localization.tr("arabic", appLanguage), fontWeight = FontWeight.Bold) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+
+                // 4. PROGRESS SECTION
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("📈", fontSize = 20.sp)
+                            Text(
+                                text = Localization.tr("section_progress", appLanguage),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E293B)
+                            )
+                        }
+
+                        // Adaptive Recommendation Box
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+                            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFCA5A5))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "💡", fontSize = 24.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = Localization.tr("adaptive_recommendation", appLanguage),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF991B1B)
+                                    )
+                                    Text(
+                                        text = "Needs practice in ${lowestSkill.first} (${lowestSkill.second}% accuracy).",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF7F1D1D)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Learning Analytics Progress Bars
                         Text(
-                            text = "Help & Support ❓",
-                            fontSize = 18.sp,
+                            text = Localization.tr("learning_analytics", appLanguage),
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1E293B)
                         )
+                        SkillProgressBar("Listening", listeningAcc, Color(0xFFA855F7))
+                        SkillProgressBar("Writing & Tracing", tracingAcc, Color(0xFF3B82F6))
+                        SkillProgressBar("Spelling & Typing", typingAcc, Color(0xFFF59E0B))
+                        SkillProgressBar("Reading", readingAcc, Color(0xFFEC4899))
+                        SkillProgressBar("Matching", matchingAcc, Color(0xFF10B981))
 
                         HorizontalDivider(color = Color(0xFFF1F5F9))
 
+                        // Change Parent PIN Button
+                        OutlinedButton(
+                            onClick = {
+                                pendingParentAction = {
+                                    newPinValue = ""
+                                    showChangePinDialog = true
+                                }
+                                showParentGatePinDialog = true
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color(0xFF2563EB))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(Localization.tr("change_pin_btn", appLanguage), fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
+                        }
+
+                        // Parent Protected Reset Button
+                        Button(
+                            onClick = {
+                                pendingParentAction = {
+                                    repository.resetAllProgress()
+                                    userStars = repository.getStars()
+                                    audioEngine.speak(if (appLanguage == "Arabic") "تم إعادة ضبط التقدم بنجاح" else "Progress reset successfully!")
+                                }
+                                showParentGatePinDialog = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Parent Gate", tint = Color.White)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(Localization.tr("reset_progress", appLanguage), fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+
+                // 5. CONTACT & SUPPORT SECTION
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("💬", fontSize = 20.sp)
+                            Text(
+                                text = Localization.tr("section_contact_support", appLanguage),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E293B)
+                            )
+                        }
+
+                        // WhatsApp Clickable Item
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFFDCFCE7))
+                                .border(1.dp, Color(0xFF86EFAC), RoundedCornerShape(16.dp))
+                                .clickable {
+                                    val formattedNumber = "201092472677"
+                                    try {
+                                        val waIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/$formattedNumber")).apply {
+                                            setPackage("com.whatsapp")
+                                        }
+                                        context.startActivity(waIntent)
+                                    } catch (e: Exception) {
+                                        try {
+                                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://api.whatsapp.com/send?phone=$formattedNumber"))
+                                            context.startActivity(webIntent)
+                                        } catch (e2: Exception) {
+                                            try {
+                                                val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$supportWhatsAppNumber"))
+                                                context.startActivity(dialIntent)
+                                            } catch (e3: Exception) {
+                                                Toast.makeText(context, "WhatsApp: $supportWhatsAppNumber", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF22C55E)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("📱", fontSize = 24.sp)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = Localization.tr("whatsapp_label", appLanguage),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF14532D)
+                                )
+                                Text(
+                                    text = supportWhatsAppNumber,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF15803D)
+                                )
+                            }
+                            Text(
+                                text = "💬 Chat",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF15803D),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFBBF7D0))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        // Email Clickable Item
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(Color(0xFFEFF6FF))
-                                .clickable { audioEngine.speak("Contact Support email: support@kkkids.app") }
-                                .padding(12.dp),
+                                .border(1.dp, Color(0xFFBFDBFE), RoundedCornerShape(16.dp))
+                                .clickable {
+                                    try {
+                                        val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                            data = Uri.parse("mailto:$supportEmailAddress")
+                                            putExtra(Intent.EXTRA_SUBJECT, "KK Kids Support & Inquiries")
+                                        }
+                                        context.startActivity(emailIntent)
+                                    } catch (e: Exception) {
+                                        try {
+                                            val viewIntent = Intent(Intent.ACTION_VIEW, Uri.parse("mailto:$supportEmailAddress"))
+                                            context.startActivity(viewIntent)
+                                        } catch (e2: Exception) {
+                                            Toast.makeText(context, "Email: $supportEmailAddress", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                }
+                                .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("📧", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Contact Support", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
-                                Text("support@kkkids.app • 24/7 Parent Help", fontSize = 12.sp, color = Color(0xFF64748B))
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF3B82F6)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("📧", fontSize = 24.sp)
                             }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = Localization.tr("email_label", appLanguage),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFF1E3A8A)
+                                )
+                                Text(
+                                    text = supportEmailAddress,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF1D4ED8)
+                                )
+                            }
+                            Text(
+                                text = "✉️ Send",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1D4ED8),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFDBEAFE))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 6. ABOUT SECTION
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("ℹ️", fontSize = 20.sp)
+                            Text(
+                                text = Localization.tr("section_about", appLanguage),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1E293B)
+                            )
                         }
 
+                        // App Version Badge (Controlled centrally via BuildConfig.VERSION_NAME)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFF0FDF4))
-                                .clickable { audioEngine.speak("FAQ: KK Kids is an offline-safe educational environment for kids.") }
-                                .padding(12.dp),
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0xFFF1F5F9))
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("💡", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Frequently Asked Questions (FAQ)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
-                                Text("100% Safe, No Ads, Offline Compatible", fontSize = 12.sp, color = Color(0xFF166534))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("📦", fontSize = 18.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = Localization.tr("app_version_label", appLanguage),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF334155)
+                                )
                             }
+                            Text(
+                                text = appVersionDisplay,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF2563EB),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFDBEAFE))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
                         }
 
+                        // KidSafe / Certified Note
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(Color(0xFFFAF5FF))
-                                .clickable { audioEngine.speak("Privacy Policy and Terms: 100% KidSafe Certified") }
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("🛡️", fontSize = 22.sp)
+                            Text("🛡️", fontSize = 20.sp)
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
-                                Text("Privacy Policy & Terms", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
-                                Text("COPPA & KidSafe Certified Privacy Standard", fontSize = 12.sp, color = Color(0xFF6B21A8))
+                                Text("KidSafe Certified & COPPA Compliant", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF1E293B))
+                                Text("100% Safe, Offline Compatible, No Ads", fontSize = 11.sp, color = Color(0xFF6B21A8))
                             }
                         }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFFEF3C7))
-                                .clickable { audioEngine.speak("Thank you for rating KK Kids 5 stars!") }
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("⭐", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Rate KK Kids", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1E293B))
-                                Text("Love the app? Leave us a 5-star review!", fontSize = 12.sp, color = Color(0xFF92400E))
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Khaled Kamal Kids (KK Kids) v1.0 Final Release • Production Build",
-                            fontSize = 11.sp,
-                            color = Color(0xFF94A3B8),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
             }
