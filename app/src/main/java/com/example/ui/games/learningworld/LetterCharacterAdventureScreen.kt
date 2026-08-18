@@ -799,8 +799,8 @@ private fun Real3DAdventureArena(
                                 else -> "Airplane launched high in the sky! Zoom!"
                             }
                             MissionGameplayType.BRIDGE_ENCOUNTER -> when (missionStage) {
-                                0 -> mission.step1Prompt.ifBlank { "Walk across the bridge to meet Alligator! 🌉" }
-                                else -> "Alligator is so happy to meet you! 🐊"
+                                0 -> mission.step1Prompt.ifBlank { "Walk across the bridge to meet ${mission.targetWord}! 🌉" }
+                                else -> "${mission.targetWord} is so happy to meet you! ${mission.targetEmoji}"
                             }
                         },
                         fontSize = 12.sp,
@@ -816,17 +816,17 @@ private fun Real3DAdventureArena(
                         val promptToSpeak = when (mission.gameplayType) {
                             MissionGameplayType.ROPE_RESCUE -> when (missionStage) {
                                 0 -> "Walk to the rescue rope and pick it up!"
-                                1 -> "Go to the water edge and throw the rope to Ant!"
-                                2 -> "Pull Ant safely to the grass!"
-                                else -> "Ant is safe! A is for Ant!"
+                                1 -> "Go to the water edge and throw the rope to ${mission.targetWord}!"
+                                2 -> "Pull ${mission.targetWord} safely to the grass!"
+                                else -> "${mission.targetWord} is safe! ${character.letter} is for ${mission.targetWord}!"
                             }
                             MissionGameplayType.ROLLING_BASKET -> when (missionStage) {
                                 0 -> "Catch the rolling ${mission.targetWord}!"
-                                1 -> "Carry it into the Picnic Basket!"
-                                else -> "Great job! A is for ${mission.targetWord}!"
+                                1 -> "Carry it into the ${mission.goalLocationName}!"
+                                else -> "Great job! ${character.letter} is for ${mission.targetWord}!"
                             }
-                            MissionGameplayType.INTERACT_ACTIVATE -> "Guide Letter A to the runway and launch the Airplane!"
-                            MissionGameplayType.BRIDGE_ENCOUNTER -> "Cross the bridge and greet the friendly Alligator!"
+                            MissionGameplayType.INTERACT_ACTIVATE -> "Guide Letter ${character.letter} to help and launch ${mission.targetWord}!"
+                            MissionGameplayType.BRIDGE_ENCOUNTER -> "Cross the bridge and greet the friendly ${mission.targetWord}!"
                         }
                         audioEngine.speak(promptToSpeak)
                     },
@@ -909,7 +909,7 @@ private fun Real3DAdventureArena(
                                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                                         modifier = Modifier.height(56.dp).testTag("action_pickup_rope_btn")
                                     ) {
-                                        Text("🖐️ PICK UP ROPE 🪢", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                                        Text("🖐️ PICK UP ROPE ${mission.ropeItemEmoji}", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
                                     }
                                 }
                             }
@@ -920,7 +920,7 @@ private fun Real3DAdventureArena(
                                             coroutineScope.launch {
                                                 actionState = CharacterActionState.THROW
                                                 audioEngine.playClickSound()
-                                                audioEngine.speak("Throwing rope to Ant!")
+                                                audioEngine.speak("Throwing rope to ${mission.targetWord}!")
                                                 delay(450)
                                                 missionStage = 2
                                                 actionState = CharacterActionState.IDLE
@@ -931,7 +931,7 @@ private fun Real3DAdventureArena(
                                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                                         modifier = Modifier.height(56.dp).testTag("action_throw_rope_btn")
                                     ) {
-                                        Text("🎯 THROW ROPE TO ANT 🐜", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                                        Text("🎯 THROW ROPE TO ${mission.targetWord.uppercase()} ${mission.targetEmoji}", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
                                     }
                                 }
                             }
@@ -941,7 +941,7 @@ private fun Real3DAdventureArena(
                                         coroutineScope.launch {
                                             actionState = CharacterActionState.PULL
                                             audioEngine.playClickSound()
-                                            audioEngine.speak("Pulling Ant to safety! Hold tight!")
+                                            audioEngine.speak("Pulling ${mission.targetWord} to safety! Hold tight!")
                                             antPullProgress.animateTo(
                                                 targetValue = 1f,
                                                 animationSpec = tween(900, easing = FastOutSlowInEasing)
@@ -949,7 +949,7 @@ private fun Real3DAdventureArena(
                                             missionStage = 3
                                             missionFinished = true
                                             actionState = CharacterActionState.CELEBRATE
-                                            audioEngine.speak("ANT! A is for Ant! Ant is safe!")
+                                            audioEngine.speak("${mission.targetWord.uppercase()}! ${character.letter} is for ${mission.targetWord}! ${mission.targetWord} is safe!")
                                             onMissionComplete(mission)
                                         }
                                     },
@@ -958,7 +958,7 @@ private fun Real3DAdventureArena(
                                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                                     modifier = Modifier.height(56.dp).testTag("action_pull_rope_btn")
                                 ) {
-                                    Text("💪 PULL ANT TO SAFETY!", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                                    Text("💪 PULL ${mission.targetWord.uppercase()} TO SAFETY!", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
                                 }
                             }
                             3 -> {
@@ -982,7 +982,7 @@ private fun Real3DAdventureArena(
                                     coroutineScope.launch {
                                         actionState = CharacterActionState.PICK_UP
                                         audioEngine.playClickSound()
-                                        audioEngine.speak("Caught ${mission.targetWord}! Put it in the basket!")
+                                        audioEngine.speak("Caught ${mission.targetWord}! Put it in the ${mission.goalLocationName}!")
                                         delay(400)
                                         isCarryingItem = true
                                         missionStage = 1
@@ -994,7 +994,7 @@ private fun Real3DAdventureArena(
                                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                                 modifier = Modifier.height(56.dp).testTag("action_pickup_btn")
                             ) {
-                                Text("🖐️ CATCH ${mission.targetWord}! 🍎", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                                Text("🖐️ CATCH ${mission.targetWord.uppercase()}! ${mission.targetEmoji}", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
                             }
                         } else if (isCarryingItem && distToBasket < 0.38f) {
                             Button(
@@ -1007,7 +1007,7 @@ private fun Real3DAdventureArena(
                                         missionStage = 2
                                         missionFinished = true
                                         actionState = CharacterActionState.CELEBRATE
-                                        audioEngine.speak("APPLE! Placed in basket! A is for Apple!")
+                                        audioEngine.speak("${mission.targetWord.uppercase()}! Placed in ${mission.goalLocationName}! ${character.letter} is for ${mission.targetWord}!")
                                         onMissionComplete(mission)
                                     }
                                 },
@@ -1016,7 +1016,7 @@ private fun Real3DAdventureArena(
                                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                                 modifier = Modifier.height(56.dp).testTag("action_place_btn")
                             ) {
-                                Text("🎯 PLACE IN BASKET!", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                                Text("🎯 PLACE IN ${mission.goalLocationName.uppercase()}!", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
                             }
                         } else if (missionFinished) {
                             Button(
@@ -1038,7 +1038,7 @@ private fun Real3DAdventureArena(
                                     coroutineScope.launch {
                                         actionState = CharacterActionState.REACT
                                         audioEngine.playClickSound()
-                                        audioEngine.speak("AIRPLANE! Propeller spinning! 3, 2, 1, Lift off!")
+                                        audioEngine.speak("${mission.targetWord.uppercase()}! Ready, set, go! ${character.letter} is for ${mission.targetWord}!")
                                         airplaneFlyHeight.animateTo(
                                             targetValue = 60f,
                                             animationSpec = tween(1200, easing = FastOutSlowInEasing)
@@ -1054,7 +1054,42 @@ private fun Real3DAdventureArena(
                                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
                                 modifier = Modifier.height(56.dp).testTag("action_activate_btn")
                             ) {
-                                Text("🚀 LAUNCH AIRPLANE! ✈️", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                                Text("🚀 ACTIVATE ${mission.targetWord.uppercase()}! ${mission.targetEmoji}", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                            }
+                        } else if (missionFinished) {
+                            Button(
+                                onClick = onNextMission,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                shape = RoundedCornerShape(20.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
+                                modifier = Modifier.height(56.dp).testTag("next_mission_btn")
+                            ) {
+                                Text("Next Adventure ➡️", fontSize = 14.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                            }
+                        }
+                    }
+
+                    MissionGameplayType.BRIDGE_ENCOUNTER -> {
+                        if (missionStage == 0 && distToAnimal < 0.38f) {
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        actionState = CharacterActionState.WAVE
+                                        audioEngine.playClickSound()
+                                        audioEngine.speak("${mission.targetWord.uppercase()}! Hello friendly ${mission.targetWord}! ${character.letter} is for ${mission.targetWord}!")
+                                        delay(600)
+                                        missionStage = 1
+                                        missionFinished = true
+                                        actionState = CharacterActionState.CELEBRATE
+                                        onMissionComplete(mission)
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                                shape = RoundedCornerShape(20.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp),
+                                modifier = Modifier.height(56.dp).testTag("action_greet_btn")
+                            ) {
+                                Text("👋 GREET ${mission.targetWord.uppercase()}! ${mission.targetEmoji}", fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1)
                             }
                         } else if (missionFinished) {
                             Button(
@@ -1618,6 +1653,11 @@ fun LetterCharacterAdventureScreen(
                     CharacterTab.VOCABULARY -> {
                         CharacterVocabularyTab(
                             character = currentCharacter,
+                            allCharacters = allCharacters,
+                            repository = repository,
+                            onSelectLetter = { letter ->
+                                selectedLetter = letter
+                            },
                             audioEngine = audioEngine
                         )
                     }
@@ -1648,6 +1688,7 @@ fun LetterCharacterAdventureScreen(
                 onPronouncedCorrect = {
                     repository.addStars(1)
                     repository.addCoins(5)
+                    repository.addLearnedWords(listOf(speakingWordTarget))
                     audioEngine.playCorrectSound()
                     audioEngine.speak("Great job! ${speakingWordTarget}!")
                     showSpeakingDialog = false
@@ -1979,118 +2020,334 @@ private fun ActionPillButton(
 }
 
 // ----------------------------------------------------
-// 4. VOCABULARY TAB (4 to 5 Words per letter)
+// 4. VOCABULARY TAB (104 Words Discovery Book)
 // ----------------------------------------------------
 @Composable
 private fun CharacterVocabularyTab(
     character: LetterCharacter,
+    allCharacters: List<LetterCharacter>,
+    repository: KkDataRepository,
+    onSelectLetter: (Char) -> Unit,
     audioEngine: SpeechAndSoundEngine
 ) {
     val scrollState = rememberScrollState()
+    var viewAllMode by remember { mutableStateOf(false) }
+    val learnedWords = remember { repository.getLearnedWords() }
+    val totalWordsCount = remember { allCharacters.sumOf { it.vocabulary.size } }
+    val discoveredCount = remember(learnedWords) {
+        allCharacters.flatMap { it.vocabulary }.count { vocab ->
+            learnedWords.any { it.equals(vocab.word, ignoreCase = true) }
+        }
+    }
+    val progressFraction = if (totalWordsCount > 0) discoveredCount.toFloat() / totalWordsCount.toFloat() else 0f
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(16.dp),
+            .padding(14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "${character.name}'s Vocabulary Words",
-            fontSize = 17.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color(character.themeColorHex),
-            maxLines = 1,
-            softWrap = false,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = "Tap any card to hear pronunciation and example phrase!",
-            fontSize = 13.sp,
-            color = Color(0xFF64748B),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 2.dp, bottom = 12.dp),
-            maxLines = 1,
-            softWrap = false
-        )
-
-        character.vocabulary.forEach { vocab ->
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White,
-                shadowElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(character.themeColorHex).copy(alpha = 0.25f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-                    .clickable {
-                        audioEngine.playClickSound()
-                        audioEngine.speak("${vocab.word}. ${vocab.sentence}")
-                    }
-                    .testTag("vocab_card_${vocab.word}")
+        // Overall 104 Vocabulary Words Discovery Banner
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White,
+            shadowElevation = 3.dp,
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(character.themeColorHex).copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Big Emoji Bubble
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(character.themeColorHex).copy(alpha = 0.12f),
-                        modifier = Modifier.size(54.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(vocab.emoji, fontSize = 28.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📚", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
                             Text(
-                                text = vocab.word,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
+                                text = "Word Discovery Book",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
                                 color = Color(0xFF0F172A),
                                 maxLines = 1,
                                 softWrap = false
                             )
-                            if (vocab.phoneticSpelling.isNotBlank()) {
+                            Text(
+                                text = "$discoveredCount of $totalWordsCount Words Rescued & Discovered",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(character.themeColorHex),
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFEF3C7),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B))
+                    ) {
+                        Text(
+                            text = "${(progressFraction * 100).toInt()}%",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFB45309),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Progress Bar
+                LinearProgressIndicator(
+                    progress = { progressFraction.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(5.dp)),
+                    color = Color(character.themeColorHex),
+                    trackColor = Color(0xFFE2E8F0)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Mode Toggle: Current Letter Words vs All 104 Words
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !viewAllMode,
+                        onClick = {
+                            audioEngine.playClickSound()
+                            viewAllMode = false
+                        },
+                        label = {
+                            Text(
+                                text = "Letter ${character.letter} (4 Words)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = viewAllMode,
+                        onClick = {
+                            audioEngine.playClickSound()
+                            viewAllMode = true
+                        },
+                        label = {
+                            Text(
+                                text = "All A–Z (104 Words)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (viewAllMode) {
+            // Display all 26 letters and their 4 vocabulary words
+            allCharacters.forEach { charItem ->
+                val charColor = Color(charItem.themeColorHex)
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = charColor.copy(alpha = 0.08f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, charColor.copy(alpha = 0.3f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(charItem.characterEmoji, fontSize = 20.sp)
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "(${vocab.phoneticSpelling})",
+                                    text = "Letter ${charItem.letter} • ${charItem.name}",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = charColor,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    audioEngine.playClickSound()
+                                    onSelectLetter(charItem.letter)
+                                }
+                            ) {
+                                Text(
+                                    text = "Play 3D 🎮",
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(character.themeColorHex),
+                                    fontWeight = FontWeight.Bold,
+                                    color = charColor,
                                     maxLines = 1,
                                     softWrap = false
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+
+                        charItem.vocabulary.forEach { vocab ->
+                            val isRescued = learnedWords.any { it.equals(vocab.word, ignoreCase = true) }
+                            VocabularyWordRowCard(
+                                vocab = vocab,
+                                themeColor = charColor,
+                                isRescued = isRescued,
+                                audioEngine = audioEngine
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            // Display Current Letter's 4 Vocabulary Words
+            Text(
+                text = "${character.characterEmoji} ${character.name}'s 4 Vocabulary Adventures",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(character.themeColorHex),
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+
+            character.vocabulary.forEach { vocab ->
+                val isRescued = learnedWords.any { it.equals(vocab.word, ignoreCase = true) }
+                VocabularyWordRowCard(
+                    vocab = vocab,
+                    themeColor = Color(character.themeColorHex),
+                    isRescued = isRescued,
+                    audioEngine = audioEngine
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VocabularyWordRowCard(
+    vocab: CharacterVocabItem,
+    themeColor: Color,
+    isRescued: Boolean,
+    audioEngine: SpeechAndSoundEngine
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White,
+        shadowElevation = 2.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, themeColor.copy(alpha = 0.25f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable {
+                audioEngine.playClickSound()
+                audioEngine.speak("${vocab.word}. ${vocab.sentence}")
+            }
+            .testTag("vocab_card_${vocab.word}")
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Big Emoji Bubble
+            Surface(
+                shape = CircleShape,
+                color = themeColor.copy(alpha = 0.12f),
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(vocab.emoji, fontSize = 24.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = vocab.word,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                    if (vocab.phoneticSpelling.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = vocab.sentence,
-                            fontSize = 13.sp,
-                            color = Color(0xFF475569),
+                            text = "(${vocab.phoneticSpelling})",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = themeColor,
                             maxLines = 1,
                             softWrap = false
                         )
                     }
-
-                    IconButton(
-                        onClick = {
-                            audioEngine.playClickSound()
-                            audioEngine.speak("${vocab.word}. ${vocab.sentence}")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    if (isRescued) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFDCFCE7)
+                        ) {
+                            Text(
+                                text = "✨ Rescued",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF16A34A),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                maxLines = 1,
+                                softWrap = false
+                            )
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = "Speak",
-                            tint = Color(character.themeColorHex)
-                        )
                     }
                 }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = vocab.sentence,
+                    fontSize = 12.sp,
+                    color = Color(0xFF475569),
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+
+            IconButton(
+                onClick = {
+                    audioEngine.playClickSound()
+                    audioEngine.speak("${vocab.word}. ${vocab.sentence}")
+                },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = "Speak",
+                    tint = themeColor
+                )
             }
         }
     }

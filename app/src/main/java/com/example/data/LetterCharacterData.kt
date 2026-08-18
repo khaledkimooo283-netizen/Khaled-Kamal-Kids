@@ -10,10 +10,10 @@ data class CharacterVocabItem(
 )
 
 enum class MissionGameplayType {
-    ROPE_RESCUE,        // 1. Pick up rope -> Move to water -> Throw rope -> Pull friend to safety
-    ROLLING_BASKET,     // 2. Chase/catch rolling item -> Carry item -> Deliver to Basket
-    INTERACT_ACTIVATE,  // 3. Approach machine/vehicle -> Activate/Launch/Play
-    BRIDGE_ENCOUNTER    // 4. Navigate across terrain/bridge -> Feed or greet friend
+    ROPE_RESCUE,        // 1. Pick up rope -> Move to hazard -> Throw rope -> Pull friend to safety
+    ROLLING_BASKET,     // 2. Chase/catch rolling item -> Carry item -> Deliver to Basket/Goal
+    INTERACT_ACTIVATE,  // 3. Approach machine/object -> Activate/Launch/Help
+    BRIDGE_ENCOUNTER    // 4. Navigate across terrain/bridge -> Greet/Share/Meet friend
 }
 
 data class CharacterMission(
@@ -31,7 +31,7 @@ data class CharacterMission(
     val step3Prompt: String = "",
     val storyPrompt: String = "",
     val rescueActionPrompt: String = "",
-    val goalLocationName: String = "Basket",
+    val goalLocationName: String = "Picnic Basket",
     val goalEmoji: String = "🧺",
     val ropeItemEmoji: String = "🪢",
     val obstacleEmoji: String = "🪵",
@@ -76,757 +76,642 @@ data class LetterCharacter(
 
 object LetterCharacterData {
 
+    private fun makeMissionsForLetter(
+        letter: Char,
+        w1: Pair<String, String>, // Rescue word (ROPE_RESCUE)
+        w2: Pair<String, String>, // Catch word (ROLLING_BASKET)
+        w3: Pair<String, String>, // Activate word (INTERACT_ACTIVATE)
+        w4: Pair<String, String>  // Bridge word (BRIDGE_ENCOUNTER)
+    ): List<CharacterMission> {
+        val letLower = letter.lowercaseChar()
+        return listOf(
+            CharacterMission(
+                id = "m_${letLower}1",
+                title = "Rescue the ${w1.first}!",
+                description = "Rescue the ${w1.first} trapped by the water with the rescue rope!",
+                targetWord = w1.first,
+                targetEmoji = w1.second,
+                gameplayType = MissionGameplayType.ROPE_RESCUE,
+                storyPrompt = "Oh no! The little ${w1.first} is trapped near the water! Pick up the rope to rescue ${w1.first}!",
+                step1Prompt = "Walk to the rescue rope and pick it up!",
+                step2Prompt = "Go to the water edge and throw the rope to ${w1.first}!",
+                step3Prompt = "Pull the rope to bring ${w1.first} safely onto the grass!",
+                ropeItemEmoji = "🪢",
+                goalLocationName = "Safe Meadow",
+                goalEmoji = "🌱"
+            ),
+            CharacterMission(
+                id = "m_${letLower}2",
+                title = "Catch the ${w2.first}!",
+                description = "The ${w2.first} is rolling away! Catch it and deliver it to the basket!",
+                targetWord = w2.first,
+                targetEmoji = w2.second,
+                gameplayType = MissionGameplayType.ROLLING_BASKET,
+                storyPrompt = "Look! The ${w2.first} is on the loose! Chase and catch the ${w2.first}, then place it safely in the basket!",
+                step1Prompt = "Run after the ${w2.first} and catch it!",
+                step2Prompt = "Carry the ${w2.first} and place it in the Picnic Basket!",
+                goalLocationName = "Picnic Basket",
+                goalEmoji = "🧺"
+            ),
+            CharacterMission(
+                id = "m_${letLower}3",
+                title = "Help the ${w3.first}!",
+                description = "Navigate across the path and launch or help the ${w3.first}!",
+                targetWord = w3.first,
+                targetEmoji = w3.second,
+                gameplayType = MissionGameplayType.INTERACT_ACTIVATE,
+                storyPrompt = "The ${w3.first} is waiting on the adventure path! Walk over and activate or help ${w3.first}!",
+                step1Prompt = "Walk toward the ${w3.first} on the runway path!",
+                step2Prompt = "Press the action button to activate ${w3.first}!",
+                goalLocationName = "Adventure Runway",
+                goalEmoji = "🏁"
+            ),
+            CharacterMission(
+                id = "m_${letLower}4",
+                title = "Meet the ${w4.first}!",
+                description = "Cross the wooden bridge and become best friends with the ${w4.first}!",
+                targetWord = w4.first,
+                targetEmoji = w4.second,
+                gameplayType = MissionGameplayType.BRIDGE_ENCOUNTER,
+                storyPrompt = "A friendly ${w4.first} is waiting across the bridge! Cross the river bridge and say hello!",
+                step1Prompt = "Walk across the wooden cobblestone bridge!",
+                step2Prompt = "Wave hello and share a high-five with ${w4.first}!",
+                goalLocationName = "Friendship Hill",
+                goalEmoji = "💚"
+            )
+        )
+    }
+
     val characters: List<LetterCharacter> = listOf(
-        // A -> Apple (Red glossy 3D apple character with leaf & friendly smile)
+        // A -> Apple (Red glossy 3D apple character)
         LetterCharacter(
             letter = 'A',
             name = "Apple",
             characterEmoji = "🍎",
-            themeColorHex = 0xFFDC2626, // Crimson Red
+            themeColorHex = 0xFFDC2626,
             secondaryColorHex = 0xFFEF4444,
             phonicsSound = "/æ/",
-            phonicsExample = "A says /æ/ as in Apple!",
+            phonicsExample = "A says /æ/ as in Apple & Ant!",
             personality = "Happy, sweet, and full of energy!",
             greetingSpeech = "Hi! I'm Apple! 'A' is for Apple! /æ/ /æ/ Apple! Let's explore together!",
-            storyIntro = "Uh-oh! Apple wants to gather all tasty red snacks and find little friends in the garden!",
+            storyIntro = "Apple is on a hero mission to rescue little Ant, collect tasty apples, fly airplanes, and meet Alligator!",
             vocabulary = listOf(
-                CharacterVocabItem("Apple", "🍎", "The sweet red Apple is juicy and yummy.", "تفاحة", phoneticSpelling = "AP-uhl"),
-                CharacterVocabItem("Ant", "🐜", "The tiny Ant carries a big green leaf.", "نملة", phoneticSpelling = "ANT"),
-                CharacterVocabItem("Airplane", "✈️", "The fast Airplane flies above the white clouds.", "طائرة", phoneticSpelling = "AIR-playn"),
-                CharacterVocabItem("Alligator", "🐊", "The friendly green Alligator smiles by the river.", "تمساح", phoneticSpelling = "AL-uh-gay-ter"),
-                CharacterVocabItem("Animal", "🐾", "The cute friendly Animal plays in the grass.", "حيوان", phoneticSpelling = "AN-ih-muhl")
+                CharacterVocabItem("Ant", "🐜", "The tiny Ant is strong and carries a leaf.", "نملة", phoneticSpelling = "ANT"),
+                CharacterVocabItem("Apple", "🍎", "The sweet red Apple is juicy and delicious.", "تفاحة", phoneticSpelling = "AP-uhl"),
+                CharacterVocabItem("Airplane", "✈️", "The fast Airplane flies high in the sky.", "طائرة", phoneticSpelling = "AIR-playn"),
+                CharacterVocabItem("Alligator", "🐊", "The friendly green Alligator smiles by the river.", "تمساح", phoneticSpelling = "AL-uh-gay-ter")
             ),
-            missions = listOf(
-                CharacterMission(
-                    id = "m_a1",
-                    title = "Help the Ant!",
-                    description = "Rescue the little Ant trapped near the water using the rope!",
-                    targetWord = "Ant",
-                    targetEmoji = "🐜",
-                    gameplayType = MissionGameplayType.ROPE_RESCUE,
-                    storyPrompt = "Oh no! The tiny Ant is trapped near the water! Find the rope to rescue Ant!",
-                    step1Prompt = "Walk to the rope and pick it up!",
-                    step2Prompt = "Go to the water edge and throw the rope to Ant!",
-                    step3Prompt = "Pull the rope to bring Ant safely to the grass!",
-                    ropeItemEmoji = "🪢",
-                    goalLocationName = "Green Meadow",
-                    goalEmoji = "🌱"
-                ),
-                CharacterMission(
-                    id = "m_a2",
-                    title = "Find the Apple!",
-                    description = "OH NO! THE APPLE FELL! Catch the rolling Apple and put it in the Basket!",
-                    targetWord = "Apple",
-                    targetEmoji = "🍎",
-                    gameplayType = MissionGameplayType.ROLLING_BASKET,
-                    storyPrompt = "OH NO! THE APPLE FELL! Run and catch the rolling Apple, then place it in the Picnic Basket!",
-                    step1Prompt = "Run after the rolling Apple and catch it!",
-                    step2Prompt = "Carry the Apple and place it in the Picnic Basket!",
-                    goalLocationName = "Picnic Basket",
-                    goalEmoji = "🧺"
-                ),
-                CharacterMission(
-                    id = "m_a3",
-                    title = "Launch the Airplane!",
-                    description = "Walk to the Airplane on the runway and start the propeller!",
-                    targetWord = "Airplane",
-                    targetEmoji = "✈️",
-                    gameplayType = MissionGameplayType.INTERACT_ACTIVATE,
-                    storyPrompt = "The Airplane is ready on the runway! Guide Letter A to the Airplane and start the flight!",
-                    step1Prompt = "Walk over to the Airplane runway!",
-                    step2Prompt = "Press Start to launch the Airplane!",
-                    goalLocationName = "Sky Runway",
-                    goalEmoji = "🏁"
-                ),
-                CharacterMission(
-                    id = "m_a4",
-                    title = "Meet the Alligator!",
-                    description = "Cross the river bridge and become best friends with the friendly Alligator!",
-                    targetWord = "Alligator",
-                    targetEmoji = "🐊",
-                    gameplayType = MissionGameplayType.BRIDGE_ENCOUNTER,
-                    storyPrompt = "Friendly Alligator is smiling across the bridge! Cross over and greet Alligator!",
-                    step1Prompt = "Walk across the cobblestone bridge!",
-                    step2Prompt = "Wave hello and share a treat with Alligator!",
-                    goalLocationName = "River Bridge",
-                    goalEmoji = "🌉"
-                )
-            ),
-            unlockBadgeName = "Apple Star Explorer"
+            missions = makeMissionsForLetter('A', "Ant" to "🐜", "Apple" to "🍎", "Airplane" to "✈️", "Alligator" to "🐊"),
+            unlockBadgeName = "Super Apple Hero"
         ),
 
-        // B -> Bear (Warm honey-brown cuddly 3D teddy bear figurine)
+        // B -> Bear (Fuzzy brown 3D bear)
         LetterCharacter(
             letter = 'B',
             name = "Bear",
             characterEmoji = "🐻",
-            themeColorHex = 0xFF854D0E, // Honey Warm Brown
+            themeColorHex = 0xFF92400E,
             secondaryColorHex = 0xFFB45309,
             phonicsSound = "/b/",
-            phonicsExample = "B says /b/ as in Bear!",
-            personality = "Friendly, gentle, and loves warm hugs!",
-            greetingSpeech = "Hello friend! I'm Bear! 'B' is for Bear! /b/ /b/ Bear! Give me a high-five!",
-            storyIntro = "Bear is playing in the meadow and needs help finding his favorite toys and snacks!",
+            phonicsExample = "B says /b/ as in Bear & Ball!",
+            personality = "Big, cuddly, and loves honey snacks!",
+            greetingSpeech = "Hello! I'm Bear! 'B' is for Bear! /b/ /b/ Bear! Big and cuddly!",
+            storyIntro = "Bear is exploring the forest to help friends find balls, delicious bananas, and ride the yellow bus!",
             vocabulary = listOf(
-                CharacterVocabItem("Bear", "🐻", "The brown Bear gives the best warm hugs.", "دب", phoneticSpelling = "BAIR"),
-                CharacterVocabItem("Ball", "⚽", "The bouncy Ball rolls across the meadow.", "كرة", phoneticSpelling = "BAWL"),
-                CharacterVocabItem("Book", "📖", "I love to read my colorful story Book.", "كتاب", phoneticSpelling = "BUUK"),
-                CharacterVocabItem("Banana", "🍌", "The yellow Banana is sweet and yummy.", "موزة", phoneticSpelling = "buh-NAN-uh"),
-                CharacterVocabItem("Bird", "🐦", "The blue Bird sings a cheerful morning song.", "طائر", phoneticSpelling = "BURD")
+                CharacterVocabItem("Bear", "🐻", "The friendly brown Bear loves sweet honey.", "دب", phoneticSpelling = "BAIR"),
+                CharacterVocabItem("Ball", "⚽", "Kick the round soccer Ball across the meadow.", "كرة", phoneticSpelling = "BAWL"),
+                CharacterVocabItem("Banana", "🍌", "The sweet yellow Banana is a healthy snack.", "موزة", phoneticSpelling = "buh-NAN-uh"),
+                CharacterVocabItem("Bus", "🚌", "The yellow school Bus takes children to school.", "حافلة", phoneticSpelling = "BUHS")
             ),
-            missions = listOf(
-                CharacterMission("m_b1", "Find Bear's Ball!", "Help Bear catch the rolling bouncy Ball!", "Ball", "⚽", listOf("Ball", "Cup", "Sun"), listOf("⚽", "🥛", "☀️"), 0),
-                CharacterMission("m_b2", "Find the Sweet Banana!", "Bear is hungry for a yummy yellow Banana!", "Banana", "🍌", listOf("Egg", "Banana", "Hat"), listOf("🥚", "🍌", "🎩"), 1),
-                CharacterMission("m_b3", "Beginning Sound /b/", "Which friend starts with letter B?", "Bird", "🐦", listOf("Snake", "Cat", "Bird"), listOf("🐍", "🐱", "🐦"), 2)
-            ),
-            unlockBadgeName = "Brave Bear Champion"
+            missions = makeMissionsForLetter('B', "Bear" to "🐻", "Ball" to "⚽", "Banana" to "🍌", "Bus" to "🚌"),
+            unlockBadgeName = "Brave Bear Explorer"
         ),
 
-        // C -> Cat (Orange striped ginger 3D cat curved into C with playful wink)
+        // C -> Cat (Playful orange tabby cat)
         LetterCharacter(
             letter = 'C',
             name = "Cat",
             characterEmoji = "🐱",
-            themeColorHex = 0xFFEA580C, // Vibrant Warm Orange
+            themeColorHex = 0xFFF97316,
             secondaryColorHex = 0xFFFB923C,
             phonicsSound = "/k/",
-            phonicsExample = "C says /k/ as in Cat!",
-            personality = "Curious, playful, and loves purring!",
-            greetingSpeech = "Meow! I'm Cat! 'C' is for Cat! /k/ /k/ Cat! Let's play together!",
-            storyIntro = "Cat lost her red toy car and delicious birthday cake in the castle!",
+            phonicsExample = "C says /k/ as in Cat & Car!",
+            personality = "Curious, agile, and loves sweet milk!",
+            greetingSpeech = "Meow! I'm Cat! 'C' is for Cat! /k/ /k/ Cat! Let's play!",
+            storyIntro = "Cat is prowling through the town to find speedy cars, warm milk cups, and birthday cakes!",
             vocabulary = listOf(
-                CharacterVocabItem("Cat", "🐱", "The soft Cat purrs when you pet its ears.", "قطة", phoneticSpelling = "KAT"),
-                CharacterVocabItem("Car", "🚗", "The red Car goes beep beep down the street!", "سيارة", phoneticSpelling = "KAHR"),
-                CharacterVocabItem("Cup", "🥛", "Drink fresh clean milk from the Cup.", "كوب", phoneticSpelling = "KUHP"),
-                CharacterVocabItem("Cake", "🎂", "The sweet birthday Cake has glowing candles.", "كعكة", phoneticSpelling = "KAYK"),
-                CharacterVocabItem("Cow", "🐮", "The friendly spotted Cow says moo moo!", "بقرة", phoneticSpelling = "KOW")
+                CharacterVocabItem("Cat", "🐱", "The cute tabby Cat purrs softly when happy.", "قطة", phoneticSpelling = "KAT"),
+                CharacterVocabItem("Car", "🚗", "The red toy Car zooms down the paved road.", "سيارة", phoneticSpelling = "KAHR"),
+                CharacterVocabItem("Cup", "🥛", "Drink refreshing water from the clean Cup.", "كوب", phoneticSpelling = "KUHP"),
+                CharacterVocabItem("Cake", "🎂", "The birthday Cake has sweet icing and candles.", "كعكة", phoneticSpelling = "KAYK")
             ),
-            missions = listOf(
-                CharacterMission("m_c1", "Find the Red Car!", "Help Cat drive the fast red Car!", "Car", "🚗", listOf("Car", "Door", "Fish"), listOf("🚗", "🚪", "🐟"), 0),
-                CharacterMission("m_c2", "Find the Birthday Cake!", "Cat wants a slice of delicious sweet Cake!", "Cake", "🎂", listOf("Tree", "Cake", "Shoe"), listOf("🌳", "🎂", "👟"), 1),
-                CharacterMission("m_c3", "Beginning Sound /k/", "Which word starts with letter C?", "Cup", "🥛", listOf("Ant", "Egg", "Cup"), listOf("🐜", "🥚", "🥛"), 2)
-            ),
-            unlockBadgeName = "Curious Cat Detective"
+            missions = makeMissionsForLetter('C', "Cat" to "🐱", "Car" to "🚗", "Cup" to "🥛", "Cake" to "🎂"),
+            unlockBadgeName = "Clever Cat Champion"
         ),
 
-        // D -> Duck (Sunny yellow 3D rubber duckling formed into D)
+        // D -> Duck (Bright yellow rubber duck)
         LetterCharacter(
             letter = 'D',
             name = "Duck",
             characterEmoji = "🦆",
-            themeColorHex = 0xFFEAB308, // Sunshine Yellow
+            themeColorHex = 0xFFEAB308,
             secondaryColorHex = 0xFFFACC15,
             phonicsSound = "/d/",
-            phonicsExample = "D says /d/ as in Duck!",
-            personality = "Playful, funny, and loves splashing in water!",
+            phonicsExample = "D says /d/ as in Duck & Dog!",
+            personality = "Cheerful, bubbly, and loves splashing in water!",
             greetingSpeech = "Quack quack! I'm Duck! 'D' is for Duck! /d/ /d/ Duck! Splish splash!",
-            storyIntro = "Duck is swimming in the sunny pond and wants to find all his musical friends!",
+            storyIntro = "Duck is waddling across the pond to find friendly dogs, magical doors, and musical drums!",
             vocabulary = listOf(
-                CharacterVocabItem("Duck", "🦆", "The yellow Duck swims happily in the pond.", "بطة", phoneticSpelling = "DUHK"),
-                CharacterVocabItem("Dog", "🐶", "The happy Dog wags its tail and barks woof!", "كلب", phoneticSpelling = "DAWG"),
-                CharacterVocabItem("Door", "🚪", "Open the wooden Door to welcome your friends.", "باب", phoneticSpelling = "DOR"),
-                CharacterVocabItem("Doll", "🪆", "The cute Doll wears a pretty pink dress.", "دمية", phoneticSpelling = "DAHL"),
-                CharacterVocabItem("Drum", "🥁", "Tap the loud Drum! Boom boom boom!", "طبلة", phoneticSpelling = "DRUHM")
+                CharacterVocabItem("Duck", "🦆", "The cheerful yellow Duck swims in the pond.", "بطة", phoneticSpelling = "DUHK"),
+                CharacterVocabItem("Dog", "🐶", "The playful puppy Dog wags its tail happily.", "كلب", phoneticSpelling = "DAWG"),
+                CharacterVocabItem("Door", "🚪", "Open the wooden Door to enter the cozy room.", "باب", phoneticSpelling = "DOR"),
+                CharacterVocabItem("Drum", "🥁", "Tap the Drum to make a loud rhythmic beat.", "طبل", phoneticSpelling = "DRUHM")
             ),
-            missions = listOf(
-                CharacterMission("m_d1", "Find the Friendly Dog!", "Help Duck find his best puppy friend Dog!", "Dog", "🐶", listOf("Dog", "Bear", "Cat"), listOf("🐶", "🐻", "🐱"), 0),
-                CharacterMission("m_d2", "Find the Musical Drum!", "Duck wants to make music on the loud Drum!", "Drum", "🥁", listOf("Ball", "Drum", "Leaf"), listOf("⚽", "🥁", "🍃"), 1),
-                CharacterMission("m_d3", "Beginning Sound /d/", "Which item starts with letter D?", "Door", "🚪", listOf("Apple", "Sun", "Door"), listOf("🍎", "☀️", "🚪"), 2)
-            ),
-            unlockBadgeName = "Daring Duck Sailor"
+            missions = makeMissionsForLetter('D', "Duck" to "🦆", "Dog" to "🐶", "Door" to "🚪", "Drum" to "🥁"),
+            unlockBadgeName = "Daring Duck Scout"
         ),
 
-        // E -> Elephant (Soft baby-blue 3D elephant with floppy ear & trunk as E)
+        // E -> Elephant (Gentle baby elephant)
         LetterCharacter(
             letter = 'E',
             name = "Elephant",
             characterEmoji = "🐘",
-            themeColorHex = 0xFF0284C7, // Sky Blue
+            themeColorHex = 0xFF0284C7,
             secondaryColorHex = 0xFF38BDF8,
             phonicsSound = "/e/",
-            phonicsExample = "E says /e/ as in Elephant!",
+            phonicsExample = "E says /e/ as in Elephant & Egg!",
             personality = "Kind, helpful, and very strong!",
             greetingSpeech = "Pawoo! I'm Elephant! 'E' is for Elephant! /e/ /e/ Elephant! I have a long trunk!",
-            storyIntro = "Elephant wants to help all the safari animals find healthy breakfast eggs and protect planet Earth!",
+            storyIntro = "Elephant wants to help all safari friends find fresh eggs, soaring eagles, and listen with big ears!",
             vocabulary = listOf(
                 CharacterVocabItem("Elephant", "🐘", "The gentle Elephant sprays water with its trunk.", "فيل", phoneticSpelling = "EL-uh-fuhnt"),
                 CharacterVocabItem("Egg", "🥚", "The little white Egg hatches into a chick.", "بيضة", phoneticSpelling = "EG"),
-                CharacterVocabItem("Eye", "👁️", "I can see the beautiful rainbow with my Eye.", "عين", phoneticSpelling = "EYE"),
-                CharacterVocabItem("Ear", "👂", "The big floppy Ear listens to cheerful music.", "أذن", phoneticSpelling = "EER"),
-                CharacterVocabItem("Earth", "🌍", "Our beautiful green and blue planet Earth.", "الأرض", phoneticSpelling = "URTH")
+                CharacterVocabItem("Eagle", "🦅", "The majestic Eagle soars high in the blue sky.", "نسر", phoneticSpelling = "EE-guhl"),
+                CharacterVocabItem("Ear", "👂", "Use your Ear to listen to joyful music.", "أذن", phoneticSpelling = "EER")
             ),
-            missions = listOf(
-                CharacterMission("m_e1", "Find the Breakfast Egg!", "Help Elephant find the fresh round Egg!", "Egg", "🥚", listOf("Egg", "Hat", "Car"), listOf("🥚", "🎩", "🚗"), 0),
-                CharacterMission("m_e2", "Find Planet Earth!", "Elephant loves our beautiful planet Earth!", "Earth", "🌍", listOf("Moon", "Earth", "Star"), listOf("🌙", "🌍", "⭐"), 1),
-                CharacterMission("m_e3", "Beginning Sound /e/", "Which part starts with letter E?", "Ear", "👂", listOf("Nose", "Hand", "Ear"), listOf("👃", "✋", "👂"), 2)
-            ),
+            missions = makeMissionsForLetter('E', "Elephant" to "🐘", "Egg" to "🥚", "Eagle" to "🦅", "Ear" to "👂"),
             unlockBadgeName = "Gentle Elephant Hero"
         ),
 
-        // F -> Fish (Orange and white striped clownfish 3D swimmer formed into F)
+        // F -> Fish (Orange clownfish)
         LetterCharacter(
             letter = 'F',
             name = "Fish",
             characterEmoji = "🐟",
-            themeColorHex = 0xFFF97316, // Clownfish Orange
+            themeColorHex = 0xFFF97316,
             secondaryColorHex = 0xFFFB923C,
             phonicsSound = "/f/",
-            phonicsExample = "F says /f/ as in Fish!",
+            phonicsExample = "F says /f/ as in Fish & Frog!",
             personality = "Fast, cheerful, and loves swimming in waves!",
             greetingSpeech = "Blub blub! I'm Fish! 'F' is for Fish! /f/ /f/ Fish! Let's swim in the ocean!",
-            storyIntro = "Fish is swimming along the coral reef looking for blooming flowers and jumpy frogs!",
+            storyIntro = "Fish is swimming along coral reefs to find jumping frogs, warm campfire fires, and pretty flowers!",
             vocabulary = listOf(
                 CharacterVocabItem("Fish", "🐟", "The orange clown Fish swims through the sea.", "سمكة", phoneticSpelling = "FISH"),
-                CharacterVocabItem("Flower", "🌸", "The sweet pink Flower smells wonderful.", "زهرة", phoneticSpelling = "FLOW-er"),
-                CharacterVocabItem("Frog", "🐸", "The green Frog jumps ribbit ribbit on the lily pad.", "ضفدع", phoneticSpelling = "FRAWG"),
-                CharacterVocabItem("Fork", "🍴", "Use the clean Fork to eat your tasty food.", "شوكة", phoneticSpelling = "FORK"),
-                CharacterVocabItem("Foot", "🦶", "Stomp your Foot happily on the ground!", "قدم", phoneticSpelling = "FUUT")
+                CharacterVocabItem("Frog", "🐸", "The green Frog jumps ribbit ribbit on lily pads.", "ضفدع", phoneticSpelling = "FRAWG"),
+                CharacterVocabItem("Fire", "🔥", "The warm campfire Fire keeps campers cozy.", "نار", phoneticSpelling = "FY-er"),
+                CharacterVocabItem("Flower", "🌸", "The sweet pink Flower smells wonderful.", "زهرة", phoneticSpelling = "FLOW-er")
             ),
-            missions = listOf(
-                CharacterMission("m_f1", "Find the Pink Flower!", "Help Fish find the sweet blooming Flower!", "Flower", "🌸", listOf("Flower", "Tree", "Cloud"), listOf("🌸", "🌳", "☁️"), 0),
-                CharacterMission("m_f2", "Find the Jumping Frog!", "Fish wants to say hello to the jumpy Frog!", "Frog", "🐸", listOf("Duck", "Frog", "Cat"), listOf("🦆", "🐸", "🐱"), 1),
-                CharacterMission("m_f3", "Beginning Sound /f/", "Which dining item starts with letter F?", "Fork", "🍴", listOf("Spoon", "Plate", "Fork"), listOf("🥄", "🍽️", "🍴"), 2)
-            ),
+            missions = makeMissionsForLetter('F', "Fish" to "🐟", "Frog" to "🐸", "Fire" to "🔥", "Flower" to "🌸"),
             unlockBadgeName = "Speedy Fish Swimmer"
         ),
 
-        // G -> Giraffe (Golden yellow spotted 3D giraffe formed into G)
+        // G -> Giraffe (Golden yellow spotted giraffe)
         LetterCharacter(
             letter = 'G',
             name = "Giraffe",
             characterEmoji = "🦒",
-            themeColorHex = 0xFFD97706, // Safari Amber
+            themeColorHex = 0xFFD97706,
             secondaryColorHex = 0xFFF59E0B,
             phonicsSound = "/g/",
-            phonicsExample = "G says /g/ as in Giraffe & Garden!",
+            phonicsExample = "G says /g/ as in Giraffe & Goat!",
             personality = "Tall, friendly, and sees everything from up high!",
-            greetingSpeech = "Hello down there! I'm Giraffe! 'G' is for Giraffe! /g/ /g/ Giraffe! Look how tall I am!",
-            storyIntro = "Giraffe has a super long neck and can spot green grass and sweet grapes from high above!",
+            greetingSpeech = "Hello! I'm Giraffe! 'G' is for Giraffe! /g/ /g/ Giraffe! Look how tall I am!",
+            storyIntro = "Giraffe is looking from high above to help friendly goats, unwrap surprise gifts, and harvest sweet grapes!",
             vocabulary = listOf(
-                CharacterVocabItem("Giraffe", "🦒", "The tall spotted Giraffe reaches high leaves.", "زرافة", phoneticSpelling = "juh-RAF"),
-                CharacterVocabItem("Grass", "🌱", "Green fresh Grass grows in the meadow.", "عشب", phoneticSpelling = "GRAS"),
-                CharacterVocabItem("Girl", "👧", "The happy Girl plays with her friends.", "بنت", phoneticSpelling = "GURL"),
-                CharacterVocabItem("Gift", "🎁", "Unwrap the shiny surprise Gift box.", "هدية", phoneticSpelling = "GIFT"),
-                CharacterVocabItem("Grape", "🍇", "Purple Grapes are juicy and sweet.", "عنب", phoneticSpelling = "GRAYP")
+                CharacterVocabItem("Giraffe", "🦒", "The tall spotted Giraffe reaches high tree leaves.", "زرافة", phoneticSpelling = "juh-RAF"),
+                CharacterVocabItem("Goat", "🐐", "The playful mountain Goat leaps on the rocks.", "ماعز", phoneticSpelling = "GOHT"),
+                CharacterVocabItem("Gift", "🎁", "Unwrap the shiny surprise Gift box with a ribbon.", "هدية", phoneticSpelling = "GIFT"),
+                CharacterVocabItem("Grapes", "🍇", "Juicy purple Grapes grow in sweet bunches.", "عنب", phoneticSpelling = "GRAYPS")
             ),
-            missions = listOf(
-                CharacterMission("m_g1", "Find the Green Grass!", "Help Giraffe find fresh green Grass to munch on!", "Grass", "🌱", listOf("Grass", "Sun", "Water"), listOf("🌱", "☀️", "💧"), 0),
-                CharacterMission("m_g2", "Find the Surprise Gift!", "Giraffe brought a special surprise Gift for you!", "Gift", "🎁", listOf("Book", "Gift", "Hat"), listOf("📖", "🎁", "🎩"), 1),
-                CharacterMission("m_g3", "Beginning Sound /g/", "Which yummy fruit starts with letter G?", "Grape", "🍇", listOf("Apple", "Banana", "Grape"), listOf("🍎", "🍌", "🍇"), 2)
-            ),
+            missions = makeMissionsForLetter('G', "Giraffe" to "🦒", "Goat" to "🐐", "Gift" to "🎁", "Grapes" to "🍇"),
             unlockBadgeName = "High-Flying Giraffe Scout"
         ),
 
-        // H -> Horse (Chestnut brown 3D horse figurine formed into H)
+        // H -> Horse (Chestnut brown horse)
         LetterCharacter(
             letter = 'H',
             name = "Horse",
             characterEmoji = "🐴",
-            themeColorHex = 0xFF92400E, // Chestnut Brown
+            themeColorHex = 0xFF92400E,
             secondaryColorHex = 0xFFB45309,
             phonicsSound = "/h/",
-            phonicsExample = "H says /h/ as in Horse!",
-            personality = "Brave, speedy, and loyal companion!",
-            greetingSpeech = "Neigh! I'm Horse! 'H' is for Horse! /h/ /h/ Horse! Let's gallop across the field!",
-            storyIntro = "Horse loves galloping through the farm and finding cozy houses and warm hats!",
+            phonicsExample = "H says /h/ as in Horse & House!",
+            personality = "Brave, speedy, and a loyal friend!",
+            greetingSpeech = "Neigh! I'm Horse! 'H' is for Horse! /h/ /h/ Horse! Let's gallop!",
+            storyIntro = "Horse loves galloping across fields to find cozy houses, stylish hats, and wave friendly hands!",
             vocabulary = listOf(
-                CharacterVocabItem("Horse", "🐴", "The brown Horse gallops fast across the field.", "حصان", phoneticSpelling = "HORS"),
-                CharacterVocabItem("House", "🏡", "A cozy warm House for the whole family.", "منزل", phoneticSpelling = "HOWS"),
-                CharacterVocabItem("Hat", "🎩", "Wear the cool Hat to shield your eyes.", "قبعة", phoneticSpelling = "HAT"),
-                CharacterVocabItem("Hand", "✋", "Wave your Hand high to say hello!", "يد", phoneticSpelling = "HAND"),
-                CharacterVocabItem("Heart", "❤️", "My Heart is full of love and happiness.", "قلب", phoneticSpelling = "HAHRT")
+                CharacterVocabItem("Horse", "🐴", "The brown Horse gallops fast across the grassy field.", "حصان", phoneticSpelling = "HORS"),
+                CharacterVocabItem("House", "🏠", "A cozy warm House for the whole family.", "منزل", phoneticSpelling = "HOWS"),
+                CharacterVocabItem("Hat", "🎩", "Wear the cool Hat to shield your eyes from sun.", "قبعة", phoneticSpelling = "HAT"),
+                CharacterVocabItem("Hand", "✋", "Wave your Hand high up to say hello.", "يد", phoneticSpelling = "HAND")
             ),
-            missions = listOf(
-                CharacterMission("m_h1", "Find the Cozy House!", "Help Horse gallop home to the cozy House!", "House", "🏡", listOf("House", "Car", "Tree"), listOf("🏡", "🚗", "🌳"), 0),
-                CharacterMission("m_h2", "Find the Cool Hat!", "Horse wants to wear a fancy top Hat!", "Hat", "🎩", listOf("Shoe", "Hat", "Bag"), listOf("👟", "🎩", "🎒"), 1),
-                CharacterMission("m_h3", "Beginning Sound /h/", "Which body part starts with letter H?", "Hand", "✋", listOf("Foot", "Eye", "Hand"), listOf("🦶", "👁️", "✋"), 2)
-            ),
+            missions = makeMissionsForLetter('H', "Horse" to "🐴", "House" to "🏠", "Hat" to "🎩", "Hand" to "✋"),
             unlockBadgeName = "Galloping Horse Champion"
         ),
 
-        // I -> Ice Cream (Waffle cone with pink strawberry scoop & sprinkles formed into I)
+        // I -> Ice Cream (Strawberry scoop ice cream)
         LetterCharacter(
             letter = 'I',
             name = "Ice Cream",
             characterEmoji = "🍦",
-            themeColorHex = 0xFFEC4899, // Strawberry Pink
+            themeColorHex = 0xFFEC4899,
             secondaryColorHex = 0xFFF472B6,
             phonicsSound = "/aɪ/",
-            phonicsExample = "I says /aɪ/ & /ɪ/ as in Ice Cream & Igloo!",
+            phonicsExample = "I says /aɪ/ as in Ice Cream & Igloo!",
             personality = "Cool, sweet, and always brings smiles!",
             greetingSpeech = "Yum! I'm Ice Cream! 'I' is for Ice Cream! /aɪ/ /aɪ/ Ice Cream! Cool and sweet!",
-            storyIntro = "Ice Cream is on a sunny island adventure looking for frozen igloos and tiny insects!",
+            storyIntro = "Ice Cream is exploring snowy mountains to build frosty igloos, help tiny insects, and press shirts with irons!",
             vocabulary = listOf(
-                CharacterVocabItem("Ice Cream", "🍦", "Cold strawberry Ice Cream is delicious!", "مثلجات", phoneticSpelling = "EYES-kreem"),
-                CharacterVocabItem("Island", "🏝️", "A tropical Island surrounded by blue sea.", "جزيرة", phoneticSpelling = "EYE-luhnd"),
-                CharacterVocabItem("Igloo", "🛖", "The snowy white Igloo is cozy inside.", "كوخ جليدي", phoneticSpelling = "IG-loo"),
-                CharacterVocabItem("Insect", "🐞", "The spotted little ladybug Insect crawls.", "حشرة", phoneticSpelling = "IN-sekt"),
-                CharacterVocabItem("Iron", "🧲", "The strong magnet Iron attracts little pins.", "مغناطيس", phoneticSpelling = "EYE-urn")
+                CharacterVocabItem("Ice Cream", "🍦", "Cold strawberry Ice Cream is delicious on warm days.", "مثلجات", phoneticSpelling = "EYES-kreem"),
+                CharacterVocabItem("Igloo", "🧊", "The snowy white Igloo is warm and cozy inside.", "كوخ جليدي", phoneticSpelling = "IG-loo"),
+                CharacterVocabItem("Insect", "🪲", "The tiny shiny Insect crawls on the green leaf.", "حشرة", phoneticSpelling = "IN-sekt"),
+                CharacterVocabItem("Iron", "👔", "Use the smooth Iron to press clothes neat and clean.", "مكواة", phoneticSpelling = "EYE-urn")
             ),
-            missions = listOf(
-                CharacterMission("m_i1", "Find the Tropical Island!", "Fly with Ice Cream to the sunny Island!", "Island", "🏝️", listOf("Island", "House", "City"), listOf("🏝️", "🏡", "🏙️"), 0),
-                CharacterMission("m_i2", "Find the Snowy Igloo!", "Ice Cream wants to visit the cold white Igloo!", "Igloo", "🛖", listOf("Tent", "Igloo", "Castle"), listOf("⛺", "🛖", "🏰"), 1),
-                CharacterMission("m_i3", "Beginning Sound /ɪ/", "Which tiny creature starts with letter I?", "Insect", "🐞", listOf("Bird", "Frog", "Insect"), listOf("🐦", "🐸", "🐞"), 2)
-            ),
+            missions = makeMissionsForLetter('I', "Ice Cream" to "🍦", "Igloo" to "🧊", "Insect" to "🪲", "Iron" to "👔"),
             unlockBadgeName = "Sweet Ice Cream Master"
         ),
 
-        // J -> Jellyfish (Lavender pastel 3D jellyfish with wavy tentacles formed into J)
+        // J -> Jellyfish (Pastel lavender jellyfish)
         LetterCharacter(
             letter = 'J',
             name = "Jellyfish",
             characterEmoji = "🪼",
-            themeColorHex = 0xFF8B5CF6, // Lavender Purple
+            themeColorHex = 0xFF8B5CF6,
             secondaryColorHex = 0xFFA78BFA,
             phonicsSound = "/dʒ/",
-            phonicsExample = "J says /dʒ/ as in Jellyfish!",
-            personality = "Gentle, calm, and loves floating gracefully!",
+            phonicsExample = "J says /dʒ/ as in Jellyfish & Juice!",
+            personality = "Gentle, calm, and floats gracefully!",
             greetingSpeech = "Float float! I'm Jellyfish! 'J' is for Jellyfish! /dʒ/ /dʒ/ Jellyfish! Look at my tentacles!",
-            storyIntro = "Jellyfish is floating through ocean currents finding sweet juice and warm winter jackets!",
+            storyIntro = "Jellyfish is floating through ocean waves finding fruity juice, warm jackets, and practicing big jumps!",
             vocabulary = listOf(
-                CharacterVocabItem("Jellyfish", "🪼", "The purple Jellyfish floats in calm waves.", "قنديل البحر", phoneticSpelling = "JEL-ee-fish"),
-                CharacterVocabItem("Juice", "🧃", "Fresh orange Juice is cold and fruity.", "عصير", phoneticSpelling = "JOOS"),
-                CharacterVocabItem("Jump", "🦘", "Jump high up into the air with joy!", "يقفز", phoneticSpelling = "JUHMP"),
-                CharacterVocabItem("Jam", "🍯", "Sweet strawberry Jam on morning toast.", "مربى", phoneticSpelling = "JAM"),
-                CharacterVocabItem("Jacket", "🧥", "Wear your warm blue Jacket when it is cold.", "سترة", phoneticSpelling = "JAK-it")
+                CharacterVocabItem("Jellyfish", "🪼", "The purple Jellyfish floats gracefully in ocean waves.", "قنديل البحر", phoneticSpelling = "JEL-ee-fish"),
+                CharacterVocabItem("Juice", "🧃", "Fresh orange Juice is cold, sweet, and fruity.", "عصير", phoneticSpelling = "JOOS"),
+                CharacterVocabItem("Jacket", "🧥", "Wear your warm cozy Jacket when it is breezy outside.", "سترة", phoneticSpelling = "JAK-it"),
+                CharacterVocabItem("Jump", "🦘", "Jump high up into the air with joy and excitement.", "يقفز", phoneticSpelling = "JUHMP")
             ),
-            missions = listOf(
-                CharacterMission("m_j1", "Find the Fruity Juice!", "Help Jellyfish sip a box of orange Juice!", "Juice", "🧃", listOf("Juice", "Water", "Milk"), listOf("🧃", "💧", "🥛"), 0),
-                CharacterMission("m_j2", "Find the Warm Jacket!", "Jellyfish wants to bundle up in a warm Jacket!", "Jacket", "🧥", listOf("Hat", "Jacket", "Shoe"), listOf("🎩", "🧥", "👟"), 1),
-                CharacterMission("m_j3", "Beginning Sound /dʒ/", "Which breakfast spread starts with letter J?", "Jam", "🍯", listOf("Bread", "Cake", "Jam"), listOf("🍞", "🎂", "🍯"), 2)
-            ),
+            missions = makeMissionsForLetter('J', "Jellyfish" to "🪼", "Juice" to "🧃", "Jacket" to "🧥", "Jump" to "🦘"),
             unlockBadgeName = "Floating Jellyfish Star"
         ),
 
-        // K -> Koala (Soft fuzzy grey 3D koala hugging letter K)
+        // K -> Koala (Soft grey koala)
         LetterCharacter(
             letter = 'K',
             name = "Koala",
             characterEmoji = "🐨",
-            themeColorHex = 0xFF64748B, // Slate Grey
+            themeColorHex = 0xFF64748B,
             secondaryColorHex = 0xFF94A3B8,
             phonicsSound = "/k/",
-            phonicsExample = "K says /k/ as in Koala!",
-            personality = "Cuddly, peaceful, and loves tree climbing!",
-            greetingSpeech = "G'day! I'm Koala! 'K' is for Koala! /k/ /k/ Koala! I love eucalyptus leaves!",
-            storyIntro = "Koala is high up in the eucalyptus tree looking for colorful kites and golden keys!",
+            phonicsExample = "K says /k/ as in Koala & Kite!",
+            personality = "Cuddly, peaceful, and loves climbing trees!",
+            greetingSpeech = "G'day! I'm Koala! 'K' is for Koala! /k/ /k/ Koala! I love climbing!",
+            storyIntro = "Koala is high up in the eucalyptus trees looking for flying kites, shiny keys, and noble kings!",
             vocabulary = listOf(
-                CharacterVocabItem("Koala", "🐨", "The fuzzy grey Koala hugs the tree trunk.", "كوالا", phoneticSpelling = "koh-AH-luh"),
-                CharacterVocabItem("Kite", "🪁", "The diamond Kite flies high in the breezy sky.", "طائرة ورقية", phoneticSpelling = "KYTE"),
+                CharacterVocabItem("Koala", "🐨", "The fuzzy grey Koala hugs the tree branch tightly.", "كوالا", phoneticSpelling = "koh-AH-luh"),
+                CharacterVocabItem("Kite", "🪁", "The diamond Kite flies high in the breezy blue sky.", "طائرة ورقية", phoneticSpelling = "KYTE"),
                 CharacterVocabItem("Key", "🔑", "The golden Key unlocks the treasure chest.", "مفتاح", phoneticSpelling = "KEE"),
-                CharacterVocabItem("Kangaroo", "🦘", "The brown Kangaroo leaps across the field.", "كنغر", phoneticSpelling = "kang-guh-ROO"),
-                CharacterVocabItem("King", "👑", "The noble King wears a shining crown.", "ملك", phoneticSpelling = "KING")
+                CharacterVocabItem("King", "👑", "The noble King wears a sparkling golden crown.", "ملك", phoneticSpelling = "KING")
             ),
-            missions = listOf(
-                CharacterMission("m_k1", "Find the Flying Kite!", "Help Koala fly the colorful diamond Kite!", "Kite", "🪁", listOf("Kite", "Ball", "Bird"), listOf("🪁", "⚽", "🐦"), 0),
-                CharacterMission("m_k2", "Find the Golden Key!", "Koala found a secret lock and needs the Key!", "Key", "🔑", listOf("Book", "Key", "Door"), listOf("📖", "🔑", "🚪"), 1),
-                CharacterMission("m_k3", "Beginning Sound /k/", "Which hopping animal starts with letter K?", "Kangaroo", "🦘", listOf("Dog", "Frog", "Kangaroo"), listOf("🐶", "🐸", "🦘"), 2)
-            ),
+            missions = makeMissionsForLetter('K', "Koala" to "🐨", "Kite" to "🪁", "Key" to "🔑", "King" to "👑"),
             unlockBadgeName = "Kind Koala Climber"
         ),
 
-        // L -> Lion (Majestic golden 3D lion with fluffy mane formed into L)
+        // L -> Lion (Golden lion with mane)
         LetterCharacter(
             letter = 'L',
             name = "Lion",
             characterEmoji = "🦁",
-            themeColorHex = 0xFFF59E0B, // Golden Yellow
+            themeColorHex = 0xFFF59E0B,
             secondaryColorHex = 0xFFFBBF24,
             phonicsSound = "/l/",
-            phonicsExample = "L says /l/ as in Lion!",
+            phonicsExample = "L says /l/ as in Lion & Lemon!",
             personality = "Brave, royal, and has a mighty roar!",
-            greetingSpeech = "Roar! I'm Lion, your learning king! 'L' is for Lion! /l/ /l/ Lion! Let's be brave!",
-            storyIntro = "Lion is leading the savanna expedition to discover green leaves, bright lamps, and sour lemons!",
+            greetingSpeech = "Roar! I'm Lion! 'L' is for Lion! /l/ /l/ Lion! Let's be brave!",
+            storyIntro = "Lion is leading the savanna team to find sour lemons, bright glowing lamps, and fluttering green leaves!",
             vocabulary = listOf(
                 CharacterVocabItem("Lion", "🦁", "The brave Lion has a magnificent golden mane.", "أسد", phoneticSpelling = "LY-uhn"),
-                CharacterVocabItem("Leaf", "🍃", "A fluttering green Leaf dances in the wind.", "ورقة شجر", phoneticSpelling = "LEEF"),
-                CharacterVocabItem("Lamp", "💡", "Turn on the bright Lamp to read your book.", "مصباح", phoneticSpelling = "LAMP"),
-                CharacterVocabItem("Lemon", "🍋", "The yellow Lemon is sour and refreshing.", "ليمون", phoneticSpelling = "LEM-uhn"),
-                CharacterVocabItem("Leg", "🦵", "I use my strong Leg to run and jump!", "ساق", phoneticSpelling = "LEG")
+                CharacterVocabItem("Lemon", "🍋", "The yellow Lemon is fresh, sour, and full of flavor.", "ليمون", phoneticSpelling = "LEM-uhn"),
+                CharacterVocabItem("Lamp", "💡", "Turn on the bright Lamp to illuminate the room.", "مصباح", phoneticSpelling = "LAMP"),
+                CharacterVocabItem("Leaf", "🍃", "A fluttering green Leaf dances in the wind.", "ورقة شجر", phoneticSpelling = "LEEF")
             ),
-            missions = listOf(
-                CharacterMission("m_l1", "Find the Green Leaf!", "Help Lion catch the falling green Leaf!", "Leaf", "🍃", listOf("Leaf", "Flower", "Grass"), listOf("🍃", "🌸", "🌱"), 0),
-                CharacterMission("m_l2", "Find the Bright Lamp!", "Lion wants to light up the cozy room with a Lamp!", "Lamp", "💡", listOf("Sun", "Lamp", "Star"), listOf("☀️", "💡", "⭐"), 1),
-                CharacterMission("m_l3", "Beginning Sound /l/", "Which yellow citrus starts with letter L?", "Lemon", "🍋", listOf("Apple", "Grape", "Lemon"), listOf("🍎", "🍇", "🍋"), 2)
-            ),
+            missions = makeMissionsForLetter('L', "Lion" to "🦁", "Lemon" to "🍋", "Lamp" to "💡", "Leaf" to "🍃"),
             unlockBadgeName = "Mighty Lion King"
         ),
 
-        // M -> Monkey (Brown 3D monkey with cute ears and curling tail formed into M)
+        // M -> Monkey (Playful brown monkey)
         LetterCharacter(
             letter = 'M',
             name = "Monkey",
             characterEmoji = "🐵",
-            themeColorHex = 0xFFB45309, // Monkey Brown
+            themeColorHex = 0xFFB45309,
             secondaryColorHex = 0xFFD97706,
             phonicsSound = "/m/",
-            phonicsExample = "M says /m/ as in Monkey!",
-            personality = "Playful, funny, and loves swinging from vine to vine!",
+            phonicsExample = "M says /m/ as in Monkey & Moon!",
+            personality = "Playful, funny, and loves swinging on vines!",
             greetingSpeech = "Ooh ooh aah aah! I'm Monkey! 'M' is for Monkey! /m/ /m/ Monkey! Let's swing!",
-            storyIntro = "Monkey is swinging through the jungle canopy to gaze at the glowing moon and drink fresh milk!",
+            storyIntro = "Monkey is swinging through the canopy to gaze at the glowing moon, drink cold milk, and say hi to tiny mouse!",
             vocabulary = listOf(
-                CharacterVocabItem("Monkey", "🐵", "The clever Monkey swings happily from vines.", "قرد", phoneticSpelling = "MUHNG-kee"),
-                CharacterVocabItem("Moon", "🌙", "The crescent Moon glows softly in the night sky.", "قمر", phoneticSpelling = "MOON"),
-                CharacterVocabItem("Milk", "🥛", "Drink healthy white Milk to grow strong.", "حليب", phoneticSpelling = "MILK"),
-                CharacterVocabItem("Mouse", "🐭", "The little Mouse nibbles a piece of cheese.", "فأر", phoneticSpelling = "MOWS"),
-                CharacterVocabItem("Mango", "🥭", "The sweet juicy Mango is tropical and delicious.", "مانجو", phoneticSpelling = "MANG-goh")
+                CharacterVocabItem("Monkey", "🐵", "The clever Monkey swings happily from jungle vines.", "قرد", phoneticSpelling = "MUHNG-kee"),
+                CharacterVocabItem("Moon", "🌙", "The crescent Moon glows softly in the evening sky.", "قمر", phoneticSpelling = "MOON"),
+                CharacterVocabItem("Milk", "🥛", "Drink healthy white Milk to grow strong bones.", "حليب", phoneticSpelling = "MILK"),
+                CharacterVocabItem("Mouse", "🐭", "The tiny cute Mouse nibbles a piece of yellow cheese.", "فأر", phoneticSpelling = "MOWS")
             ),
-            missions = listOf(
-                CharacterMission("m_m1", "Find the Glowing Moon!", "Help Monkey point to the beautiful Moon!", "Moon", "🌙", listOf("Moon", "Sun", "Cloud"), listOf("🌙", "☀️", "☁️"), 0),
-                CharacterMission("m_m2", "Find the Fresh Milk!", "Monkey wants a cup of healthy white Milk!", "Milk", "🥛", listOf("Juice", "Milk", "Water"), listOf("🧃", "🥛", "💧"), 1),
-                CharacterMission("m_m3", "Beginning Sound /m/", "Which tropical fruit starts with letter M?", "Mango", "🥭", listOf("Banana", "Apple", "Mango"), listOf("🍌", "🍎", "🥭"), 2)
-            ),
+            missions = makeMissionsForLetter('M', "Monkey" to "🐵", "Moon" to "🌙", "Milk" to "🥛", "Mouse" to "🐭"),
             unlockBadgeName = "Jumping Jungle Monkey"
         ),
 
-        // N -> Nest (Textured twig nest with shiny blue eggs formed into N)
+        // N -> Nest (Twig nest with eggs)
         LetterCharacter(
             letter = 'N',
             name = "Nest",
             characterEmoji = "🪺",
-            themeColorHex = 0xFF78350F, // Twig Brown
+            themeColorHex = 0xFF78350F,
             secondaryColorHex = 0xFF92400E,
             phonicsSound = "/n/",
-            phonicsExample = "N says /n/ as in Nest!",
+            phonicsExample = "N says /n/ as in Nest & Nose!",
             personality = "Warm, cozy, and nurturing!",
-            greetingSpeech = "Tweet tweet! I'm Nest! 'N' is for Nest! /n/ /n/ Nest! Home for little baby birds!",
-            storyIntro = "Nest is sitting safely high in the oak tree keeping eggs warm and looking at starry night skies!",
+            greetingSpeech = "Tweet tweet! I'm Nest! 'N' is for Nest! /n/ /n/ Nest! A safe cozy home!",
+            storyIntro = "Nest is sitting safely high in the tree watching sniffing noses, helpful nurses, and starry night skies!",
             vocabulary = listOf(
-                CharacterVocabItem("Nest", "🪺", "The cozy bird Nest protects tiny blue eggs.", "عش", phoneticSpelling = "NEST"),
-                CharacterVocabItem("Nose", "👃", "I use my Nose to smell sweet flowers.", "أنف", phoneticSpelling = "NOHZ"),
-                CharacterVocabItem("Nut", "🥜", "The crunchy Nut is a squirrel's favorite snack.", "بندقة", phoneticSpelling = "NUHT"),
-                CharacterVocabItem("Net", "🥅", "The soccer Net catches the winning goal!", "شبكة", phoneticSpelling = "NET"),
-                CharacterVocabItem("Night", "🌌", "Twinkling stars shine brightly at Night.", "ليل", phoneticSpelling = "NYTE")
+                CharacterVocabItem("Nest", "🪺", "The cozy bird Nest protects tiny baby eggs.", "عش", phoneticSpelling = "NEST"),
+                CharacterVocabItem("Nose", "👃", "I use my Nose to smell fresh blooming flowers.", "أنف", phoneticSpelling = "NOHZ"),
+                CharacterVocabItem("Nurse", "👩‍⚕️", "The kind Nurse helps everyone feel healthy and well.", "ممرضة", phoneticSpelling = "NURS"),
+                CharacterVocabItem("Night", "🌌", "Twinkling stars shine brightly across the dark Night sky.", "ليل", phoneticSpelling = "NYTE")
             ),
-            missions = listOf(
-                CharacterMission("m_n1", "Find the Crunchy Nut!", "Help Nest find the crunchy snack Nut!", "Nut", "🥜", listOf("Nut", "Apple", "Cake"), listOf("🥜", "🍎", "🎂"), 0),
-                CharacterMission("m_n2", "Find the Soccer Net!", "Nest wants to score a goal into the Net!", "Net", "🥅", listOf("Ball", "Net", "Shoe"), listOf("⚽", "🥅", "👟"), 1),
-                CharacterMission("m_n3", "Beginning Sound /n/", "Which face part starts with letter N?", "Nose", "👃", listOf("Eye", "Ear", "Nose"), listOf("👁️", "👂", "👃"), 2)
-            ),
+            missions = makeMissionsForLetter('N', "Nest" to "🪺", "Nose" to "👃", "Nurse" to "👩‍⚕️", "Night" to "🌌"),
             unlockBadgeName = "Cozy Nest Guardian"
         ),
 
-        // O -> Owl (Sky blue feathered 3D owl with big bright intelligent eyes formed into O)
+        // O -> Owl (Wise blue owl)
         LetterCharacter(
             letter = 'O',
             name = "Owl",
             characterEmoji = "🦉",
-            themeColorHex = 0xFF0284C7, // Wise Owl Blue
+            themeColorHex = 0xFF0284C7,
             secondaryColorHex = 0xFF38BDF8,
             phonicsSound = "/ɒ/",
             phonicsExample = "O says /ɒ/ as in Owl & Orange!",
-            personality = "Smart, calm, and loves night wisdom!",
+            personality = "Smart, calm, and loves nighttime wisdom!",
             greetingSpeech = "Hoo hoo! I'm Owl! 'O' is for Owl! /ɒ/ /ɒ/ Owl! I have big wise eyes!",
-            storyIntro = "Owl sits on the moonlit branch looking for juicy oranges and ocean octopuses!",
+            storyIntro = "Owl sits on a tree branch looking for juicy round oranges, the deep blue ocean, and eight-armed octopuses!",
             vocabulary = listOf(
-                CharacterVocabItem("Owl", "🦉", "The wise Owl hoots gently in the night.", "بومة", phoneticSpelling = "OWL"),
-                CharacterVocabItem("Orange", "🍊", "The round Orange is citrusy and full of vitamin C.", "برتقالة", phoneticSpelling = "OR-inj"),
-                CharacterVocabItem("Octopus", "🐙", "The smart Octopus has eight flexible arms.", "أخطبوط", phoneticSpelling = "AHK-tuh-puhs"),
-                CharacterVocabItem("Onion", "🧅", "The purple Onion adds flavor to cooking.", "بصل", phoneticSpelling = "UHN-yuhn"),
-                CharacterVocabItem("Ocean", "🌊", "The vast blue Ocean is filled with sea life.", "محيط", phoneticSpelling = "OH-shuhn")
+                CharacterVocabItem("Owl", "🦉", "The wise Owl hoots gently in the peaceful forest.", "بومة", phoneticSpelling = "OWL"),
+                CharacterVocabItem("Orange", "🍊", "The round orange fruit is sweet, juicy, and healthy.", "برتقالة", phoneticSpelling = "OR-inj"),
+                CharacterVocabItem("Ocean", "🌊", "The vast blue Ocean is filled with amazing sea creatures.", "محيط", phoneticSpelling = "OH-shuhn"),
+                CharacterVocabItem("Octopus", "🐙", "The clever Octopus has eight flexible arms.", "أخطبوط", phoneticSpelling = "AHK-tuh-puhs")
             ),
-            missions = listOf(
-                CharacterMission("m_o1", "Find the Juicy Orange!", "Help Owl find the round sweet Orange!", "Orange", "🍊", listOf("Orange", "Grape", "Lemon"), listOf("🍊", "🍇", "🍋"), 0),
-                CharacterMission("m_o2", "Find the Eight-Armed Octopus!", "Owl wants to spot the swimming Octopus!", "Octopus", "🐙", listOf("Fish", "Octopus", "Duck"), listOf("🐟", "🐙", "🦆"), 1),
-                CharacterMission("m_o3", "Beginning Sound /ɒ/", "Which vast blue water starts with letter O?", "Ocean", "🌊", listOf("River", "Rain", "Ocean"), listOf("🏞️", "🌧️", "🌊"), 2)
-            ),
+            missions = makeMissionsForLetter('O', "Owl" to "🦉", "Orange" to "🍊", "Ocean" to "🌊", "Octopus" to "🐙"),
             unlockBadgeName = "Wise Owl Scholar"
         ),
 
-        // P -> Penguin (Tuxedo black and white 3D penguin with orange beak formed into P)
+        // P -> Penguin (Tuxedo penguin)
         LetterCharacter(
             letter = 'P',
             name = "Penguin",
             characterEmoji = "🐧",
-            themeColorHex = 0xFF1E293B, // Tuxedo Slate
+            themeColorHex = 0xFF1E293B,
             secondaryColorHex = 0xFF475569,
             phonicsSound = "/p/",
-            phonicsExample = "P says /p/ as in Penguin!",
+            phonicsExample = "P says /p/ as in Penguin & Pizza!",
             personality = "Playful, polite, and loves sliding on ice!",
             greetingSpeech = "Waddle waddle! I'm Penguin! 'P' is for Penguin! /p/ /p/ Penguin! Let's slide on ice!",
-            storyIntro = "Penguin is sliding across snowy glaciers to deliver warm pizza and write with colorful pencils!",
+            storyIntro = "Penguin is sliding across snowy glaciers to deliver warm pizza, write with sharp pencils, and visit panda!",
             vocabulary = listOf(
-                CharacterVocabItem("Penguin", "🐧", "The cute Penguin waddles across the white snow.", "بطريق", phoneticSpelling = "PENG-gwin"),
-                CharacterVocabItem("Pizza", "🍕", "Hot cheesy Pizza with yummy tomato toppings.", "بيتزا", phoneticSpelling = "PEET-suh"),
+                CharacterVocabItem("Penguin", "🐧", "The cute Penguin waddles across the snowy ice.", "بطريق", phoneticSpelling = "PENG-gwin"),
+                CharacterVocabItem("Pizza", "🍕", "Hot cheesy Pizza with delicious tomato sauce.", "بيتزا", phoneticSpelling = "PEET-suh"),
                 CharacterVocabItem("Pencil", "✏️", "Use the sharp Pencil to draw and write letters.", "قلم رصاص", phoneticSpelling = "PEN-suhl"),
-                CharacterVocabItem("Panda", "🐼", "The black and white Panda munches green bamboo.", "باندا", phoneticSpelling = "PAN-duh"),
-                CharacterVocabItem("Pear", "🍐", "The juicy green Pear is sweet and crunchy.", "كمثرى", phoneticSpelling = "PAIR")
+                CharacterVocabItem("Panda", "🐼", "The black and white Panda munches green bamboo leaves.", "باندا", phoneticSpelling = "PAN-duh")
             ),
-            missions = listOf(
-                CharacterMission("m_p1", "Find the Cheesy Pizza!", "Help Penguin deliver the hot slice of Pizza!", "Pizza", "🍕", listOf("Pizza", "Bread", "Cake"), listOf("🍕", "🍞", "🎂"), 0),
-                CharacterMission("m_p2", "Find the Writing Pencil!", "Penguin needs a Pencil to practice writing letters!", "Pencil", "✏️", listOf("Book", "Pencil", "Bag"), listOf("📖", "✏️", "🎒"), 1),
-                CharacterMission("m_p3", "Beginning Sound /p/", "Which bamboo-eating animal starts with letter P?", "Panda", "🐼", listOf("Koala", "Bear", "Panda"), listOf("🐨", "🐻", "🐼"), 2)
-            ),
+            missions = makeMissionsForLetter('P', "Penguin" to "🐧", "Pizza" to "🍕", "Pencil" to "✏️", "Panda" to "🐼"),
             unlockBadgeName = "Polite Penguin Explorer"
         ),
 
-        // Q -> Queen (Royal purple 3D crowned queen with pearl necklace formed into Q)
+        // Q -> Queen (Royal crowned queen)
         LetterCharacter(
             letter = 'Q',
             name = "Queen",
-            characterEmoji = "👸",
-            themeColorHex = 0xFF7E22CE, // Royal Purple
+            characterEmoji = "👑",
+            themeColorHex = 0xFF7E22CE,
             secondaryColorHex = 0xFFA855F7,
             phonicsSound = "/kw/",
-            phonicsExample = "Q says /kw/ as in Queen!",
+            phonicsExample = "Q says /kw/ as in Queen & Quilt!",
             personality = "Graceful, kind, and royal leader!",
-            greetingSpeech = "Greetings! I am Queen! 'Q' is for Queen! /kw/ /kw/ Queen! Welcome to my castle!",
-            storyIntro = "Queen rules the kingdom with kindness and is writing royal decrees with her feathered quill!",
+            greetingSpeech = "Greetings! I am Queen! 'Q' is for Queen! /kw/ /kw/ Queen! Welcome to my kingdom!",
+            storyIntro = "Queen rules the kingdom with kindness, sewing cozy quilts, asking clever questions, and being super quick!",
             vocabulary = listOf(
-                CharacterVocabItem("Queen", "👸", "The gracious Queen wears a sparkling gold crown.", "ملكة", phoneticSpelling = "KWEEN"),
-                CharacterVocabItem("Quiet", "🤫", "Shh! Be Quiet while the baby sleeps peacefully.", "هادئ", phoneticSpelling = "KWY-uht"),
-                CharacterVocabItem("Quill", "🪶", "The feather Quill writes fancy cursive letters.", "ريشة كتابة", phoneticSpelling = "KWIL"),
-                CharacterVocabItem("Quick", "⚡", "The cheetah is Quick like a lightning flash!", "سريع", phoneticSpelling = "KWIK"),
-                CharacterVocabItem("Quilt", "🧵", "The colorful patchwork Quilt keeps us warm.", "لحاف", phoneticSpelling = "KWILT")
+                CharacterVocabItem("Queen", "👑", "The gracious Queen wears a sparkling gold crown.", "ملكة", phoneticSpelling = "KWEEN"),
+                CharacterVocabItem("Quilt", "🧵", "The colorful patchwork Quilt keeps us warm and cozy.", "لحاف", phoneticSpelling = "KWILT"),
+                CharacterVocabItem("Question", "❓", "Raise your hand to ask a smart Question.", "سؤال", phoneticSpelling = "KWES-chuhn"),
+                CharacterVocabItem("Quick", "⚡", "The speedy cheetah runs very Quick like lightning!", "سريع", phoneticSpelling = "KWIK")
             ),
-            missions = listOf(
-                CharacterMission("m_q1", "Find the Feather Quill!", "Help Queen find her writing Quill pen!", "Quill", "🪶", listOf("Quill", "Pencil", "Book"), listOf("🪶", "✏️", "📖"), 0),
-                CharacterMission("m_q2", "Find the Warm Quilt!", "Queen wants to tuck in with a cozy patchwork Quilt!", "Quilt", "🧵", listOf("Blanket", "Quilt", "Shirt"), listOf("🧶", "🧵", "👕"), 1),
-                CharacterMission("m_q3", "Beginning Sound /kw/", "Which sign means 'Shh' starting with Q?", "Quiet", "🤫", listOf("Stop", "Go", "Quiet"), listOf("🛑", "🟢", "🤫"), 2)
-            ),
+            missions = makeMissionsForLetter('Q', "Queen" to "👑", "Quilt" to "🧵", "Question" to "❓", "Quick" to "⚡"),
             unlockBadgeName = "Royal Queen Crown"
         ),
 
-        // R -> Rabbit (Snow white fluffy 3D bunny with pink long ears formed into R)
+        // R -> Rabbit (White fluffy bunny)
         LetterCharacter(
             letter = 'R',
             name = "Rabbit",
             characterEmoji = "🐰",
-            themeColorHex = 0xFFDB2777, // Rosy Pink
+            themeColorHex = 0xFFDB2777,
             secondaryColorHex = 0xFFF472B6,
             phonicsSound = "/r/",
-            phonicsExample = "R says /r/ as in Rabbit!",
+            phonicsExample = "R says /r/ as in Rabbit & Robot!",
             personality = "Fast, cheerful, and loves hopping around!",
             greetingSpeech = "Hop hop! I'm Rabbit! 'R' is for Rabbit! /r/ /r/ Rabbit! Let's hop together!",
-            storyIntro = "Rabbit is hopping through the flower garden to chase beautiful rainbows and launch rockets!",
+            storyIntro = "Rabbit is hopping through gardens to find friendly robots, play in the rain, and discover shining rings!",
             vocabulary = listOf(
-                CharacterVocabItem("Rabbit", "🐰", "The white Rabbit hops fast with long pink ears.", "أرنب", phoneticSpelling = "RAB-it"),
-                CharacterVocabItem("Rainbow", "🌈", "A vibrant Rainbow arches across the blue sky.", "قوس قزح", phoneticSpelling = "RAYN-boh"),
-                CharacterVocabItem("Rocket", "🚀", "3.. 2.. 1.. Blast off! The fast space Rocket.", "صاروخ", phoneticSpelling = "RAHK-it"),
-                CharacterVocabItem("Ring", "💍", "The shining gold Ring sparkles in the light.", "خاتم", phoneticSpelling = "RING"),
-                CharacterVocabItem("Rose", "🌹", "The fragrant red Rose blooms in the garden.", "وردة", phoneticSpelling = "ROHZ")
+                CharacterVocabItem("Rabbit", "🐰", "The fluffy white Rabbit hops fast with long ears.", "أرنب", phoneticSpelling = "RAB-it"),
+                CharacterVocabItem("Robot", "🤖", "The smart mechanical Robot beeps and flashes lights.", "روبوت", phoneticSpelling = "ROH-baht"),
+                CharacterVocabItem("Rain", "🌧️", "Pitter-patter falls the fresh Rain from clouds.", "مطر", phoneticSpelling = "RAYN"),
+                CharacterVocabItem("Ring", "💍", "The shining gold Ring sparkles in the sunshine.", "خاتم", phoneticSpelling = "RING")
             ),
-            missions = listOf(
-                CharacterMission("m_r1", "Find the Colorful Rainbow!", "Help Rabbit look up and find the shining Rainbow!", "Rainbow", "🌈", listOf("Rainbow", "Sun", "Cloud"), listOf("🌈", "☀️", "☁️"), 0),
-                CharacterMission("m_r2", "Find the Fast Rocket!", "Rabbit wants to count down and launch the Rocket!", "Rocket", "🚀", listOf("Car", "Rocket", "Airplane"), listOf("🚗", "🚀", "✈️"), 1),
-                CharacterMission("m_r3", "Beginning Sound /r/", "Which garden flower starts with letter R?", "Rose", "🌹", listOf("Tree", "Grass", "Rose"), listOf("🌳", "🌱", "🌹"), 2)
-            ),
+            missions = makeMissionsForLetter('R', "Rabbit" to "🐰", "Robot" to "🤖", "Rain" to "🌧️", "Ring" to "💍"),
             unlockBadgeName = "Joyful Hopping Rabbit"
         ),
 
-        // S -> Snake (Emerald green spotted 3D friendly snake curved into S)
+        // S -> Snake (Emerald green snake)
         LetterCharacter(
             letter = 'S',
             name = "Snake",
             characterEmoji = "🐍",
-            themeColorHex = 0xFF16A34A, // Emerald Green
+            themeColorHex = 0xFF16A34A,
             secondaryColorHex = 0xFF22C55E,
             phonicsSound = "/s/",
             phonicsExample = "S says /s/ as in Snake & Sun!",
             personality = "Silly, friendly, and loves sliding smoothly!",
             greetingSpeech = "Sssss! I'm Snake! 'S' is for Snake! /s/ /s/ Snake! Slither and smile!",
-            storyIntro = "Snake is sliding along the sunny sandy beach looking for the bright sun and twinkling stars!",
+            storyIntro = "Snake is sliding across sunny fields to bask under the sun, touch glowing stars, and make yummy sandwiches!",
             vocabulary = listOf(
-                CharacterVocabItem("Snake", "🐍", "The green spotted Snake slithers smoothly.", "ثعبان", phoneticSpelling = "SNAYK"),
-                CharacterVocabItem("Sun", "☀️", "The bright yellow Sun warms our beautiful day.", "شمس", phoneticSpelling = "SUHN"),
-                CharacterVocabItem("Star", "⭐", "A glittering gold Star shines in the evening sky.", "نجمة", phoneticSpelling = "STAHR"),
-                CharacterVocabItem("Shoe", "👟", "Tie the blue running Shoe on your foot.", "حذاء", phoneticSpelling = "SHOO"),
-                CharacterVocabItem("Ship", "🚢", "The grand Ship sails across the deep ocean.", "سفينة", phoneticSpelling = "SHIP")
+                CharacterVocabItem("Snake", "🐍", "The green spotted Snake slithers smoothly on grass.", "ثعبان", phoneticSpelling = "SNAYK"),
+                CharacterVocabItem("Sun", "☀️", "The bright yellow Sun warms our wonderful day.", "شمس", phoneticSpelling = "SUHN"),
+                CharacterVocabItem("Star", "⭐", "A twinkling gold Star shines in the night sky.", "نجمة", phoneticSpelling = "STAHR"),
+                CharacterVocabItem("Sandwich", "🥪", "The tasty Sandwich has lettuce, cheese, and tomatoes.", "شطيرة", phoneticSpelling = "SAND-wich")
             ),
-            missions = listOf(
-                CharacterMission("m_s1", "Find the Bright Sun!", "Help Snake bask under the warm glowing Sun!", "Sun", "☀️", listOf("Sun", "Moon", "Cloud"), listOf("☀️", "🌙", "☁️"), 0),
-                CharacterMission("m_s2", "Find the Twinkling Star!", "Snake wants to wish upon a twinkling gold Star!", "Star", "⭐", listOf("Heart", "Star", "Circle"), listOf("❤️", "⭐", "🔵"), 1),
-                CharacterMission("m_s3", "Beginning Sound /s/", "Which footwear starts with letter S?", "Shoe", "👟", listOf("Hat", "Shirt", "Shoe"), listOf("🎩", "👕", "👟"), 2)
-            ),
+            missions = makeMissionsForLetter('S', "Snake" to "🐍", "Sun" to "☀️", "Star" to "⭐", "Sandwich" to "🥪"),
             unlockBadgeName = "Smooth Slithering Snake"
         ),
 
-        // T -> Tiger (Vibrant orange striped 3D tiger cub face formed into T)
+        // T -> Tiger (Vibrant orange tiger cub)
         LetterCharacter(
             letter = 'T',
             name = "Tiger",
             characterEmoji = "🐯",
-            themeColorHex = 0xFFEA580C, // Tiger Orange
+            themeColorHex = 0xFFEA580C,
             secondaryColorHex = 0xFFF97316,
             phonicsSound = "/t/",
-            phonicsExample = "T says /t/ as in Tiger!",
+            phonicsExample = "T says /t/ as in Tiger & Tree!",
             personality = "Energetic, adventurous, and loves running fast!",
             greetingSpeech = "Grrr-eat! I'm Tiger! 'T' is for Tiger! /t/ /t/ Tiger! Let's explore the jungle!",
-            storyIntro = "Tiger is exploring the jungle trails discovering tall green trees and riding the toy train!",
+            storyIntro = "Tiger is exploring the jungle to climb tall trees, play with soft toys, and ride the choo-choo train!",
             vocabulary = listOf(
                 CharacterVocabItem("Tiger", "🐯", "The playful orange Tiger has black stripes.", "نمر", phoneticSpelling = "TY-gur"),
-                CharacterVocabItem("Tree", "🌳", "The tall green Tree gives shade on sunny days.", "شجرة", phoneticSpelling = "TREE"),
-                CharacterVocabItem("Train", "🚂", "Choo choo! The steam Train chugs along tracks.", "قطار", phoneticSpelling = "TRAYN"),
-                CharacterVocabItem("Table", "🪵", "We set our plates and cups on the wooden Table.", "طاولة", phoneticSpelling = "TAY-buhl"),
-                CharacterVocabItem("Tomato", "🍅", "The juicy red Tomato is fresh from the garden.", "طماطم", phoneticSpelling = "tuh-MAY-toh")
+                CharacterVocabItem("Tree", "🌳", "The tall green Tree provides cool shade on sunny days.", "شجرة", phoneticSpelling = "TREE"),
+                CharacterVocabItem("Toy", "🧸", "The soft cuddly Toy teddy bear is my favorite.", "لعبة", phoneticSpelling = "TOY"),
+                CharacterVocabItem("Train", "🚂", "Choo choo! The steam Train chugs down the railway.", "قطار", phoneticSpelling = "TRAYN")
             ),
-            missions = listOf(
-                CharacterMission("m_t1", "Find the Tall Tree!", "Help Tiger climb up to the top of the Tree!", "Tree", "🌳", listOf("Tree", "Flower", "Grass"), listOf("🌳", "🌸", "🌱"), 0),
-                CharacterMission("m_t2", "Find the Choo-Choo Train!", "Tiger wants to ride the fast steam Train!", "Train", "🚂", listOf("Car", "Train", "Rocket"), listOf("🚗", "🚂", "🚀"), 1),
-                CharacterMission("m_t3", "Beginning Sound /t/", "Which garden veggie starts with letter T?", "Tomato", "🍅", listOf("Apple", "Banana", "Tomato"), listOf("🍎", "🍌", "🍅"), 2)
-            ),
+            missions = makeMissionsForLetter('T', "Tiger" to "🐯", "Tree" to "🌳", "Toy" to "🧸", "Train" to "🚂"),
             unlockBadgeName = "Tiger Adventure Champion"
         ),
 
-        // U -> Umbrella (Rainbow multi-color curved 3D umbrella formed into U)
+        // U -> Umbrella (Colorful rainbow umbrella)
         LetterCharacter(
             letter = 'U',
             name = "Umbrella",
             characterEmoji = "☂️",
-            themeColorHex = 0xFF0284C7, // Ocean Cyan
+            themeColorHex = 0xFF0284C7,
             secondaryColorHex = 0xFF06B6D4,
             phonicsSound = "/ʌ/",
             phonicsExample = "U says /ʌ/ as in Umbrella & Up!",
             personality = "Helpful, colorful, and shields everyone from rain!",
             greetingSpeech = "Open up! I'm Umbrella! 'U' is for Umbrella! /ʌ/ /ʌ/ Umbrella! Rain or shine, I'm here!",
-            storyIntro = "Umbrella is opening its colorful canopy to help friends stay dry and find magical unicorns!",
+            storyIntro = "Umbrella is opening up to find magical unicorns, float up into the sky, and wear neat martial arts uniforms!",
             vocabulary = listOf(
-                CharacterVocabItem("Umbrella", "☂️", "The colorful Umbrella keeps us dry in rain.", "مظلة", phoneticSpelling = "uhm-BREL-uh"),
-                CharacterVocabItem("Uniform", "🥋", "Wear the clean school Uniform with pride.", "زي موحد", phoneticSpelling = "YOO-nuh-form"),
+                CharacterVocabItem("Umbrella", "☂️", "The colorful Umbrella keeps us dry when it rains.", "مظلة", phoneticSpelling = "uhm-BREL-uh"),
                 CharacterVocabItem("Unicorn", "🦄", "The magical white Unicorn has a glowing horn.", "وحيد القرن", phoneticSpelling = "YOO-nuh-korn"),
-                CharacterVocabItem("Up", "⬆️", "Look Up high at the clouds and birds.", "فوق", phoneticSpelling = "UHP"),
-                CharacterVocabItem("Uncle", "👨", "My kind Uncle tells the funniest jokes.", "عم / خال", phoneticSpelling = "UHNG-kuhl")
+                CharacterVocabItem("Up", "🎈", "Float Up into the sky with a colorful balloon.", "فوق", phoneticSpelling = "UHP"),
+                CharacterVocabItem("Uniform", "🥋", "Wear the clean karate Uniform with focus and pride.", "زي موحد", phoneticSpelling = "YOO-nuh-form")
             ),
-            missions = listOf(
-                CharacterMission("m_u1", "Find the Magical Unicorn!", "Help Umbrella fly with the magical Unicorn!", "Unicorn", "🦄", listOf("Unicorn", "Horse", "Bear"), listOf("🦄", "🐴", "🐻"), 0),
-                CharacterMission("m_u2", "Point Arrow Up!", "Umbrella wants to point Up to the sky!", "Up", "⬆️", listOf("Down", "Up", "Left"), listOf("⬇️", "⬆️", "⬅️"), 1),
-                CharacterMission("m_u3", "Beginning Sound /juː/", "Which outfit starts with letter U?", "Uniform", "🥋", listOf("Shirt", "Shoe", "Uniform"), listOf("👕", "👟", "🥋"), 2)
-            ),
+            missions = makeMissionsForLetter('U', "Umbrella" to "☂️", "Unicorn" to "🦄", "Up" to "🎈", "Uniform" to "🥋"),
             unlockBadgeName = "Rainbow Umbrella Protector"
         ),
 
-        // V -> Violin (Wooden classical 3D violin with strings formed into V)
+        // V -> Violin (Polished wooden violin)
         LetterCharacter(
             letter = 'V',
             name = "Violin",
             characterEmoji = "🎻",
-            themeColorHex = 0xFF9A3412, // Polished Wood Rust
+            themeColorHex = 0xFF9A3412,
             secondaryColorHex = 0xFFC2410C,
             phonicsSound = "/v/",
-            phonicsExample = "V says /v/ as in Violin!",
+            phonicsExample = "V says /v/ as in Violin & Van!",
             personality = "Musical, elegant, and makes sweet melodies!",
             greetingSpeech = "La la la! I'm Violin! 'V' is for Violin! /v/ /v/ Violin! Let's make sweet music!",
-            storyIntro = "Violin is performing in the grand concert hall driving the touring van and eating healthy vegetables!",
+            storyIntro = "Violin is on a musical concert tour riding the family van, seeing glowing volcanoes, and eating fresh vegetables!",
             vocabulary = listOf(
-                CharacterVocabItem("Violin", "🎻", "The wooden Violin plays a sweet classical tune.", "كمان", phoneticSpelling = "vy-uh-LIN"),
-                CharacterVocabItem("Van", "🚐", "The blue family Van carries everyone on trips.", "شاحنة صغيرة", phoneticSpelling = "VAN"),
-                CharacterVocabItem("Vase", "🏺", "Put fresh blooming flowers in the ceramic Vase.", "مزهرية", phoneticSpelling = "VAYZ"),
-                CharacterVocabItem("Vest", "🦺", "Wear the bright safety Vest when crossing streets.", "سترة نجاة", phoneticSpelling = "VEST"),
-                CharacterVocabItem("Vegetable", "🥦", "Crunchy green Vegetables make you healthy!", "خضار", phoneticSpelling = "VEJ-tuh-buhl")
+                CharacterVocabItem("Violin", "🎻", "The wooden Violin plays sweet classical melodies.", "كمان", phoneticSpelling = "vy-uh-LIN"),
+                CharacterVocabItem("Van", "🚐", "The blue family Van takes everyone on road trips.", "شاحنة صغيرة", phoneticSpelling = "VAN"),
+                CharacterVocabItem("Volcano", "🌋", "The mighty mountain Volcano puffs soft smoke.", "بركان", phoneticSpelling = "vohl-KAY-noh"),
+                CharacterVocabItem("Vegetable", "🥕", "Crunchy orange carrots are healthy Vegetables.", "خضار", phoneticSpelling = "VEJ-tuh-buhl")
             ),
-            missions = listOf(
-                CharacterMission("m_v1", "Find the Family Van!", "Help Violin load instruments into the Van!", "Van", "🚐", listOf("Van", "Car", "Train"), listOf("🚐", "🚗", "🚂"), 0),
-                CharacterMission("m_v2", "Find the Flower Vase!", "Violin wants to place roses in the pretty Vase!", "Vase", "🏺", listOf("Cup", "Vase", "Plate"), listOf("🥛", "🏺", "🍽️"), 1),
-                CharacterMission("m_v3", "Beginning Sound /v/", "Which healthy food starts with letter V?", "Vegetable", "🥦", listOf("Cake", "Pizza", "Vegetable"), listOf("🎂", "🍕", "🥦"), 2)
-            ),
+            missions = makeMissionsForLetter('V', "Violin" to "🎻", "Van" to "🚐", "Volcano" to "🌋", "Vegetable" to "🥕"),
             unlockBadgeName = "Musical Violin Virtuoso"
         ),
 
-        // W -> Whale (Ocean blue 3D whale spouting water fountain formed into W)
+        // W -> Whale (Deep blue ocean whale)
         LetterCharacter(
             letter = 'W',
             name = "Whale",
-            characterEmoji = "🐳",
-            themeColorHex = 0xFF0284C7, // Deep Ocean Blue
+            characterEmoji = "🐋",
+            themeColorHex = 0xFF0284C7,
             secondaryColorHex = 0xFF38BDF8,
             phonicsSound = "/w/",
             phonicsExample = "W says /w/ as in Whale & Water!",
             personality = "Grand, friendly, and spouts water joyfully!",
-            greetingSpeech = "Splash splash! I'm Whale! 'W' is for Whale! /w/ /w/ Whale! Welcome to the ocean!",
-            storyIntro = "Whale is swimming through deep blue waters spraying water fountains and looking through windows!",
+            greetingSpeech = "Splash splash! I'm Whale! 'W' is for Whale! /w/ /w/ Whale! Welcome to the sea!",
+            storyIntro = "Whale is swimming through deep blue oceans finding clean water, pulling red wagons, and feeling gentle wind!",
             vocabulary = listOf(
-                CharacterVocabItem("Whale", "🐳", "The gentle blue Whale spouts water in the sea.", "حوت", phoneticSpelling = "WAYL"),
-                CharacterVocabItem("Water", "💧", "Drink clean fresh Water to stay healthy.", "ماء", phoneticSpelling = "WAH-ter"),
-                CharacterVocabItem("Watch", "⌚", "Look at the ticking Watch to check the time.", "ساعة يد", phoneticSpelling = "WAHCH"),
-                CharacterVocabItem("Window", "🪟", "Look out the clean glass Window at the birds.", "نافذة", phoneticSpelling = "WIN-doh"),
-                CharacterVocabItem("Wind", "💨", "The cool gentle Wind makes the leaves dance.", "رياح", phoneticSpelling = "WIND")
+                CharacterVocabItem("Whale", "🐋", "The gentle blue Whale swims peacefully in the sea.", "حوت", phoneticSpelling = "WAYL"),
+                CharacterVocabItem("Water", "💧", "Drink clean fresh Water every day to stay healthy.", "ماء", phoneticSpelling = "WAH-ter"),
+                CharacterVocabItem("Wagon", "🛒", "Pull the red Wagon loaded with your favorite toys.", "عربة", phoneticSpelling = "WAG-uhn"),
+                CharacterVocabItem("Wind", "💨", "The cool gentle Wind makes the trees whisper.", "رياح", phoneticSpelling = "WIND")
             ),
-            missions = listOf(
-                CharacterMission("m_w1", "Find the Fresh Water!", "Help Whale spout fresh clean Water!", "Water", "💧", listOf("Water", "Milk", "Juice"), listOf("💧", "🥛", "🧃"), 0),
-                CharacterMission("m_w2", "Find the Ticking Watch!", "Whale wants to know what time it is on the Watch!", "Watch", "⌚", listOf("Lamp", "Watch", "Key"), listOf("💡", "⌚", "🔑"), 1),
-                CharacterMission("m_w3", "Beginning Sound /w/", "Which glass frame starts with letter W?", "Window", "🪟", listOf("Door", "Wall", "Window"), listOf("🚪", "🧱", "🪟"), 2)
-            ),
+            missions = makeMissionsForLetter('W', "Whale" to "🐋", "Water" to "💧", "Wagon" to "🛒", "Wind" to "💨"),
             unlockBadgeName = "Gentle Whale Navigator"
         ),
 
-        // X -> Xylophone (Rainbow colored chime bars with wooden mallets formed into X)
+        // X -> Xylophone (Rainbow chime xylophone)
         LetterCharacter(
             letter = 'X',
             name = "Xylophone",
-            characterEmoji = "🎼",
-            themeColorHex = 0xFF7C3AED, // Violet Melody
+            characterEmoji = "🎵",
+            themeColorHex = 0xFF7C3AED,
             secondaryColorHex = 0xFFA78BFA,
             phonicsSound = "/ks/",
-            phonicsExample = "X says /ks/ as in Xylophone, Box & Fox!",
+            phonicsExample = "X says /ks/ as in Xylophone & X-Ray!",
             personality = "Musical, vibrant, and loves cheerful tunes!",
-            greetingSpeech = "Ding dong! I'm Xylophone! 'X' is for Xylophone! /ks/ /ks/ Xylophone! Let's play chimes!",
-            storyIntro = "Xylophone is tapping rainbow chimes and packing mystery boxes with clever foxes!",
+            greetingSpeech = "Ding dong! I'm Xylophone! 'X' is for Xylophone! /ks/ /ks/ Xylophone! Let's play!",
+            storyIntro = "Xylophone is tapping rainbow chimes to view bone x-rays, spot the xenops bird, and celebrate Xmas holidays!",
             vocabulary = listOf(
-                CharacterVocabItem("Xylophone", "🎼", "Tap the colorful bars on the musical Xylophone.", "إكسيلوفون", phoneticSpelling = "ZY-luh-fohn"),
-                CharacterVocabItem("X-ray", "🩻", "The medical X-ray picture sees our strong bones.", "أشعة سينية", phoneticSpelling = "EKS-ray"),
-                CharacterVocabItem("Box", "📦", "Open the cardboard Box to find your toy.", "صندوق", phoneticSpelling = "BAHKS"),
-                CharacterVocabItem("Fox", "🦊", "The clever orange Fox has a bushy tail.", "ثعلب", phoneticSpelling = "FAHKS"),
-                CharacterVocabItem("Six", "6️⃣", "Count your fingers: one, two, three, four, five, Six!", "ستة", phoneticSpelling = "SIKS")
+                CharacterVocabItem("Xylophone", "🎵", "Tap colorful bars on the musical Xylophone.", "إكسيلوفون", phoneticSpelling = "ZY-luh-fohn"),
+                CharacterVocabItem("X-Ray", "🩻", "The medical X-Ray sees our strong healthy bones.", "أشعة سينية", phoneticSpelling = "EKS-ray"),
+                CharacterVocabItem("Xenops", "🐦", "The tiny Xenops bird flutters in rainforest trees.", "طائر الزينوبس", phoneticSpelling = "ZEE-nops"),
+                CharacterVocabItem("Xmas", "🎄", "Decorate the sparkling Xmas tree with ornaments.", "عيد الميلاد", phoneticSpelling = "EKS-muhs")
             ),
-            missions = listOf(
-                CharacterMission("m_x1", "Find the Medical X-ray!", "Help Xylophone view the shiny bone X-ray!", "X-ray", "🩻", listOf("X-ray", "Book", "Photo"), listOf("🩻", "📖", "🖼️"), 0),
-                CharacterMission("m_x2", "Find the Cardboard Box!", "Xylophone packed instruments inside the Box!", "Box", "📦", listOf("Bag", "Box", "Cup"), listOf("🎒", "📦", "🥛"), 1),
-                CharacterMission("m_x3", "Ending Sound /ks/", "Which clever animal ends with letter X sound?", "Fox", "🦊", listOf("Dog", "Cat", "Fox"), listOf("🐶", "🐱", "🦊"), 2)
-            ),
+            missions = makeMissionsForLetter('X', "Xylophone" to "🎵", "X-Ray" to "🩻", "Xenops" to "🐦", "Xmas" to "🎄"),
             unlockBadgeName = "Rainbow Xylophone Maestro"
         ),
 
-        // Y -> Yak (Fuzzy shaggy brown 3D yak with curved horns formed into Y)
+        // Y -> Yak (Shaggy brown mountain yak)
         LetterCharacter(
             letter = 'Y',
             name = "Yak",
             characterEmoji = "🐂",
-            themeColorHex = 0xFF78350F, // Shaggy Yak Brown
+            themeColorHex = 0xFF78350F,
             secondaryColorHex = 0xFF92400E,
             phonicsSound = "/j/",
-            phonicsExample = "Y says /j/ as in Yak & Yellow!",
-            personality = "Strong, cozy, and loves mountain walks!",
-            greetingSpeech = "Warm snort! I'm Yak! 'Y' is for Yak! /j/ /j/ Yak! I have warm shaggy fur!",
-            storyIntro = "Yak is trekking across snowy mountain peaks playing with yellow yo-yos and sailing yachts!",
+            phonicsExample = "Y says /j/ as in Yak & Yo-Yo!",
+            personality = "Strong, cozy, and loves mountain trails!",
+            greetingSpeech = "Warm snort! I'm Yak! 'Y' is for Yak! /j/ /j/ Yak! I have cozy warm fur!",
+            storyIntro = "Yak is trekking high across mountain peaks spinning fun yo-yos, finding yellow gems, and eating healthy yogurt!",
             vocabulary = listOf(
-                CharacterVocabItem("Yak", "🐂", "The shaggy brown Yak lives in high mountains.", "ثور الياك", phoneticSpelling = "YAK"),
-                CharacterVocabItem("Yellow", "🟡", "The bright Yellow lemon shines like the sun.", "أصفر", phoneticSpelling = "YEL-oh"),
-                CharacterVocabItem("Yo-yo", "🪀", "Spin the spinning Yo-yo up and down on a string.", "يويو", phoneticSpelling = "YOH-yoh"),
-                CharacterVocabItem("Yacht", "⛵", "The white sailing Yacht glides across the lake.", "يخت", phoneticSpelling = "YAHT"),
-                CharacterVocabItem("Yarn", "🧶", "Knit a warm winter scarf from soft wool Yarn.", "خيط صوف", phoneticSpelling = "YAHRN")
+                CharacterVocabItem("Yak", "🐂", "The shaggy brown Yak lives in high snowy mountains.", "ثور الياك", phoneticSpelling = "YAK"),
+                CharacterVocabItem("Yo-Yo", "🪀", "Spin the spinning Yo-Yo up and down on its string.", "يويو", phoneticSpelling = "YOH-yoh"),
+                CharacterVocabItem("Yellow", "💛", "The bright Yellow heart shines like the morning sun.", "أصفر", phoneticSpelling = "YEL-oh"),
+                CharacterVocabItem("Yogurt", "🥣", "Creamy sweet strawberry Yogurt is a healthy snack.", "زبادي", phoneticSpelling = "YOH-gurt")
             ),
-            missions = listOf(
-                CharacterMission("m_y1", "Find the Bright Yellow!", "Help Yak find the glowing Yellow color!", "Yellow", "🟡", listOf("Yellow", "Blue", "Red"), listOf("🟡", "🔵", "🔴"), 0),
-                CharacterMission("m_y2", "Find the Spinning Yo-yo!", "Yak loves performing fun tricks with the Yo-yo!", "Yo-yo", "🪀", listOf("Ball", "Yo-yo", "Kite"), listOf("⚽", "🪀", "🪁"), 1),
-                CharacterMission("m_y3", "Beginning Sound /j/", "Which cozy knitting thread starts with letter Y?", "Yarn", "🧶", listOf("Net", "Quilt", "Yarn"), listOf("🥅", "🧵", "🧶"), 2)
-            ),
+            missions = makeMissionsForLetter('Y', "Yak" to "🐂", "Yo-Yo" to "🪀", "Yellow" to "💛", "Yogurt" to "🥣"),
             unlockBadgeName = "Mountain Yak Champion"
         ),
 
-        // Z -> Zebra (Crisp black & white striped 3D zebra formed into Z)
+        // Z -> Zebra (Black and white striped zebra)
         LetterCharacter(
             letter = 'Z',
             name = "Zebra",
             characterEmoji = "🦓",
-            themeColorHex = 0xFF1E293B, // Striped Dark Slate
+            themeColorHex = 0xFF1E293B,
             secondaryColorHex = 0xFF475569,
             phonicsSound = "/z/",
             phonicsExample = "Z says /z/ as in Zebra & Zoo!",
-            personality = "Energetic, stylish, and loves zigzag racing!",
+            personality = "Energetic, stylish, and loves zigzag running!",
             greetingSpeech = "Whee! I'm Zebra! 'Z' is for Zebra! /z/ /z/ Zebra! Look at my cool stripes!",
-            storyIntro = "Zebra is galloping through the safari zoo zip-zipping zippers and running in fun zigzags!",
+            storyIntro = "Zebra is galloping through the safari to visit animal zoos, pull jackets with zippers, and count down to zero!",
             vocabulary = listOf(
                 CharacterVocabItem("Zebra", "🦓", "The swift Zebra has beautiful black and white stripes.", "حمار وحشي", phoneticSpelling = "ZEE-bruh"),
-                CharacterVocabItem("Zoo", "🦁", "Visit all friendly animals at the animal Zoo.", "حديقة حيوان", phoneticSpelling = "ZOO"),
-                CharacterVocabItem("Zero", "0️⃣", "The number Zero looks like an empty circle.", "صفر", phoneticSpelling = "ZEER-oh"),
-                CharacterVocabItem("Zipper", "🤐", "Zip up your warm jacket with the metal Zipper.", "سحاب", phoneticSpelling = "ZIP-er"),
-                CharacterVocabItem("Zigzag", "⚡", "The lightning bolt zigzags across the sky.", "متعرج", phoneticSpelling = "ZIG-zag")
+                CharacterVocabItem("Zoo", "🦁", "Visit all the amazing friendly animals at the animal Zoo.", "حديقة حيوان", phoneticSpelling = "ZOO"),
+                CharacterVocabItem("Zipper", "🤐", "Pull the metal Zipper to zip up your warm coat.", "سحاب", phoneticSpelling = "ZIP-er"),
+                CharacterVocabItem("Zero", "0️⃣", "The number Zero represents a fresh beginning circle.", "صفر", phoneticSpelling = "ZEER-oh")
             ),
-            missions = listOf(
-                CharacterMission("m_z1", "Find the Animal Zoo!", "Help Zebra guide all safari friends to the Zoo!", "Zoo", "🦁", listOf("Zoo", "Park", "School"), listOf("🦁", "🏞️", "🏫"), 0),
-                CharacterMission("m_z2", "Find the Jacket Zipper!", "Zebra wants to zip up the jacket with the Zipper!", "Zipper", "🤐", listOf("Button", "Zipper", "Key"), listOf("🔘", "🤐", "🔑"), 1),
-                CharacterMission("m_z3", "Beginning Sound /z/", "Which starting number word means none / 0?", "Zero", "0️⃣", listOf("One", "Ten", "Zero"), listOf("1️⃣", "🔟", "0️⃣"), 2)
-            ),
+            missions = makeMissionsForLetter('Z', "Zebra" to "🦓", "Zoo" to "🦁", "Zipper" to "🤐", "Zero" to "0️⃣"),
             unlockBadgeName = "Zippy Zebra Explorer"
         )
     )
